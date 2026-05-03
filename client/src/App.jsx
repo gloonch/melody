@@ -82,6 +82,7 @@ const navItems = [
   { id: "craft", label: "فرآیند ساخت" },
   { id: "usage", label: "کاربردها" },
   { id: "contact", label: "سفارش" },
+  { id: "courses", label: "دیدن دوره‌های آموزشی" },
   { id: "works", label: "نمونه‌کارها" },
 ];
 
@@ -357,12 +358,12 @@ export default function MelodyLandingPage() {
         <section id="craft" className="scroll-mt-24 border-y border-[#ece3d8] bg-white/45 md:scroll-mt-28">
           <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-[0.95fr_1.05fr] md:px-8 lg:px-12">
             <div className="flex items-center">
-              <div className="max-w-xl text-right">
+              <div className="max-w-xl text-center">
                 <SectionLabel>فرآیند ساخت</SectionLabel>
                 <h2 className="mb-6 text-4xl leading-tight text-[#54463d] md:text-6xl">
                   ساخته ی دست
                 </h2>
-                <div className="mb-6 h-px w-24 bg-[#c08081]" />
+                <div className="mb-6 h-px w-24 bg-[#c08081] mx-auto" />
                 <p className="text-lg leading-9 text-[#6f6056]">
                   از انتخاب بافت‌های لطیف تا برش دقیق، فرم‌دهی آرام، دوخت‌های ظریف و ترکیب
                   لایه‌ها، هر قطعه با صبر و توجه ساخته می‌شود تا شکوه گل را به حضوری ماندگار و
@@ -462,6 +463,22 @@ export default function MelodyLandingPage() {
                   <p className="text-sm text-[#9b867d]">اطلاعات شما امن و محرمانه خواهد ماند.</p>
                 </div>
               </form>
+            </div>
+          </div>
+        </section>
+
+        <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
+          <div className="overflow-hidden rounded-[34px] border border-[#e6dbcf] bg-[linear-gradient(135deg,#f9f4ec_0%,#efe4d6_100%)] shadow-[0_20px_50px_rgba(84,64,47,0.06)]">
+            <div className="p-8 text-center md:p-10">
+              <SectionLabel>دوره‌های آموزشی</SectionLabel>
+
+              <h2 className="mb-4 text-3xl leading-tight text-[#4f4138] md:text-5xl">
+                ثبت‌نام دوره‌های آموزش گل‌سازی به‌زودی
+              </h2>
+              <p className="max-w-3xl text-base leading-8 text-[#75655a] md:text-lg md:leading-9">
+                در حال آماده‌سازی دوره‌های آموزشی تخصصی گل‌سازی هستیم. به‌زودی زمان‌بندی و جزئیات
+                کامل دوره‌ها برای ثبت‌نام اعلام می‌شود.
+              </p>
             </div>
           </div>
         </section>
