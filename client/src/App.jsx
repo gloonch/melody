@@ -16,12 +16,15 @@ import styleImage2 from "./assets/section-four/2.png";
 import styleImage3 from "./assets/section-four/3.png";
 import styleImage4 from "./assets/section-four/4.png";
 
-const projectImages = Object.entries(
-  import.meta.glob("./assets/project_images/*.{jpg,jpeg,png,webp}", {
-    eager: true,
-    import: "default",
-  }),
-)
+const projectImages = [
+  ...Object.entries(
+    import.meta.glob("./assets/project_images/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}", {
+      eager: true,
+      query: "?url",
+      import: "default",
+    }),
+  ),
+]
   .sort(([pathA], [pathB]) => pathA.localeCompare(pathB, undefined, { numeric: true }))
   .map(([, source]) => source);
 
@@ -221,9 +224,8 @@ export default function MelodyLandingPage() {
                     />
                   ) : null}
                   <span
-                    className={`relative z-10 transition-colors duration-300 ${
-                      isActive ? "text-white" : "text-[#f7eee4]/82 hover:text-white"
-                    }`}
+                    className={`relative z-10 transition-colors duration-300 ${isActive ? "text-white" : "text-[#f7eee4]/82 hover:text-white"
+                      }`}
                   >
                     {item.label}
                   </span>
