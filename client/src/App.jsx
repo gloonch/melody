@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Flower2, Send, Sparkles } from "lucide-react";
 import heroImage from "./assets/images-hero/hero.png";
-import logoImage from "./assets/logo.png";
+import logoImage from "./assets/Logo.png";
 import flowerImage1 from "./assets/section-two/1.jpeg";
 import flowerImage2 from "./assets/section-two/2.jpg";
 import flowerImage3 from "./assets/section-two/3.jpg";

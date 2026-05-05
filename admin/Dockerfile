@@ -8,8 +8,10 @@ CMD ["npm", "run", "dev"]
 
 FROM node:20-alpine AS build
 WORKDIR /app
-ARG VITE_API_BASE_URL=http://localhost:8080/api/v1
+ARG VITE_API_BASE_URL=/api/v1
+ARG VITE_BASE_PATH=/
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 COPY package*.json ./
 RUN npm ci
 COPY . .
