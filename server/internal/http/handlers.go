@@ -2,7 +2,9 @@ package httpapi
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/subtle"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -16,22 +18,26 @@ import (
 	"melody-server/internal/config"
 	"melody-server/internal/database"
 	"melody-server/internal/models"
+	"melody-server/internal/repository"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Handler struct {
-	db  *database.MongoDB
-	cfg *config.Config
+	db      *database.PostgresDB
+	cfg     *config.Config
+	courses *repository.CourseRepository
 }
 
 const (
 	contactMessageMinLength = 10
 	contactMessageMaxLength = 2000
+
+	projectImagesTable = "project_images"
+	heroSlidesTable    = "hero_slides"
 )
 
 type createContactRequestBody struct {
@@ -79,8 +85,13 @@ type uploadImageResult struct {
 	URL         string `json:"url"`
 }
 
-func NewHandler(db *database.MongoDB, cfg *config.Config) *Handler {
-	return &Handler{db: db, cfg: cfg}
+type courseWithImagesResponse struct {
+	Course models.Course        `json:"course"`
+	Images []models.CourseImage `json:"images"`
+}
+
+func NewHandler(db *database.PostgresDB, cfg *config.Config) *Handler {
+	return &Handler{db: db, cfg: cfg, courses: repository.NewCourseRepository(db.Pool())}
 }
 
 func (h *Handler) AdminLogin(c *gin.Context) {
@@ -132,7 +143,7 @@ func (h *Handler) CreateContactRequest(c *gin.Context) {
 
 	now := time.Now().UTC()
 	request := models.ContactRequest{
-		ID:        primitive.NewObjectID(),
+		ID:        generateID(),
 		FullName:  body.FullName,
 		Contact:   body.Contact,
 		Message:   body.Message,
@@ -142,13 +153,22 @@ func (h *Handler) CreateContactRequest(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	if _, err := h.db.ContactRequests().InsertOne(ctx, request); err != nil {
+	_, err := h.db.Pool().Exec(
+		ctx,
+		`INSERT INTO contact_requests (id, full_name, contact, message, created_at) VALUES ($1, $2, $3, $4, $5)`,
+		request.ID,
+		request.FullName,
+		request.Contact,
+		request.Message,
+		request.CreatedAt,
+	)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره پیام انجام نشد."})
 		return
 	}
 
 	c.JSON(http.StatusCreated, contactRequestResponse{
-		ID:        request.ID.Hex(),
+		ID:        request.ID,
 		FullName:  request.FullName,
 		Contact:   request.Contact,
 		Message:   request.Message,
@@ -160,39 +180,54 @@ func (h *Handler) ListContactRequests(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	cursor, err := h.db.ContactRequests().Find(
+	rows, err := h.db.Pool().Query(
 		ctx,
-		bson.D{},
-		options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}}),
+		`SELECT id, full_name, contact, message, created_at FROM contact_requests ORDER BY created_at DESC`,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت پیام‌ها انجام نشد."})
 		return
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	requests := make([]contactRequestResponse, 0)
-	for cursor.Next(ctx) {
-		var request models.ContactRequest
-		if err := cursor.Decode(&request); err != nil {
+	for rows.Next() {
+		var request contactRequestResponse
+		if err := rows.Scan(&request.ID, &request.FullName, &request.Contact, &request.Message, &request.CreatedAt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن پیام‌ها انجام نشد."})
 			return
 		}
-
-		requests = append(requests, contactRequestResponse{
-			ID:        request.ID.Hex(),
-			FullName:  request.FullName,
-			Contact:   request.Contact,
-			Message:   request.Message,
-			CreatedAt: request.CreatedAt,
-		})
+		requests = append(requests, request)
 	}
-	if err := cursor.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن پیام‌ها انجام نشد."})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"contactRequests": requests})
+}
+
+func (h *Handler) DeleteContactRequest(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شناسه پیام معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.db.Pool().Exec(ctx, `DELETE FROM contact_requests WHERE id = $1`, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف پیام انجام نشد."})
+		return
+	}
+	if result.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "پیام پیدا نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) CreateCourseSignup(c *gin.Context) {
@@ -210,7 +245,7 @@ func (h *Handler) CreateCourseSignup(c *gin.Context) {
 
 	now := time.Now().UTC()
 	signup := models.CourseSignup{
-		ID:        primitive.NewObjectID(),
+		ID:        generateID(),
 		Phone:     body.Phone,
 		CreatedAt: now,
 	}
@@ -218,13 +253,20 @@ func (h *Handler) CreateCourseSignup(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	if _, err := h.db.CourseSignups().InsertOne(ctx, signup); err != nil {
+	_, err := h.db.Pool().Exec(
+		ctx,
+		`INSERT INTO course_signups (id, phone, created_at) VALUES ($1, $2, $3)`,
+		signup.ID,
+		signup.Phone,
+		signup.CreatedAt,
+	)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ثبت شماره انجام نشد."})
 		return
 	}
 
 	c.JSON(http.StatusCreated, courseSignupResponse{
-		ID:        signup.ID.Hex(),
+		ID:        signup.ID,
 		Phone:     signup.Phone,
 		CreatedAt: signup.CreatedAt,
 	})
@@ -234,32 +276,26 @@ func (h *Handler) ListCourseSignups(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	cursor, err := h.db.CourseSignups().Find(
+	rows, err := h.db.Pool().Query(
 		ctx,
-		bson.D{},
-		options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}}),
+		`SELECT id, phone, created_at FROM course_signups ORDER BY created_at DESC`,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت ثبت‌نام‌های دوره انجام نشد."})
 		return
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	signups := make([]courseSignupResponse, 0)
-	for cursor.Next(ctx) {
-		var signup models.CourseSignup
-		if err := cursor.Decode(&signup); err != nil {
+	for rows.Next() {
+		var signup courseSignupResponse
+		if err := rows.Scan(&signup.ID, &signup.Phone, &signup.CreatedAt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن ثبت‌نام‌های دوره انجام نشد."})
 			return
 		}
-
-		signups = append(signups, courseSignupResponse{
-			ID:        signup.ID.Hex(),
-			Phone:     signup.Phone,
-			CreatedAt: signup.CreatedAt,
-		})
+		signups = append(signups, signup)
 	}
-	if err := cursor.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن ثبت‌نام‌های دوره انجام نشد."})
 		return
 	}
@@ -267,105 +303,162 @@ func (h *Handler) ListCourseSignups(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"courseSignups": signups})
 }
 
-func (h *Handler) ListProjectImages(c *gin.Context) {
-	h.listImages(c, h.db.ProjectImages(), h.projectImageURL)
-}
+func (h *Handler) DeleteCourseSignup(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شناسه ثبت‌نام معتبر نیست."})
+		return
+	}
 
-func (h *Handler) UploadProjectImages(c *gin.Context) {
-	h.uploadImages(c, h.db.ProjectImages(), "نمونه‌کار", h.projectImageURL)
-}
-
-func (h *Handler) DeleteProjectImage(c *gin.Context) {
-	h.deleteImage(c, h.db.ProjectImages())
-}
-
-func (h *Handler) ListHeroSlides(c *gin.Context) {
-	h.listImages(c, h.db.HeroSlides(), h.heroSlideURL)
-}
-
-func (h *Handler) UploadHeroSlides(c *gin.Context) {
-	h.uploadImages(c, h.db.HeroSlides(), "اسلاید", h.heroSlideURL)
-}
-
-func (h *Handler) DeleteHeroSlide(c *gin.Context) {
-	h.deleteImage(c, h.db.HeroSlides())
-}
-
-func (h *Handler) listImages(c *gin.Context, collection *mongo.Collection, urlForID func(string) string) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	findOptions := options.Find().
-		SetSort(bson.D{{Key: "sortOrder", Value: 1}, {Key: "filename", Value: 1}}).
-		SetProjection(bson.M{"data": 0})
-
-	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
+	result, err := h.db.Pool().Exec(ctx, `DELETE FROM course_signups WHERE id = $1`, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر انجام نشد."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف ثبت‌نام انجام نشد."})
 		return
 	}
-	defer cursor.Close(ctx)
+	if result.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ثبت‌نام پیدا نشد."})
+		return
+	}
 
-	images := make([]projectImageResponse, 0)
-	for cursor.Next(ctx) {
-		var image models.ProjectImage
-		if err := cursor.Decode(&image); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصاویر انجام نشد."})
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) ListCourses(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	courses, err := h.courses.ListCourses(ctx, false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره‌ها انجام نشد."})
+		return
+	}
+	if err := h.attachCourseImagesToList(ctx, courses); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر دوره‌ها انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courses": courses})
+}
+
+func (h *Handler) GetCourse(c *gin.Context) {
+	h.getCourse(c, false)
+}
+
+func (h *Handler) ListAdminCourses(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	courses, err := h.courses.ListCourses(ctx, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره‌ها انجام نشد."})
+		return
+	}
+	if err := h.attachCourseImagesToList(ctx, courses); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر دوره‌ها انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courses": courses})
+}
+
+func (h *Handler) GetAdminCourse(c *gin.Context) {
+	h.getCourse(c, true)
+}
+
+func (h *Handler) CreateAdminCourse(c *gin.Context) {
+	var course models.Course
+	if err := c.ShouldBindJSON(&course); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات دوره معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	created, err := h.courses.CreateCourse(ctx, course)
+	if err != nil {
+		if isUniqueViolation(err) {
+			c.JSON(http.StatusConflict, gin.H{"error": "شناسه یا آدرس دوره تکراری است."})
 			return
 		}
-
-		images = append(images, projectImageResponse{
-			ID:          image.ID.Hex(),
-			Alt:         image.Alt,
-			Filename:    image.Filename,
-			ContentType: image.ContentType,
-			URL:         urlForID(image.ID.Hex()),
-			SortOrder:   image.SortOrder,
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ساخت دوره انجام نشد."})
+		return
 	}
-	if err := cursor.Err(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصاویر انجام نشد."})
+
+	c.JSON(http.StatusCreated, gin.H{"course": created})
+}
+
+func (h *Handler) UpdateAdminCourse(c *gin.Context) {
+	var course models.Course
+	if err := c.ShouldBindJSON(&course); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات دوره معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	updated, err := h.courses.UpdateCourse(ctx, strings.TrimSpace(c.Param("id")), course)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		if isUniqueViolation(err) {
+			c.JSON(http.StatusConflict, gin.H{"error": "شناسه یا آدرس دوره تکراری است."})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ویرایش دوره انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"course": updated})
+}
+
+func (h *Handler) DeleteAdminCourse(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := h.courses.DeleteCourse(ctx, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف دوره انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) ListCourseImages(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	images, err := h.courseImagesWithURLs(ctx, course.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر دوره انجام نشد."})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"images": images})
 }
 
-func (h *Handler) GetProjectImageContent(c *gin.Context) {
-	h.getImageContent(c, h.db.ProjectImages())
-}
-
-func (h *Handler) GetHeroSlideContent(c *gin.Context) {
-	h.getImageContent(c, h.db.HeroSlides())
-}
-
-func (h *Handler) getImageContent(c *gin.Context, collection *mongo.Collection) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "شناسه تصویر معتبر نیست."})
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
-	defer cancel()
-
-	var image models.ProjectImage
-	err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&image)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
-		return
-	}
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصویر انجام نشد."})
-		return
-	}
-
-	c.Header("Cache-Control", "public, max-age=31536000, immutable")
-	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", image.Filename))
-	c.Data(http.StatusOK, image.ContentType, image.Data)
-}
-
-func (h *Handler) uploadImages(c *gin.Context, collection *mongo.Collection, altPrefix string, urlForID func(string) string) {
+func (h *Handler) UploadCourseImages(c *gin.Context) {
 	if err := c.Request.ParseMultipartForm(128 << 20); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "فایل‌های تصویر معتبر نیستند."})
 		return
@@ -380,15 +473,273 @@ func (h *Handler) uploadImages(c *gin.Context, collection *mongo.Collection, alt
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()
 
-	startOrder, err := nextSortOrder(ctx, collection)
+	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	existing, err := h.courses.ListImages(ctx, course.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "آماده‌سازی آپلود انجام نشد."})
+		return
+	}
+
+	uploaded := make([]models.CourseImage, 0, len(files))
+	for index, header := range files {
+		imageDoc, err := imageFromUploadHeader(header, fmt.Sprintf("تصویر دوره %d", len(existing)+index+1), len(existing)+index, time.Now().UTC())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		image, err := h.courses.CreateImage(ctx, models.CourseImage{
+			ID:          imageDoc.ID,
+			CourseID:    course.ID,
+			Filename:    imageDoc.Filename,
+			Alt:         imageDoc.Alt,
+			ContentType: imageDoc.ContentType,
+			Data:        imageDoc.Data,
+			SortOrder:   imageDoc.SortOrder,
+			CreatedAt:   imageDoc.CreatedAt,
+		})
+		if err != nil {
+			if isUniqueViolation(err) {
+				c.JSON(http.StatusConflict, gin.H{"error": "تصویر تکراری است."})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصاویر دوره انجام نشد."})
+			return
+		}
+		image.URL = h.courseImageURL(course.ID, image.ID)
+		uploaded = append(uploaded, image)
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"images": uploaded})
+}
+
+func (h *Handler) DeleteCourseImage(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	err = h.courses.DeleteImage(ctx, course.ID, strings.TrimSpace(c.Param("imageId")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف تصویر دوره انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) GetCourseImageContent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	image, err := h.courses.GetImageContent(ctx, course.ID, strings.TrimSpace(c.Param("imageId")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصویر انجام نشد."})
+		return
+	}
+
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", image.Filename))
+	c.Data(http.StatusOK, image.ContentType, image.Data)
+}
+
+func (h *Handler) getCourse(c *gin.Context, includeDrafts bool) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(c.Param("id")), includeDrafts)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	images, err := h.courseImagesWithURLs(ctx, course.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر دوره انجام نشد."})
+		return
+	}
+	h.attachLessonImageURLs(&course, images)
+	h.attachCourseImageURL(&course, images)
+
+	c.JSON(http.StatusOK, courseWithImagesResponse{Course: course, Images: images})
+}
+
+func (h *Handler) ListProjectImages(c *gin.Context) {
+	h.listImages(c, projectImagesTable, h.projectImageURL)
+}
+
+func (h *Handler) UploadProjectImages(c *gin.Context) {
+	h.uploadImages(c, projectImagesTable, "نمونه‌کار", h.projectImageURL)
+}
+
+func (h *Handler) DeleteProjectImage(c *gin.Context) {
+	h.deleteImage(c, projectImagesTable)
+}
+
+func (h *Handler) ListHeroSlides(c *gin.Context) {
+	h.listImages(c, heroSlidesTable, h.heroSlideURL)
+}
+
+func (h *Handler) UploadHeroSlides(c *gin.Context) {
+	h.uploadImages(c, heroSlidesTable, "اسلاید", h.heroSlideURL)
+}
+
+func (h *Handler) DeleteHeroSlide(c *gin.Context) {
+	h.deleteImage(c, heroSlidesTable)
+}
+
+func (h *Handler) listImages(c *gin.Context, table string, urlForID func(string) string) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	query, err := imageListQuery(table)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تنظیمات تصویر معتبر نیست."})
+		return
+	}
+
+	rows, err := h.db.Pool().Query(ctx, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر انجام نشد."})
+		return
+	}
+	defer rows.Close()
+
+	images := make([]projectImageResponse, 0)
+	for rows.Next() {
+		var image projectImageResponse
+		if err := rows.Scan(&image.ID, &image.Alt, &image.Filename, &image.ContentType, &image.SortOrder); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصاویر انجام نشد."})
+			return
+		}
+		image.URL = urlForID(image.ID)
+		images = append(images, image)
+	}
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصاویر انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"images": images})
+}
+
+func (h *Handler) GetProjectImageContent(c *gin.Context) {
+	h.getImageContent(c, projectImagesTable)
+}
+
+func (h *Handler) GetHeroSlideContent(c *gin.Context) {
+	h.getImageContent(c, heroSlidesTable)
+}
+
+func (h *Handler) getImageContent(c *gin.Context, table string) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شناسه تصویر معتبر نیست."})
+		return
+	}
+
+	query, err := imageContentQuery(table)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تنظیمات تصویر معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	var filename string
+	var contentType string
+	var data []byte
+	err = h.db.Pool().QueryRow(ctx, query, id).Scan(&filename, &contentType, &data)
+	if errors.Is(err, pgx.ErrNoRows) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصویر انجام نشد."})
+		return
+	}
+
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
+	c.Data(http.StatusOK, contentType, data)
+}
+
+func (h *Handler) uploadImages(c *gin.Context, table string, altPrefix string, urlForID func(string) string) {
+	if err := c.Request.ParseMultipartForm(128 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "فایل‌های تصویر معتبر نیستند."})
+		return
+	}
+
+	files := uploadedFiles(c.Request.MultipartForm)
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "حداقل یک تصویر انتخاب کنید."})
+		return
+	}
+
+	insertQuery, err := imageInsertQuery(table)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تنظیمات تصویر معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	startOrder, err := nextSortOrder(ctx, h.db.Pool(), table)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "آماده‌سازی آپلود انجام نشد."})
 		return
 	}
 
 	now := time.Now().UTC()
-	documents := make([]interface{}, 0, len(files))
 	uploaded := make([]uploadImageResult, 0, len(files))
+
+	tx, err := h.db.Pool().Begin(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصاویر انجام نشد."})
+		return
+	}
+	defer tx.Rollback(ctx)
 
 	for index, header := range files {
 		image, err := imageFromUploadHeader(header, fmt.Sprintf("%s %d", altPrefix, startOrder+index+1), startOrder+index, now)
@@ -397,16 +748,35 @@ func (h *Handler) uploadImages(c *gin.Context, collection *mongo.Collection, alt
 			return
 		}
 
-		documents = append(documents, image)
+		_, err = tx.Exec(
+			ctx,
+			insertQuery,
+			image.ID,
+			image.Filename,
+			image.Alt,
+			image.ContentType,
+			image.Data,
+			image.SortOrder,
+			image.CreatedAt,
+		)
+		if err != nil {
+			if isUniqueViolation(err) {
+				c.JSON(http.StatusConflict, gin.H{"error": "تصویر تکراری است."})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصاویر انجام نشد."})
+			return
+		}
+
 		uploaded = append(uploaded, uploadImageResult{
-			ID:          image.ID.Hex(),
+			ID:          image.ID,
 			Filename:    image.Filename,
 			ContentType: image.ContentType,
-			URL:         urlForID(image.ID.Hex()),
+			URL:         urlForID(image.ID),
 		})
 	}
 
-	if _, err := collection.InsertMany(ctx, documents); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصاویر انجام نشد."})
 		return
 	}
@@ -414,22 +784,28 @@ func (h *Handler) uploadImages(c *gin.Context, collection *mongo.Collection, alt
 	c.JSON(http.StatusCreated, gin.H{"images": uploaded})
 }
 
-func (h *Handler) deleteImage(c *gin.Context, collection *mongo.Collection) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+func (h *Handler) deleteImage(c *gin.Context, table string) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "شناسه تصویر معتبر نیست."})
+		return
+	}
+
+	query, err := imageDeleteQuery(table)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تنظیمات تصویر معتبر نیست."})
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	result, err := collection.DeleteOne(ctx, bson.M{"_id": id})
+	result, err := h.db.Pool().Exec(ctx, query, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف تصویر انجام نشد."})
 		return
 	}
-	if result.DeletedCount == 0 {
+	if result.RowsAffected() == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
 		return
 	}
@@ -443,6 +819,53 @@ func (h *Handler) projectImageURL(id string) string {
 
 func (h *Handler) heroSlideURL(id string) string {
 	return fmt.Sprintf("%s/api/v1/hero-slides/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), id)
+}
+
+func (h *Handler) courseImageURL(courseID string, imageID string) string {
+	return fmt.Sprintf("%s/api/v1/courses/%s/images/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), courseID, imageID)
+}
+
+func (h *Handler) courseImagesWithURLs(ctx context.Context, courseID string) ([]models.CourseImage, error) {
+	images, err := h.courses.ListImages(ctx, courseID)
+	if err != nil {
+		return nil, err
+	}
+	for index := range images {
+		images[index].URL = h.courseImageURL(courseID, images[index].ID)
+	}
+	return images, nil
+}
+
+func (h *Handler) attachLessonImageURLs(course *models.Course, images []models.CourseImage) {
+	byID := make(map[string]string, len(images))
+	for _, image := range images {
+		byID[image.ID] = image.URL
+	}
+	for index := range course.Lessons {
+		if url := byID[course.Lessons[index].ImageID]; url != "" {
+			course.Lessons[index].ImageURL = url
+		}
+	}
+}
+
+func (h *Handler) attachCourseImageURL(course *models.Course, images []models.CourseImage) {
+	for _, image := range images {
+		if image.ID == course.ImageID {
+			course.ImageURL = image.URL
+			return
+		}
+	}
+}
+
+func (h *Handler) attachCourseImagesToList(ctx context.Context, courses []models.Course) error {
+	for index := range courses {
+		images, err := h.courseImagesWithURLs(ctx, courses[index].ID)
+		if err != nil {
+			return err
+		}
+		h.attachCourseImageURL(&courses[index], images)
+	}
+	return nil
 }
 
 func uploadedFiles(form *multipart.Form) []*multipart.FileHeader {
@@ -478,8 +901,8 @@ func imageFromUploadHeader(header *multipart.FileHeader, alt string, sortOrder i
 		return models.ImageDocument{}, fmt.Errorf("فقط فایل تصویر قابل آپلود است.")
 	}
 
-	id := primitive.NewObjectID()
-	filename := id.Hex() + "-" + filepath.Base(header.Filename)
+	id := generateID()
+	filename := id + "-" + filepath.Base(header.Filename)
 
 	return models.ImageDocument{
 		ID:          id,
@@ -492,22 +915,85 @@ func imageFromUploadHeader(header *multipart.FileHeader, alt string, sortOrder i
 	}, nil
 }
 
-func nextSortOrder(ctx context.Context, collection *mongo.Collection) (int, error) {
-	options := options.FindOne().
-		SetSort(bson.D{{Key: "sortOrder", Value: -1}}).
-		SetProjection(bson.M{"sortOrder": 1})
-
-	var row struct {
-		SortOrder int `bson:"sortOrder"`
-	}
-	err := collection.FindOne(ctx, bson.D{}, options).Decode(&row)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return 0, nil
-	}
+func nextSortOrder(ctx context.Context, pool *pgxpool.Pool, table string) (int, error) {
+	query, err := imageNextSortOrderQuery(table)
 	if err != nil {
 		return 0, err
 	}
-	return row.SortOrder + 1, nil
+
+	var nextOrder int
+	if err := pool.QueryRow(ctx, query).Scan(&nextOrder); err != nil {
+		return 0, err
+	}
+	if nextOrder < 0 {
+		return 0, nil
+	}
+	return nextOrder, nil
+}
+
+func imageListQuery(table string) (string, error) {
+	t, err := normalizeImageTable(table)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`SELECT id, alt, filename, content_type, sort_order FROM %s ORDER BY sort_order ASC, filename ASC`, t), nil
+}
+
+func imageContentQuery(table string) (string, error) {
+	t, err := normalizeImageTable(table)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`SELECT filename, content_type, data FROM %s WHERE id = $1`, t), nil
+}
+
+func imageInsertQuery(table string) (string, error) {
+	t, err := normalizeImageTable(table)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`INSERT INTO %s (id, filename, alt, content_type, data, sort_order, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`, t), nil
+}
+
+func imageDeleteQuery(table string) (string, error) {
+	t, err := normalizeImageTable(table)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`DELETE FROM %s WHERE id = $1`, t), nil
+}
+
+func imageNextSortOrderQuery(table string) (string, error) {
+	t, err := normalizeImageTable(table)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`SELECT COALESCE(MAX(sort_order), -1) + 1 FROM %s`, t), nil
+}
+
+func normalizeImageTable(table string) (string, error) {
+	switch table {
+	case projectImagesTable, heroSlidesTable:
+		return table, nil
+	default:
+		return "", fmt.Errorf("invalid image table: %s", table)
+	}
+}
+
+func generateID() string {
+	buf := make([]byte, 12)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(buf)
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+	return false
 }
 
 func normalizeDigits(value string) string {

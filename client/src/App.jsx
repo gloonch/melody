@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Flower2, Send, Sparkles } from "lucide-react";
-import heroImage from "./assets/images-hero/hero.png";
+import { BrowserRouter, Link, Route, Routes, useParams } from "react-router-dom";
 import logoImage from "./assets/Logo.png";
 import flowerImage1 from "./assets/section-two/1.jpeg";
 import flowerImage2 from "./assets/section-two/2.jpg";
@@ -21,6 +21,22 @@ const MESSAGE_MIN_LENGTH = 10;
 const MESSAGE_MAX_LENGTH = 2000;
 const CONTACT_SUCCESS_MESSAGE = "اطلاعات شما ثبت شد و به‌زودی پشتیبان‌های سایت با شما ارتباط برقرار می‌کنند.";
 const COURSE_SUCCESS_MESSAGE = "شماره شما ثبت شد و با شروع دوره‌های آموزشی به شما اطلاع داده می‌شود.";
+const NAV_SCROLL_DURATION = 820;
+const CTA_SCROLL_DURATION = 1750;
+const LOGO_SCROLL_DURATION = 900;
+const COURSE_STATUS_LABELS = {
+  in_progress: "در حال برگزاری",
+  in_production: "در حال تولید",
+  completed: "اتمام دوره",
+  published: "در حال برگزاری",
+  draft: "پیش‌نویس",
+};
+
+function easeInOutCubic(progress) {
+  return progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
 
 function apiEndpoint(path) {
   return `${API_BASE_URL}/${path.replace(/^\/+/, "")}`;
@@ -138,6 +154,80 @@ const navItems = [
   { id: "works", label: "نمونه‌کارها" },
 ];
 
+function SiteNavbar({ activeSection = "hero", onNavClick, onLogoClick }) {
+  const activeNavItem = navItems.find((item) => item.id === activeSection) ?? navItems[0];
+
+  return (
+    <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081cc] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-sm">
+        {onLogoClick ? (
+          <button
+            type="button"
+            className="flex items-center"
+            onClick={onLogoClick}
+            aria-label="بازگشت به ابتدای صفحه"
+          >
+            <img
+              src={logoImage}
+              alt="golmelo logo"
+              className="h-9 w-auto object-contain brightness-110"
+            />
+          </button>
+        ) : (
+          <Link to="/" className="flex items-center" aria-label="بازگشت به ابتدای صفحه">
+            <img
+              src={logoImage}
+              alt="golmelo logo"
+              className="h-9 w-auto object-contain brightness-110"
+            />
+          </Link>
+        )}
+
+        <div className="md:hidden">
+          <motion.div
+            key={activeNavItem.id}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+            className="rounded-full border border-white/25 bg-white/12 px-3 py-1.5 text-xs text-white/95 backdrop-blur-lg"
+          >
+            {activeNavItem.label}
+          </motion.div>
+        </div>
+
+        <nav className="hidden items-center gap-1 rounded-full bg-white/[0.06] p-1 text-sm md:flex">
+          {navItems.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <a
+                key={item.id}
+                href={onNavClick ? `#${item.id}` : `/#${item.id}`}
+                onClick={onNavClick ? onNavClick(item.id) : undefined}
+                aria-current={isActive ? "page" : undefined}
+                className="relative rounded-full px-4 py-2"
+              >
+                {isActive ? (
+                  <motion.span
+                    layoutId="active-nav-pill"
+                    className="absolute inset-0 rounded-full bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-xl"
+                    transition={{ type: "spring", stiffness: 430, damping: 38, mass: 0.85 }}
+                  />
+                ) : null}
+                <span
+                  className={`relative z-10 transition-colors duration-300 ${isActive ? "text-white" : "text-[#f7eee4]/84 hover:text-white"
+                    }`}
+                >
+                  {item.label}
+                </span>
+              </a>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
 function SectionLabel({ children }) {
   return (
     <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#d8cbbd] bg-white/70 px-3 py-1 text-[11px] tracking-[0.22em] text-[#8f7f72] backdrop-blur-sm">
@@ -154,7 +244,7 @@ function AppCard({ item }) {
       transition={{ duration: 0.35 }}
       className="group rounded-[28px] border border-[#e5dbd0] bg-white/70 p-6 text-center shadow-[0_10px_35px_rgba(93,74,55,0.06)] backdrop-blur-sm"
     >
-      <div className="mx-auto mb-5 h-44 w-44 overflow-hidden rounded-full border border-[#eadfd5] bg-[#f7f0e8] shadow-inner">
+      <div className="mx-auto mb-5 aspect-square w-full max-w-[13rem] overflow-hidden rounded-[26px] border border-[#eadfd5] bg-[#f7f0e8] shadow-inner">
         <img
           src={item.image}
           alt={item.title}
@@ -168,14 +258,16 @@ function AppCard({ item }) {
   );
 }
 
-function WorkCard({ item, index }) {
+function WorkCard({ item, index, onSelect }) {
   return (
-    <motion.article
+    <motion.button
+      type="button"
       initial={{ y: 14 }}
       whileInView={{ y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group relative aspect-square overflow-hidden rounded-[26px] border border-[#e5dbd0] shadow-[0_12px_30px_rgba(83,63,47,0.12)]"
+      onClick={() => onSelect(item)}
+      className="group relative block aspect-square w-full overflow-hidden rounded-[26px] border border-[#e5dbd0] text-right shadow-[0_12px_30px_rgba(83,63,47,0.12)]"
     >
       <img
         src={item.image}
@@ -183,15 +275,91 @@ function WorkCard({ item, index }) {
         loading="lazy"
         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
       />
+    </motion.button>
+  );
+}
+
+function MaterialPill({ children }) {
+  return (
+    <span className="rounded-full border border-[#e8ded4] bg-[#fbf8f4] px-3 py-1.5 text-sm text-[#74645a]">
+      {children}
+    </span>
+  );
+}
+
+function CourseVisual({ imageUrl, title }) {
+  if (imageUrl) {
+    return (
+      <img src={imageUrl} alt={title} loading="lazy" className="h-full w-full object-cover" />
+    );
+  }
+
+  return (
+    <div className="relative h-full min-h-[220px] overflow-hidden bg-[linear-gradient(145deg,#f7f2eb_0%,#eee4d8_100%)]">
+      <div className="absolute right-[22%] top-[16%] h-28 w-28 rotate-[14deg] rounded-[44%] border border-white/70 bg-white/45" />
+      <div className="absolute left-[24%] top-[34%] h-20 w-20 -rotate-[10deg] rounded-[46%] border border-white/60 bg-white/35" />
+      <div className="absolute right-[46%] top-[38%] h-16 w-px bg-[#b9a295]/70" />
+      <div className="absolute right-[46%] top-[48%] h-px w-14 rotate-[24deg] bg-[#b9a295]/70" />
+    </div>
+  );
+}
+
+function CoursePreviewCard({ course }) {
+  const href = `/courses/${course.slug || course.id}`;
+
+  return (
+    <motion.article
+      whileHover={{ y: -6 }}
+      transition={{ duration: 0.3 }}
+      className="relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white p-5 shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:p-6"
+    >
+      <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <div className="relative min-h-[220px] overflow-hidden rounded-[26px] border border-[#efe7de]">
+          <CourseVisual imageUrl={course.imageUrl} title={course.title} />
+        </div>
+
+        <div className="text-right">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
+              {course.term ? (
+                <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{course.term}</span>
+              ) : null}
+              {course.level ? (
+                <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{course.level}</span>
+              ) : null}
+              {course.format ? (
+                <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{course.format}</span>
+              ) : null}
+              <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#b06d6f]">
+                {COURSE_STATUS_LABELS[course.status] || course.status}
+              </span>
+            </div>
+          </div>
+
+          <h3 className="mt-5 text-3xl leading-tight text-[#4f433b] md:text-[2.05rem]">{course.title}</h3>
+          <p className="mt-4 text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
+
+          <div className="mt-6 flex items-center justify-end">
+            <Link
+              to={href}
+              className="inline-flex items-center gap-2 rounded-full bg-[#c08081] px-5 py-3 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5"
+            >
+              مشاهده جزئیات دوره
+            </Link>
+          </div>
+        </div>
+      </div>
     </motion.article>
   );
 }
 
-export default function MelodyLandingPage() {
+function MelodyLandingPage() {
   const [activeSection, setActiveSection] = useState("hero");
   const [heroSlides, setHeroSlides] = useState([]);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [works, setWorks] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [selectedWork, setSelectedWork] = useState(null);
   const [contactForm, setContactForm] = useState({
     fullName: "",
     contact: "",
@@ -200,6 +368,7 @@ export default function MelodyLandingPage() {
   const [contactStatus, setContactStatus] = useState({ type: "idle", message: "" });
   const [coursePhone, setCoursePhone] = useState("");
   const [courseStatus, setCourseStatus] = useState({ type: "idle", message: "" });
+  const scrollRafRef = useRef(null);
 
   useEffect(() => {
     const sections = navItems
@@ -289,8 +458,24 @@ export default function MelodyLandingPage() {
       }
     }
 
+    async function loadCourses() {
+      try {
+        const response = await fetch(apiEndpoint("courses"));
+        if (!response.ok) {
+          throw new Error("Failed to fetch courses");
+        }
+
+        const data = await response.json();
+        if (cancelled) return;
+        setCourses(Array.isArray(data.courses) ? data.courses : []);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
     loadHeroSlides();
     loadProjectImages();
+    loadCourses();
 
     return () => {
       cancelled = true;
@@ -327,12 +512,87 @@ export default function MelodyLandingPage() {
     return () => window.clearTimeout(timeoutId);
   }, [contactStatus.type, courseStatus.type]);
 
-  const handleNavClick = (sectionId) => (event) => {
-    event.preventDefault();
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedWork) {
+      return undefined;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setSelectedWork(null);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [selectedWork]);
+
+  const animateWindowScrollTo = useCallback((targetY, duration) => {
+    if (scrollRafRef.current) {
+      window.cancelAnimationFrame(scrollRafRef.current);
+    }
+
+    const startY = window.scrollY;
+    const distance = targetY - startY;
+    const startTime = performance.now();
+
+    if (Math.abs(distance) < 1) {
+      window.scrollTo(0, targetY);
+      return;
+    }
+
+    const tick = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeInOutCubic(progress);
+
+      window.scrollTo(0, startY + distance * easedProgress);
+
+      if (progress < 1) {
+        scrollRafRef.current = window.requestAnimationFrame(tick);
+      } else {
+        scrollRafRef.current = null;
+      }
+    };
+
+    scrollRafRef.current = window.requestAnimationFrame(tick);
+  }, []);
+
+  const scrollToSection = useCallback((sectionId, duration) => {
     const targetSection = document.getElementById(sectionId);
     if (!targetSection) return;
+
     setActiveSection(sectionId);
-    targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    animateWindowScrollTo(window.scrollY + targetSection.getBoundingClientRect().top, duration);
+  }, [animateWindowScrollTo]);
+
+  const handleNavClick = (sectionId) => (event) => {
+    event.preventDefault();
+    scrollToSection(sectionId, NAV_SCROLL_DURATION);
+  };
+
+  const handleCtaClick = (sectionId) => (event) => {
+    event.preventDefault();
+    scrollToSection(sectionId, CTA_SCROLL_DURATION);
+  };
+
+  const handleLogoClick = () => {
+    setActiveSection("hero");
+    animateWindowScrollTo(0, LOGO_SCROLL_DURATION);
   };
 
   const handleContactChange = (field) => (event) => {
@@ -408,7 +668,6 @@ export default function MelodyLandingPage() {
     }
   };
 
-  const activeNavItem = navItems.find((item) => item.id === activeSection) ?? navItems[0];
   const isSendingContactRequest = contactStatus.type === "loading";
   const isSubmittingCourseSignup = courseStatus.type === "loading";
   const successToastMessage = contactStatus.type === "success"
@@ -416,9 +675,6 @@ export default function MelodyLandingPage() {
     : courseStatus.type === "success"
       ? courseStatus.message
       : "";
-  const heroSlidesForDisplay = heroSlides.length > 0
-    ? heroSlides
-    : [{ id: "hero-fallback", image: heroImage, alt: "گل پارچه‌ای golmelo" }];
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
@@ -452,66 +708,46 @@ export default function MelodyLandingPage() {
         ) : null}
       </AnimatePresence>
 
-      <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
-        <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-[#d7ddd4]/20 bg-[#2f3b33cc] px-5 py-3 text-[#f7eee4] shadow-[0_12px_40px_rgba(25,34,29,0.22)] backdrop-blur-md">
-          <div className="flex items-center">
-            <img
-              src={logoImage}
-              alt="golmelo logo"
-              className="h-9 w-auto object-contain brightness-110"
-            />
-          </div>
+      <AnimatePresence>
+        {selectedWork ? (
+          <motion.div
+            key="work-full-preview"
+            className="fixed inset-0 z-[75] overflow-auto bg-[linear-gradient(180deg,rgba(47,59,51,0.08)_0%,rgba(47,59,51,0.18)_52%,rgba(47,59,51,0.08)_100%)] backdrop-blur-[1px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            onClick={() => setSelectedWork(null)}
+          >
+            <div className="flex min-h-full min-w-full items-center justify-center p-6 md:p-10">
+              <motion.img
+                src={selectedWork.image}
+                alt={selectedWork.alt}
+                initial={{ opacity: 0.25 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="h-auto w-auto max-h-none max-w-none cursor-zoom-out select-none"
+                onClick={() => setSelectedWork(null)}
+              />
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-          <div className="md:hidden">
-            <motion.div
-              key={activeNavItem.id}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.24, ease: "easeOut" }}
-              className="rounded-full border border-[#d7ddd4]/30 bg-[#51645a]/24 px-3 py-1.5 text-xs text-white/95 backdrop-blur-lg"
-            >
-              {activeNavItem.label}
-            </motion.div>
-          </div>
-
-          <nav className="hidden items-center gap-1 rounded-full bg-white/[0.06] p-1 text-sm md:flex">
-            {navItems.map((item) => {
-              const isActive = activeSection === item.id;
-              return (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  onClick={handleNavClick(item.id)}
-                  aria-current={isActive ? "page" : undefined}
-                  className="relative rounded-full px-4 py-2"
-                >
-                  {isActive ? (
-                    <motion.span
-                      layoutId="active-nav-pill"
-                      className="absolute inset-0 rounded-full bg-[#51645a]/42 shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_8px_24px_rgba(25,34,29,0.32)] backdrop-blur-xl"
-                      transition={{ type: "spring", stiffness: 430, damping: 38, mass: 0.85 }}
-                    />
-                  ) : null}
-                  <span
-                    className={`relative z-10 transition-colors duration-300 ${isActive ? "text-white" : "text-[#f7eee4]/84 hover:text-white"
-                      }`}
-                  >
-                    {item.label}
-                  </span>
-                </a>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
+      <SiteNavbar
+        activeSection={activeSection}
+        onNavClick={handleNavClick}
+        onLogoClick={handleLogoClick}
+      />
 
       <section
         id="hero"
         className="relative isolate scroll-mt-28 overflow-hidden bg-[#2f3b33] text-[#fbf5ee] md:scroll-mt-32"
       >
         <div className="pointer-events-none absolute inset-0">
-          {heroSlidesForDisplay.map((slide, index) => {
-            const isActive = index === activeHeroSlide % heroSlidesForDisplay.length;
+          {heroSlides.map((slide, index) => {
+            const isActive = index === activeHeroSlide % heroSlides.length;
 
             return (
               <motion.img
@@ -557,13 +793,15 @@ export default function MelodyLandingPage() {
             <div className="mt-8 flex flex-wrap justify-start gap-4 md:mt-10">
               <a
                 href="#works"
-                className="rounded-full bg-[#51645a] px-7 py-3.5 text-base text-white shadow-[0_14px_34px_rgba(81,100,90,0.32)] transition hover:-translate-y-0.5 hover:bg-[#44554c]"
+                onClick={handleCtaClick("works")}
+                className="rounded-full bg-[#c08081] px-7 py-3.5 text-base text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
               >
                 دیدن نمونه‌کارها
               </a>
               <a
                 href="#contact"
-                className="rounded-full border border-[#d7ddd4]/50 bg-white/5 px-7 py-3.5 text-base text-white backdrop-blur-sm transition hover:bg-[#51645a]/20"
+                onClick={handleCtaClick("contact")}
+                className="rounded-full border border-[#f0c7c8]/50 bg-[#c08081]/20 px-7 py-3.5 text-base text-white shadow-[0_14px_32px_rgba(192,128,129,0.18)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[#c08081]/32"
               >
                 ثبت سفارش
               </a>
@@ -585,7 +823,7 @@ export default function MelodyLandingPage() {
             </p>
           </div>
 
-          <div className="mt-14 grid grid-cols-2 gap-4 md:hidden">
+          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {flowerStudies.map((item, index) => (
               <motion.div
                 key={item.title}
@@ -593,7 +831,7 @@ export default function MelodyLandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ duration: 0.45, delay: index * 0.04 }}
-                className="aspect-[3/4] overflow-hidden rounded-[24px] border border-[#e7ddd2] shadow-[0_14px_35px_rgba(84,64,47,0.08)]"
+                className="aspect-square overflow-hidden rounded-[24px] border border-[#e7ddd2] shadow-[0_14px_35px_rgba(84,64,47,0.08)]"
               >
                 <img
                   src={item.image}
@@ -604,94 +842,39 @@ export default function MelodyLandingPage() {
               </motion.div>
             ))}
           </div>
-
-          <div className="relative mt-14 hidden min-h-[420px] md:block md:min-h-[500px]">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6 }}
-              className="absolute right-[18%] top-0 h-64 w-56 overflow-hidden rounded-[34px] border border-[#e8ddd0] shadow-[0_18px_45px_rgba(74,58,43,0.08)] md:h-72 md:w-60"
-            >
-              <img src={flowerStudies[0].image} alt={flowerStudies[0].title} loading="lazy" className="h-full w-full object-cover" />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.06 }}
-              className="absolute left-[8%] top-14 h-72 w-72 overflow-hidden rounded-[38px] border border-[#e5dbd0] shadow-[0_20px_52px_rgba(74,58,43,0.1)] md:h-80 md:w-80"
-            >
-              <img src={flowerStudies[1].image} alt={flowerStudies[1].title} loading="lazy" className="h-full w-full object-cover" />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.12 }}
-              className="absolute bottom-12 right-[6%] h-52 w-72 overflow-hidden rounded-[30px] border border-[#e6ddd2] shadow-[0_20px_48px_rgba(74,58,43,0.08)] md:h-56 md:w-80"
-            >
-              <img src={flowerStudies[2].image} alt={flowerStudies[2].title} loading="lazy" className="h-full w-full object-cover" />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.18 }}
-              className="absolute bottom-0 left-[28%] h-44 w-60 overflow-hidden rounded-[28px] border border-[#ebe0d4] shadow-[0_18px_45px_rgba(74,58,43,0.09)] md:h-48 md:w-64"
-            >
-              <img src={flowerStudies[3].image} alt={flowerStudies[3].title} loading="lazy" className="h-full w-full object-cover" />
-            </motion.div>
-          </div>
         </section>
 
-        <section id="craft" className="scroll-mt-24 border-y border-[#ece3d8] bg-white/45 md:scroll-mt-28">
-          <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-[0.95fr_1.05fr] md:px-8 lg:px-12">
-            <div className="flex items-center">
-              <div className="max-w-xl text-center">
-                <SectionLabel>فرآیند ساخت</SectionLabel>
-                <h2 className="mb-6 text-4xl leading-tight text-[#54463d] md:text-6xl">
-                  ساخته ی دست
-                </h2>
-                <div className="mb-6 h-px w-24 bg-[#b77a78] mx-auto" />
-                <p className="text-lg leading-9 text-[#6f6056]">
-                  از انتخاب بافت‌های لطیف تا برش دقیق، فرم‌دهی آرام، دوخت‌های ظریف و ترکیب
-                  لایه‌ها، هر قطعه با صبر و توجه ساخته می‌شود تا شکوه گل را به حضوری ماندگار و
-                  پوشیدنی تبدیل کند.
-                </p>
-              </div>
-            </div>
+        <section id="craft" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 md:scroll-mt-28 md:px-8 lg:px-12">
+          <div className="mx-auto max-w-3xl text-center">
+            <SectionLabel>فرآیند ساخت</SectionLabel>
+            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
+              ساخته ی دست
+            </h2>
+            <p className="text-lg leading-9 text-[#75655a]">
+              از انتخاب بافت‌های لطیف تا برش دقیق، فرم‌دهی آرام، دوخت‌های ظریف و ترکیب
+              لایه‌ها، هر قطعه با صبر و توجه ساخته می‌شود تا شکوه گل را به حضوری ماندگار و
+              پوشیدنی تبدیل کند.
+            </p>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4 md:hidden">
-              {[craftImage1, craftImage2, craftImage3, craftImage4].map((image, index) => (
-                <div
-                  key={`craft-mobile-${index + 1}`}
-                  className="aspect-[3/4] overflow-hidden rounded-[24px] border border-[#e5dbd0] shadow-[0_14px_35px_rgba(74,58,43,0.08)]"
-                >
-                  <img
-                    src={image}
-                    alt={`بافت پارچه ${index + 1}`}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="relative hidden min-h-[420px] md:block md:min-h-[500px]">
-              <div className="absolute right-[18%] top-0 h-64 w-56 overflow-hidden rounded-[34px] border border-[#e8ddd0] shadow-[0_18px_45px_rgba(74,58,43,0.08)] md:h-72 md:w-60">
-                <img src={craftImage1} alt="بافت پارچه ۱" loading="lazy" className="h-full w-full object-cover" />
-              </div>
-              <div className="absolute left-[8%] top-14 h-72 w-72 overflow-hidden rounded-[38px] border border-[#e5dbd0] shadow-[0_20px_52px_rgba(74,58,43,0.1)] md:h-80 md:w-80">
-                <img src={craftImage2} alt="بافت پارچه ۲" loading="lazy" className="h-full w-full object-cover" />
-              </div>
-              <div className="absolute bottom-12 right-[6%] h-52 w-72 overflow-hidden rounded-[30px] border border-[#e6ddd2] shadow-[0_20px_48px_rgba(74,58,43,0.08)] md:h-56 md:w-80">
-                <img src={craftImage3} alt="بافت پارچه ۳" loading="lazy" className="h-full w-full object-cover" />
-              </div>
-              <div className="absolute bottom-0 left-[28%] h-44 w-60 overflow-hidden rounded-[28px] border border-[#ebe0d4] shadow-[0_18px_45px_rgba(74,58,43,0.09)] md:h-48 md:w-64">
-                <img src={craftImage4} alt="بافت پارچه ۴" loading="lazy" className="h-full w-full object-cover" />
-              </div>
-            </div>
+          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            {[craftImage1, craftImage2, craftImage3, craftImage4].map((image, index) => (
+              <motion.div
+                key={`craft-mobile-${index + 1}`}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.45, delay: index * 0.04 }}
+                className="aspect-square overflow-hidden rounded-[24px] border border-[#e7ddd2] shadow-[0_14px_35px_rgba(84,64,47,0.08)]"
+              >
+                <img
+                  src={image}
+                  alt={`بافت پارچه ${index + 1}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </motion.div>
+            ))}
           </div>
         </section>
 
@@ -707,9 +890,23 @@ export default function MelodyLandingPage() {
             </p>
           </div>
 
-          <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {applications.map((item) => (
-              <AppCard key={item.title} item={item} />
+          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            {applications.map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.45, delay: index * 0.04 }}
+                className="aspect-square overflow-hidden rounded-[24px] border border-[#e7ddd2] shadow-[0_14px_35px_rgba(84,64,47,0.08)]"
+              >
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </motion.div>
             ))}
           </div>
         </section>
@@ -746,7 +943,8 @@ export default function MelodyLandingPage() {
                     inputMode="numeric"
                     pattern="[0-9۰-۹٠-٩]+"
                     autoComplete="tel"
-                    className="h-14 rounded-2xl border border-[#e5d8cd] bg-white/70 px-4 text-[#54463d] outline-none placeholder:text-[#a39286] focus:border-[#51645a]"
+                    dir="rtl"
+                    className="rtl-input h-14 rounded-2xl border border-[#e5d8cd] bg-white/70 px-4 text-[#54463d] outline-none placeholder:text-[#a39286] focus:border-[#51645a]"
                     placeholder="شماره تلفن"
                   />
                 </div>
@@ -768,7 +966,7 @@ export default function MelodyLandingPage() {
                   <button
                     type="submit"
                     disabled={isSendingContactRequest}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#51645a] px-7 py-3.5 text-white shadow-[0_14px_32px_rgba(81,100,90,0.28)] transition hover:-translate-y-0.5 hover:bg-[#44554c] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#c08081] px-7 py-3.5 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
                   >
                     <Send className="h-4 w-4" />
                     {isSendingContactRequest ? "در حال ارسال" : "ارسال پیام"}
@@ -791,53 +989,61 @@ export default function MelodyLandingPage() {
         </section>
 
         <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
-          <div className="overflow-hidden rounded-[34px] border border-[#e6dbcf] bg-[linear-gradient(135deg,#f9f4ec_0%,#efe4d6_100%)] shadow-[0_20px_50px_rgba(84,64,47,0.06)]">
-            <div className="p-8 text-center md:p-10">
-              <SectionLabel>دوره‌های آموزشی</SectionLabel>
+          <div className="mx-auto max-w-3xl text-center">
+            <SectionLabel>دوره‌های آموزشی</SectionLabel>
+            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">آموزش گل‌سازی پارچه‌ای</h2>
+            <p className="text-lg leading-9 text-[#75655a]">
+              دوره‌ها از پنل مدیریت اضافه و ویرایش می‌شوند و هر دوره صفحه جزئیات مستقل خودش را دارد.
+            </p>
+          </div>
 
-              <h2 className="mb-4 text-3xl leading-tight text-[#4f4138] md:text-5xl">
-                ثبت‌نام دوره‌های آموزش گل‌سازی به‌زودی
-              </h2>
-              <p className="mx-auto max-w-3xl text-base leading-8 text-[#75655a] md:text-lg md:leading-9">
-                در حال آماده‌سازی دوره‌های آموزشی تخصصی گل‌سازی هستیم. به‌زودی زمان‌بندی و جزئیات
-                کامل دوره‌ها برای ثبت‌نام اعلام می‌شود.
-              </p>
+          <div className="mt-12 grid gap-6">
+            {courses.map((course) => (
+              <CoursePreviewCard key={course.id} course={course} />
+            ))}
+            {courses.length === 0 ? (
+              <div className="rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
+                هنوز دوره‌ای منتشر نشده است.
+              </div>
+            ) : null}
+          </div>
 
-              <form
-                className="mx-auto mt-8 grid max-w-xl gap-3 text-right md:grid-cols-[1fr_auto] md:items-start"
-                onSubmit={handleCourseSignupSubmit}
+          <div className="mt-8 overflow-hidden rounded-[28px] border border-[#e6dbcf] bg-white/60 p-6">
+            <form
+              className="mx-auto grid max-w-xl gap-3 text-right md:grid-cols-[1fr_auto] md:items-start"
+              onSubmit={handleCourseSignupSubmit}
+            >
+              <input
+                value={coursePhone}
+                onChange={(event) => setCoursePhone(event.target.value)}
+                required
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9۰-۹٠-٩]+"
+                autoComplete="tel"
+                dir="rtl"
+                className="rtl-input h-14 rounded-2xl border border-[#e0d2c4] bg-white/72 px-4 text-[#54463d] outline-none placeholder:text-[#a39286] focus:border-[#51645a]"
+                placeholder="شماره تلفن"
+              />
+              <button
+                type="submit"
+                disabled={isSubmittingCourseSignup}
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#c08081] px-6 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
               >
-                <input
-                  value={coursePhone}
-                  onChange={(event) => setCoursePhone(event.target.value)}
-                  required
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9۰-۹٠-٩]+"
-                  autoComplete="tel"
-                  className="h-14 rounded-2xl border border-[#e0d2c4] bg-white/72 px-4 text-[#54463d] outline-none placeholder:text-[#a39286] focus:border-[#51645a]"
-                  placeholder="شماره تلفن"
-                />
-                <button
-                  type="submit"
-                  disabled={isSubmittingCourseSignup}
-                  className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#51645a] px-6 text-white shadow-[0_14px_30px_rgba(81,100,90,0.28)] transition hover:-translate-y-0.5 hover:bg-[#44554c] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
-                >
-                  <Send className="h-4 w-4" />
-                  {isSubmittingCourseSignup ? "در حال ثبت" : "از شروع دوره‌های آموزشی با خبرم کن"}
-                </button>
-              </form>
+                <Send className="h-4 w-4" />
+                {isSubmittingCourseSignup ? "در حال ثبت" : "از شروع دوره‌های آموزشی با خبرم کن"}
+              </button>
+            </form>
 
-              <p
-                aria-live="polite"
-                className={`mx-auto mt-3 max-w-xl text-right text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
-                  }`}
-              >
-                {courseStatus.type === "success"
-                  ? "شماره شما امن و محرمانه خواهد ماند."
-                  : courseStatus.message || "فقط شماره تلفن خود را وارد کنید."}
-              </p>
-            </div>
+            <p
+              aria-live="polite"
+              className={`mx-auto mt-3 max-w-xl text-right text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
+                }`}
+            >
+              {courseStatus.type === "success"
+                ? "شماره شما امن و محرمانه خواهد ماند."
+                : courseStatus.message || "فقط شماره تلفن خود را وارد کنید."}
+            </p>
           </div>
         </section>
 
@@ -853,11 +1059,167 @@ export default function MelodyLandingPage() {
 
           <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
             {works.map((item, index) => (
-              <WorkCard key={item.id} item={item} index={index} />
+              <WorkCard key={item.id} item={item} index={index} onSelect={setSelectedWork} />
             ))}
           </div>
         </section>
       </main>
     </div>
+  );
+}
+
+function LessonCard({ lesson, featured }) {
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5 }}
+      className={`relative overflow-hidden rounded-[32px] border border-[#e9e1d7] p-6 shadow-[0_18px_40px_rgba(85,63,45,0.05)] ${featured ? "bg-[#fcfaf7]" : "bg-white"}`}
+    >
+      <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <div className="relative min-h-[240px] overflow-hidden rounded-[28px] border border-[#efe7de]">
+          <CourseVisual imageUrl={lesson.imageUrl} title={lesson.title} />
+        </div>
+
+        <div className="text-right">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[#a49084]">
+              <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{lesson.id}</span>
+              <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{lesson.level}</span>
+              <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{lesson.type}</span>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#f8f3ed] px-3 py-1.5 text-sm text-[#8b7a70]">
+              {lesson.duration}
+            </div>
+          </div>
+
+          <h3 className="mt-5 text-3xl text-[#4f433b]">گل {lesson.title}</h3>
+          <p className="mt-4 text-base leading-8 text-[#73645a]">{lesson.summary}</p>
+
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            {(lesson.materials || []).map((item) => (
+              <MaterialPill key={item}>{item}</MaterialPill>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+function CourseDetailPage() {
+  const { id } = useParams();
+  const [payload, setPayload] = useState({ course: null, images: [] });
+  const [status, setStatus] = useState({ type: "loading", message: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCourse() {
+      setStatus({ type: "loading", message: "" });
+      try {
+        const response = await fetch(apiEndpoint(`courses/${id}`));
+        if (!response.ok) {
+          throw new Error("دوره پیدا نشد.");
+        }
+        const data = await response.json();
+        if (cancelled) return;
+        setPayload({ course: data.course, images: data.images || [] });
+        setStatus({ type: "idle", message: "" });
+      } catch (error) {
+        if (!cancelled) setStatus({ type: "error", message: error.message });
+      }
+    }
+
+    loadCourse();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const course = payload.course;
+
+  if (status.type === "loading") {
+    return <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] text-[#75655a]">در حال بارگذاری دوره...</div>;
+  }
+
+  if (!course) {
+    return (
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] px-6 text-center text-[#75655a]">
+        <div>
+          <p>{status.message || "دوره پیدا نشد."}</p>
+          <Link to="/" className="mt-4 inline-flex rounded-full bg-[#c08081] px-5 py-3 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">بازگشت به خانه</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+      <SiteNavbar activeSection="courses" />
+      <div className="mx-auto max-w-7xl px-6 pb-8 pt-28 md:px-8 lg:px-12">
+        <section className="overflow-hidden rounded-[40px] border border-[#e8dfd5] bg-[#faf7f3] shadow-[0_24px_60px_rgba(85,63,45,0.06)]">
+          <div className="border-b border-[#eee5db] px-6 py-14 md:px-10 lg:px-14">
+            <div className="mx-auto max-w-4xl text-center">
+              <SectionLabel>صفحه جزئیات دوره</SectionLabel>
+              <h1 className="mt-5 text-5xl leading-[1.18] text-[#4f433b] md:text-6xl">{course.title}</h1>
+              <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a] md:text-xl">{course.description}</p>
+            </div>
+
+            <div className="mt-10 grid gap-4 md:grid-cols-2">
+              <div className="rounded-[22px] border border-[#ece4db] bg-white p-4 text-right shadow-[0_10px_28px_rgba(85,63,45,0.04)] md:p-5">
+                <h3 className="mb-2 text-lg text-[#4f433b]">آنچه در این دوره یاد می‌گیرید</h3>
+                <ul className="space-y-1.5 text-sm leading-6 text-[#726359]">
+                  {(course.outcomes || []).slice(0, 5).map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-[22px] border border-[#ece4db] bg-white p-4 text-right shadow-[0_10px_28px_rgba(85,63,45,0.04)] md:p-5">
+                <h3 className="mb-2 text-lg text-[#4f433b]">مناسب چه کسانی است؟</h3>
+                <ul className="space-y-1.5 text-sm leading-6 text-[#726359]">
+                  {(course.audience || []).map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-12 md:px-10 lg:px-14">
+            <div className="mb-8 flex items-end justify-between">
+              <div className="text-sm text-[#9c8a7f]">{(course.lessons || []).length} آموزش ویدیویی</div>
+              <div className="text-right">
+                <h2 className="text-2xl text-[#4f433b]">سرفصل‌های دوره</h2>
+                <p className="mt-2 text-sm text-[#8f7f73]">هر درس با متریال موردنیاز و سطح سختی مشخص شده است.</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {(course.lessons || []).map((lesson, index) => (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  featured={index === 0 || index === course.lessons.length - 1}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MelodyLandingPage />} />
+        <Route path="/courses/:id" element={<CourseDetailPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

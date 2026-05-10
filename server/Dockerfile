@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS base
+FROM golang:1.25-alpine AS base
 WORKDIR /app
 ENV GOPROXY=https://proxy.golang.org|https://goproxy.cn|direct
 RUN apk add --no-cache git

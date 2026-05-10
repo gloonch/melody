@@ -2,9 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-body: "Vazirmatn", sans-serif;
+  --font-heading: "Lalezar", "Vazirmatn", sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: "Cormorant Garamond", "Times New Roman", serif;
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.rtl-input {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
 }
 
 html,

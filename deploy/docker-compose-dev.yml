@@ -29,11 +29,11 @@ services:
     container_name: melody-mongo-dev
     env_file: .dev.env
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongo_data_dev:/data/db
+      - postgres_data_dev:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1" ]
+      test: [ "CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\"" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -45,7 +45,7 @@ services:
     container_name: melody-backend-dev
     env_file: .dev.env
     environment:
-      GOPROXY: https://proxy.golang.org|https://goproxy.cn|direct
+      GOPROXY: https://package-mirror.liara.ir/repository/go/
       GOSUMDB: "off"
       PROJECT_IMAGES_DIR: /seed/project_images
     depends_on:
@@ -62,5 +62,5 @@ services:
 volumes:
   client_node_modules:
   admin_node_modules:
-  mongo_data_dev:
+  postgres_data_dev:
   go_build_cache:

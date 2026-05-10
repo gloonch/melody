@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(db *database.MongoDB, cfg *config.Config) *gin.Engine {
+func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 	if cfg.App.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -40,6 +40,9 @@ func NewRouter(db *database.MongoDB, cfg *config.Config) *gin.Engine {
 		v1.GET("/images/:id/content", handler.GetProjectImageContent)
 		v1.GET("/hero-slides", handler.ListHeroSlides)
 		v1.GET("/hero-slides/:id/content", handler.GetHeroSlideContent)
+		v1.GET("/courses", handler.ListCourses)
+		v1.GET("/courses/:id", handler.GetCourse)
+		v1.GET("/courses/:id/images/:imageId/content", handler.GetCourseImageContent)
 
 		admin := v1.Group("/admin")
 		{
@@ -49,13 +52,23 @@ func NewRouter(db *database.MongoDB, cfg *config.Config) *gin.Engine {
 			protected.Use(adminAuthMiddleware(cfg.Admin.Token))
 			{
 				protected.GET("/contact-requests", handler.ListContactRequests)
+				protected.DELETE("/contact-requests/:id", handler.DeleteContactRequest)
 				protected.GET("/course-signups", handler.ListCourseSignups)
+				protected.DELETE("/course-signups/:id", handler.DeleteCourseSignup)
 				protected.GET("/project-images", handler.ListProjectImages)
 				protected.POST("/project-images", handler.UploadProjectImages)
 				protected.DELETE("/project-images/:id", handler.DeleteProjectImage)
 				protected.GET("/hero-slides", handler.ListHeroSlides)
 				protected.POST("/hero-slides", handler.UploadHeroSlides)
 				protected.DELETE("/hero-slides/:id", handler.DeleteHeroSlide)
+				protected.GET("/courses", handler.ListAdminCourses)
+				protected.POST("/courses", handler.CreateAdminCourse)
+				protected.GET("/courses/:id", handler.GetAdminCourse)
+				protected.PUT("/courses/:id", handler.UpdateAdminCourse)
+				protected.DELETE("/courses/:id", handler.DeleteAdminCourse)
+				protected.GET("/courses/:id/images", handler.ListCourseImages)
+				protected.POST("/courses/:id/images", handler.UploadCourseImages)
+				protected.DELETE("/courses/:id/images/:imageId", handler.DeleteCourseImage)
 			}
 		}
 	}
@@ -86,7 +99,7 @@ func corsMiddleware(allowedOrigins []string) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}
 
-		c.Header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Header("Access-Control-Max-Age", "86400")
 

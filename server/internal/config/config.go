@@ -23,11 +23,16 @@ type AppConfig struct {
 }
 
 type DatabaseConfig struct {
-	URI            string
+	URL            string
 	Name           string
+	Host           string
+	Port           string
+	User           string
+	Password       string
+	SSLMode        string
 	ConnectTimeout int
-	MaxPoolSize    uint64
-	MinPoolSize    uint64
+	MaxPoolSize    int32
+	MinPoolSize    int32
 }
 
 type SeedConfig struct {
@@ -41,7 +46,12 @@ type AdminConfig struct {
 }
 
 func Load() *Config {
-	databaseName := getEnv("MONGODB_NAME", getEnv("DB_NAME", "melody"))
+	databaseName := getEnv("POSTGRES_DB", getEnv("DB_NAME", getEnv("MONGODB_NAME", "melody")))
+	dbHost := getEnv("POSTGRES_HOST", getEnv("DB_HOST", "localhost"))
+	dbPort := getEnv("POSTGRES_PORT", "5432")
+	dbUser := getEnv("POSTGRES_USER", getEnv("DB_USER", "postgres"))
+	dbPassword := getEnv("POSTGRES_PASSWORD", getEnv("DB_PASSWORD", "postgres"))
+	dbSSLMode := getEnv("POSTGRES_SSLMODE", "disable")
 
 	return &Config{
 		App: AppConfig{
@@ -51,11 +61,16 @@ func Load() *Config {
 			AllowedOrigins: splitCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:5173")),
 		},
 		Database: DatabaseConfig{
-			URI:            mongoURI(databaseName),
+			URL:            postgresURL(databaseName, dbHost, dbPort, dbUser, dbPassword, dbSSLMode),
 			Name:           databaseName,
-			ConnectTimeout: getEnvAsInt("MONGODB_CONNECT_TIMEOUT", 30),
-			MaxPoolSize:    uint64(getEnvAsInt("MONGODB_MAX_POOL_SIZE", 100)),
-			MinPoolSize:    uint64(getEnvAsInt("MONGODB_MIN_POOL_SIZE", 2)),
+			Host:           dbHost,
+			Port:           dbPort,
+			User:           dbUser,
+			Password:       dbPassword,
+			SSLMode:        dbSSLMode,
+			ConnectTimeout: getEnvAsInt("POSTGRES_CONNECT_TIMEOUT", getEnvAsInt("DB_CONNECT_TIMEOUT", 30)),
+			MaxPoolSize:    int32(getEnvAsInt("POSTGRES_MAX_POOL_SIZE", getEnvAsInt("DB_MAX_POOL_SIZE", 40))),
+			MinPoolSize:    int32(getEnvAsInt("POSTGRES_MIN_POOL_SIZE", getEnvAsInt("DB_MIN_POOL_SIZE", 2))),
 		},
 		Seed: SeedConfig{
 			ProjectImagesDir: getEnv("PROJECT_IMAGES_DIR", "assets/project_images"),
@@ -68,22 +83,27 @@ func Load() *Config {
 	}
 }
 
-func mongoURI(databaseName string) string {
-	if uri := os.Getenv("MONGODB_URI"); uri != "" {
-		return uri
+func postgresURL(databaseName, host, port, username, password, sslmode string) string {
+	if dsn := getEnv("POSTGRES_DSN", ""); dsn != "" {
+		return dsn
+	}
+	if dsn := getEnv("POSTGRES_URL", ""); dsn != "" {
+		return dsn
+	}
+	if dsn := getEnv("DATABASE_URL", ""); dsn != "" {
+		return dsn
 	}
 
-	host := getEnv("MONGODB_HOST", getEnv("DB_HOST", "localhost"))
-	port := getEnv("MONGODB_PORT", "27017")
-	username := getEnv("MONGO_INITDB_ROOT_USERNAME", getEnv("DB_USER", ""))
-	password := getEnv("MONGO_INITDB_ROOT_PASSWORD", getEnv("DB_PASSWORD", ""))
-
-	if username == "" {
-		return fmt.Sprintf("mongodb://%s:%s/%s", host, port, databaseName)
-	}
-
-	credentials := url.UserPassword(username, password).String()
-	return fmt.Sprintf("mongodb://%s@%s:%s/%s?authSource=admin", credentials, host, port, databaseName)
+	query := url.Values{}
+	query.Set("sslmode", sslmode)
+	return fmt.Sprintf(
+		"postgres://%s@%s:%s/%s?%s",
+		url.UserPassword(username, password).String(),
+		host,
+		port,
+		databaseName,
+		query.Encode(),
+	)
 }
 
 func getEnv(key, defaultValue string) string {

@@ -2,6 +2,8 @@ package seed
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -15,9 +17,6 @@ import (
 
 	"melody-server/internal/database"
 	"melody-server/internal/models"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var allowedImageExtensions = map[string]struct{}{
@@ -27,7 +26,7 @@ var allowedImageExtensions = map[string]struct{}{
 	".webp": {},
 }
 
-func ProjectImages(ctx context.Context, db *database.MongoDB, dir string) error {
+func ProjectImages(ctx context.Context, db *database.PostgresDB, dir string) error {
 	if dir == "" {
 		return nil
 	}
@@ -46,6 +45,11 @@ func ProjectImages(ctx context.Context, db *database.MongoDB, dir string) error 
 		return err
 	}
 
+	nextOrder, err := nextSortOrder(ctx, db)
+	if err != nil {
+		return err
+	}
+
 	names := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -60,8 +64,8 @@ func ProjectImages(ctx context.Context, db *database.MongoDB, dir string) error 
 	sort.Strings(names)
 
 	now := time.Now().UTC()
-	documents := make([]interface{}, 0, len(names))
-	for index, name := range names {
+	documents := make([]models.ProjectImage, 0, len(names))
+	for _, name := range names {
 		if _, ok := existing[name]; ok {
 			continue
 		}
@@ -73,49 +77,84 @@ func ProjectImages(ctx context.Context, db *database.MongoDB, dir string) error 
 		}
 
 		documents = append(documents, models.ProjectImage{
+			ID:          generateID(),
 			Filename:    name,
-			Alt:         fmt.Sprintf("نمونه‌کار %d", index+1),
+			Alt:         fmt.Sprintf("نمونه‌کار %d", nextOrder+1),
 			ContentType: detectContentType(name, data),
 			Data:        data,
-			SortOrder:   index,
+			SortOrder:   nextOrder,
 			CreatedAt:   now,
 		})
+		nextOrder++
 	}
 
 	if len(documents) == 0 {
 		return nil
 	}
 
-	if _, err := db.ProjectImages().InsertMany(ctx, documents); err != nil {
-		return fmt.Errorf("insert seed project images: %w", err)
+	tx, err := db.Pool().Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin seed transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, image := range documents {
+		if _, err := tx.Exec(
+			ctx,
+			`INSERT INTO project_images (id, filename, alt, content_type, data, sort_order, created_at)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)
+			 ON CONFLICT (filename) DO NOTHING`,
+			image.ID,
+			image.Filename,
+			image.Alt,
+			image.ContentType,
+			image.Data,
+			image.SortOrder,
+			image.CreatedAt,
+		); err != nil {
+			return fmt.Errorf("insert seed project image %s: %w", image.Filename, err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit seed transaction: %w", err)
 	}
 
 	log.Printf("seeded %d project images from %s", len(documents), dir)
 	return nil
 }
 
-func existingFilenames(ctx context.Context, db *database.MongoDB) (map[string]struct{}, error) {
-	cursor, err := db.ProjectImages().Find(ctx, bson.D{}, options.Find().SetProjection(bson.M{"filename": 1}))
+func existingFilenames(ctx context.Context, db *database.PostgresDB) (map[string]struct{}, error) {
+	rows, err := db.Pool().Query(ctx, `SELECT filename FROM project_images`)
 	if err != nil {
 		return nil, fmt.Errorf("query existing project images: %w", err)
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	existing := make(map[string]struct{})
-	for cursor.Next(ctx) {
-		var row struct {
-			Filename string `bson:"filename"`
-		}
-		if err := cursor.Decode(&row); err != nil {
+	for rows.Next() {
+		var filename string
+		if err := rows.Scan(&filename); err != nil {
 			return nil, fmt.Errorf("decode existing project image: %w", err)
 		}
-		existing[row.Filename] = struct{}{}
+		existing[filename] = struct{}{}
 	}
-	if err := cursor.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate existing project images: %w", err)
 	}
 
 	return existing, nil
+}
+
+func nextSortOrder(ctx context.Context, db *database.PostgresDB) (int, error) {
+	var nextOrder int
+	if err := db.Pool().QueryRow(ctx, `SELECT COALESCE(MAX(sort_order), -1) + 1 FROM project_images`).Scan(&nextOrder); err != nil {
+		return 0, fmt.Errorf("query next project image sort order: %w", err)
+	}
+	if nextOrder < 0 {
+		return 0, nil
+	}
+	return nextOrder, nil
 }
 
 func detectContentType(filename string, data []byte) string {
@@ -128,4 +167,12 @@ func detectContentType(filename string, data []byte) string {
 		sampleSize = 512
 	}
 	return http.DetectContentType(data[:sampleSize])
+}
+
+func generateID() string {
+	buf := make([]byte, 12)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Sprintf("seed-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(buf)
 }

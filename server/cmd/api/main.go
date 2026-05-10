@@ -12,6 +12,7 @@ import (
 	"melody-server/internal/config"
 	"melody-server/internal/database"
 	httpapi "melody-server/internal/http"
+	"melody-server/internal/repository"
 	"melody-server/internal/seed"
 
 	"github.com/joho/godotenv"
@@ -24,17 +25,18 @@ func main() {
 
 	cfg := config.Load()
 
-	db, err := database.NewMongoDB(cfg.Database)
+	db, err := database.NewPostgresDB(cfg.Database)
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
 	}
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := db.Disconnect(ctx); err != nil {
-			log.Printf("database disconnect failed: %v", err)
-		}
-	}()
+	defer db.Close()
+
+	courseSeedCtx, courseSeedCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := repository.NewCourseRepository(db.Pool()).SeedDefaultCourse(courseSeedCtx); err != nil {
+		courseSeedCancel()
+		log.Fatalf("course seed failed: %v", err)
+	}
+	courseSeedCancel()
 
 	seedCtx, seedCancel := context.WithTimeout(context.Background(), 60*time.Second)
 	if err := seed.ProjectImages(seedCtx, db, cfg.Seed.ProjectImagesDir); err != nil {
