@@ -25,8 +25,8 @@ services:
     command: sh -c "npm ci && npm run dev"
 
   db:
-    image: mongo:7.0-jammy
-    container_name: melody-mongo-dev
+    image: postgres:15-alpine
+    container_name: melody-postgres-dev
     env_file: .dev.env
     ports:
       - "5432:5432"

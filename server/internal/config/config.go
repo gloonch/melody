@@ -46,7 +46,7 @@ type AdminConfig struct {
 }
 
 func Load() *Config {
-	databaseName := getEnv("POSTGRES_DB", getEnv("DB_NAME", getEnv("MONGODB_NAME", "melody")))
+	databaseName := getEnv("POSTGRES_DB", getEnv("DB_NAME", "melody"))
 	dbHost := getEnv("POSTGRES_HOST", getEnv("DB_HOST", "localhost"))
 	dbPort := getEnv("POSTGRES_PORT", "5432")
 	dbUser := getEnv("POSTGRES_USER", getEnv("DB_USER", "postgres"))

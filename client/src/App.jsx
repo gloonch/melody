@@ -228,15 +228,6 @@ function SiteNavbar({ activeSection = "hero", onNavClick, onLogoClick }) {
   );
 }
 
-function SectionLabel({ children }) {
-  return (
-    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#d8cbbd] bg-white/70 px-3 py-1 text-[11px] tracking-[0.22em] text-[#8f7f72] backdrop-blur-sm">
-      <Sparkles className="h-3.5 w-3.5" />
-      <span>{children}</span>
-    </div>
-  );
-}
-
 function AppCard({ item }) {
   return (
     <motion.div
@@ -290,7 +281,7 @@ function MaterialPill({ children }) {
 function CourseVisual({ imageUrl, title }) {
   if (imageUrl) {
     return (
-      <img src={imageUrl} alt={title} loading="lazy" className="h-full w-full object-cover" />
+      <img src={imageUrl} alt={title} loading="lazy" className="h-full w-full object-cover object-right" />
     );
   }
 
@@ -311,14 +302,16 @@ function CoursePreviewCard({ course }) {
     <motion.article
       whileHover={{ y: -6 }}
       transition={{ duration: 0.3 }}
-      className="relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white p-5 shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:p-6"
+      className="group relative min-h-[470px] overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
     >
-      <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-        <div className="relative min-h-[220px] overflow-hidden rounded-[26px] border border-[#efe7de]">
-          <CourseVisual imageUrl={course.imageUrl} title={course.title} />
-        </div>
+      <div className="absolute inset-0">
+        <CourseVisual imageUrl={course.imageUrl} title={course.title} />
+      </div>
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.95)_56%,#fffaf6_100%)] md:bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)]" />
+      <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:w-[72%]" />
 
-        <div className="text-right">
+      <div className="relative z-10 flex min-h-[470px] items-end p-5 md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
+        <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
               {course.term ? (
@@ -337,9 +330,9 @@ function CoursePreviewCard({ course }) {
           </div>
 
           <h3 className="mt-5 text-3xl leading-tight text-[#4f433b] md:text-[2.05rem]">{course.title}</h3>
-          <p className="mt-4 text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
+          <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
 
-          <div className="mt-6 flex items-center justify-end">
+          <div className="mt-6 flex items-center justify-start">
             <Link
               to={href}
               className="inline-flex items-center gap-2 rounded-full bg-[#c08081] px-5 py-3 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5"
@@ -366,8 +359,6 @@ function MelodyLandingPage() {
     message: "",
   });
   const [contactStatus, setContactStatus] = useState({ type: "idle", message: "" });
-  const [coursePhone, setCoursePhone] = useState("");
-  const [courseStatus, setCourseStatus] = useState({ type: "idle", message: "" });
   const scrollRafRef = useRef(null);
 
   useEffect(() => {
@@ -496,7 +487,7 @@ function MelodyLandingPage() {
   }, [heroSlides.length]);
 
   useEffect(() => {
-    if (contactStatus.type !== "success" && courseStatus.type !== "success") {
+    if (contactStatus.type !== "success") {
       return undefined;
     }
 
@@ -504,13 +495,10 @@ function MelodyLandingPage() {
       if (contactStatus.type === "success") {
         setContactStatus({ type: "idle", message: "" });
       }
-      if (courseStatus.type === "success") {
-        setCourseStatus({ type: "idle", message: "" });
-      }
     }, 4500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [contactStatus.type, courseStatus.type]);
+  }, [contactStatus.type]);
 
   useEffect(() => {
     return () => {
@@ -525,7 +513,8 @@ function MelodyLandingPage() {
       return undefined;
     }
 
-    const originalOverflow = document.body.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setSelectedWork(null);
@@ -533,10 +522,12 @@ function MelodyLandingPage() {
     };
 
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     window.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
       window.removeEventListener("keydown", handleEscape);
     };
   }, [selectedWork]);
@@ -635,46 +626,8 @@ function MelodyLandingPage() {
     }
   };
 
-  const handleCourseSignupSubmit = async (event) => {
-    event.preventDefault();
-
-    const validation = validatePhoneNumber(coursePhone);
-    if (validation.error) {
-      setCourseStatus({ type: "error", message: validation.error });
-      return;
-    }
-
-    setCourseStatus({ type: "loading", message: "در حال ثبت شماره..." });
-
-    try {
-      const response = await fetch(apiEndpoint("course-signups"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone: validation.phone }),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        throw new Error(errorBody?.error || "Failed to submit course signup");
-      }
-
-      setCoursePhone("");
-      setCourseStatus({ type: "success", message: COURSE_SUCCESS_MESSAGE });
-    } catch (error) {
-      console.error(error);
-      setCourseStatus({ type: "error", message: "ثبت شماره انجام نشد. دوباره تلاش کنید." });
-    }
-  };
-
   const isSendingContactRequest = contactStatus.type === "loading";
-  const isSubmittingCourseSignup = courseStatus.type === "loading";
-  const successToastMessage = contactStatus.type === "success"
-    ? contactStatus.message
-    : courseStatus.type === "success"
-      ? courseStatus.message
-      : "";
+  const successToastMessage = contactStatus.type === "success" ? contactStatus.message : "";
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
@@ -712,14 +665,14 @@ function MelodyLandingPage() {
         {selectedWork ? (
           <motion.div
             key="work-full-preview"
-            className="fixed inset-0 z-[75] overflow-auto bg-[linear-gradient(180deg,rgba(47,59,51,0.08)_0%,rgba(47,59,51,0.18)_52%,rgba(47,59,51,0.08)_100%)] backdrop-blur-[1px]"
+            className="fixed inset-0 z-[75] overflow-hidden overscroll-none bg-[linear-gradient(180deg,rgba(47,59,51,0.08)_0%,rgba(47,59,51,0.18)_52%,rgba(47,59,51,0.08)_100%)] backdrop-blur-[1px] touch-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
             onClick={() => setSelectedWork(null)}
           >
-            <div className="flex min-h-full min-w-full items-center justify-center p-6 md:p-10">
+            <div className="flex h-dvh w-dvw items-center justify-center p-5 md:p-10">
               <motion.img
                 src={selectedWork.image}
                 alt={selectedWork.alt}
@@ -727,7 +680,7 @@ function MelodyLandingPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="h-auto w-auto max-h-none max-w-none cursor-zoom-out select-none"
+                className="h-auto w-auto max-h-[72dvh] max-w-[86vw] cursor-zoom-out select-none object-contain sm:max-h-[78dvh] sm:max-w-[82vw] md:max-h-none md:max-w-none"
                 onClick={() => setSelectedWork(null)}
               />
             </div>
@@ -815,7 +768,6 @@ function MelodyLandingPage() {
       <main className="relative z-10 -mt-1">
         <section id="inspiration" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>الهام از طبیعت</SectionLabel>
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">الهام‌گرفته از زیبایی زنده</h2>
             <p className="text-lg leading-9 text-[#75655a]">
               هر گل نیروی آرام خود را دارد؛ لطافتی درونی، حرکتی نرم، و نظمی پنهان در دل طبیعت.
@@ -846,7 +798,6 @@ function MelodyLandingPage() {
 
         <section id="craft" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>فرآیند ساخت</SectionLabel>
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
               ساخته ی دست
             </h2>
@@ -880,7 +831,6 @@ function MelodyLandingPage() {
 
         <section id="usage" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>کاربردها</SectionLabel>
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
               برای پوشیده‌شدن، استایل‌شدن و ماندن
             </h2>
@@ -915,7 +865,6 @@ function MelodyLandingPage() {
           <div className="overflow-hidden rounded-[34px] border border-[#e6dbcf] bg-[linear-gradient(135deg,#fbf7f1_0%,#f3ece4_100%)] shadow-[0_20px_50px_rgba(84,64,47,0.06)]">
             <div className="grid gap-8 p-6 md:grid-cols-[0.9fr_1.1fr] md:p-8 lg:p-10">
               <div className="relative text-right">
-                <SectionLabel>سفارش و همکاری</SectionLabel>
                 <h2 className="mb-4 text-4xl leading-tight text-[#54463d]">برای سفارش یا همکاری</h2>
                 <p className="max-w-md text-lg leading-9 text-[#73645a]">
                   ایده‌ی شما می‌تواند از همین‌جا آغاز شود. برای سفارش، همکاری یا پرسش درباره‌ی
@@ -990,7 +939,6 @@ function MelodyLandingPage() {
 
         <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>دوره‌های آموزشی</SectionLabel>
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">آموزش گل‌سازی پارچه‌ای</h2>
             <p className="text-lg leading-9 text-[#75655a]">
               دوره‌ها از پنل مدیریت اضافه و ویرایش می‌شوند و هر دوره صفحه جزئیات مستقل خودش را دارد.
@@ -1008,48 +956,10 @@ function MelodyLandingPage() {
             ) : null}
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-[28px] border border-[#e6dbcf] bg-white/60 p-6">
-            <form
-              className="mx-auto grid max-w-xl gap-3 text-right md:grid-cols-[1fr_auto] md:items-start"
-              onSubmit={handleCourseSignupSubmit}
-            >
-              <input
-                value={coursePhone}
-                onChange={(event) => setCoursePhone(event.target.value)}
-                required
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9۰-۹٠-٩]+"
-                autoComplete="tel"
-                dir="rtl"
-                className="rtl-input h-14 rounded-2xl border border-[#e0d2c4] bg-white/72 px-4 text-[#54463d] outline-none placeholder:text-[#a39286] focus:border-[#51645a]"
-                placeholder="شماره تلفن"
-              />
-              <button
-                type="submit"
-                disabled={isSubmittingCourseSignup}
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#c08081] px-6 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
-              >
-                <Send className="h-4 w-4" />
-                {isSubmittingCourseSignup ? "در حال ثبت" : "از شروع دوره‌های آموزشی با خبرم کن"}
-              </button>
-            </form>
-
-            <p
-              aria-live="polite"
-              className={`mx-auto mt-3 max-w-xl text-right text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
-                }`}
-            >
-              {courseStatus.type === "success"
-                ? "شماره شما امن و محرمانه خواهد ماند."
-                : courseStatus.message || "فقط شماره تلفن خود را وارد کنید."}
-            </p>
-          </div>
         </section>
 
         <section id="works" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>Selected Works</SectionLabel>
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">نمونه‌کارهای منتخب</h2>
             <p className="text-lg leading-9 text-[#75655a]">
               مجموعه‌ای از قطعات منتخب که هرکدام روایتی متفاوت از لطافت، بافت، فرم و حضور گل در
@@ -1068,34 +978,123 @@ function MelodyLandingPage() {
   );
 }
 
-function LessonCard({ lesson, featured }) {
+function CourseSignupForm() {
+  const [coursePhone, setCoursePhone] = useState("");
+  const [courseStatus, setCourseStatus] = useState({ type: "idle", message: "" });
+  const isSubmitting = courseStatus.type === "loading";
+
+  const handleCourseSignupSubmit = async (event) => {
+    event.preventDefault();
+
+    const validation = validatePhoneNumber(coursePhone);
+    if (validation.error) {
+      setCourseStatus({ type: "error", message: validation.error });
+      return;
+    }
+
+    setCourseStatus({ type: "loading", message: "در حال ثبت شماره..." });
+
+    try {
+      const response = await fetch(apiEndpoint("course-signups"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone: validation.phone }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.error || "Failed to submit course signup");
+      }
+
+      setCoursePhone("");
+      setCourseStatus({ type: "success", message: COURSE_SUCCESS_MESSAGE });
+    } catch (error) {
+      console.error(error);
+      setCourseStatus({ type: "error", message: "ثبت شماره انجام نشد. دوباره تلاش کنید." });
+    }
+  };
+
+  return (
+    <div className="overflow-hidden rounded-[28px] border border-[#e6dbcf] bg-white/70 p-6 shadow-[0_18px_40px_rgba(85,63,45,0.05)]">
+      <div className="mx-auto max-w-2xl text-center">
+        <h3 className="text-2xl text-[#4f433b]">برای اطلاع از زمان برگزاری و ثبت‌نام</h3>
+        <p className="mt-3 text-sm leading-7 text-[#807269]">
+          اگر این دوره برایتان مناسب بود، شماره خود را بگذارید تا درباره زمان برگزاری، ظرفیت و نحوه ثبت‌نام اطلاع‌رسانی شود.
+        </p>
+      </div>
+
+      <form className="mx-auto mt-5 grid max-w-xl gap-3 text-right" onSubmit={handleCourseSignupSubmit}>
+        <input
+          value={coursePhone}
+          onChange={(event) => setCoursePhone(event.target.value)}
+          required
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9۰-۹٠-٩]+"
+          autoComplete="tel"
+          dir="rtl"
+          className="rtl-input h-14 rounded-2xl border border-[#e0d2c4] bg-white/80 px-4 text-[#54463d] outline-none placeholder:text-[#a39286] focus:border-[#c08081]"
+          placeholder="شماره تلفن"
+        />
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex h-14 items-center justify-center gap-2 justify-self-center rounded-full bg-[#c08081] px-6 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+        >
+          <Send className="h-4 w-4" />
+          {isSubmitting ? "در حال ثبت" : "می‌خواهم از ثبت‌نام این دوره باخبر شوم"}
+        </button>
+      </form>
+
+      <p
+        aria-live="polite"
+        className={`mx-auto mt-3 max-w-xl text-right text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
+          }`}
+      >
+        {courseStatus.type === "success"
+          ? "شماره شما ثبت شد و اطلاعات دوره برایتان ارسال می‌شود."
+          : courseStatus.message || "فقط شماره تلفن خود را وارد کنید."}
+      </p>
+    </div>
+  );
+}
+
+function LessonCard({ lesson }) {
   return (
     <motion.article
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.5 }}
-      className={`relative overflow-hidden rounded-[32px] border border-[#e9e1d7] p-6 shadow-[0_18px_40px_rgba(85,63,45,0.05)] ${featured ? "bg-[#fcfaf7]" : "bg-white"}`}
+      className="relative min-h-[500px] overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[420px]"
     >
-      <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-        <div className="relative min-h-[240px] overflow-hidden rounded-[28px] border border-[#efe7de]">
-          <CourseVisual imageUrl={lesson.imageUrl} title={lesson.title} />
-        </div>
+      <div className="absolute inset-0">
+        <CourseVisual imageUrl={lesson.imageUrl} title={lesson.title} />
+      </div>
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.95)_56%,#fffaf6_100%)] md:bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)]" />
+      <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:w-[72%]" />
 
-        <div className="text-right">
+      <div className="relative z-10 flex min-h-[500px] items-end p-5 md:min-h-[420px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
+        <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-[#a49084]">
               <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{lesson.id}</span>
-              <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{lesson.level}</span>
-              <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{lesson.type}</span>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#f8f3ed] px-3 py-1.5 text-sm text-[#8b7a70]">
-              {lesson.duration}
+              {lesson.level ? (
+                <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{lesson.level}</span>
+              ) : null}
+              {lesson.type ? (
+                <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{lesson.type}</span>
+              ) : null}
+              {lesson.duration ? (
+                <span className="rounded-full bg-[#f8f3ed] px-3 py-1 text-xs text-[#8b7a70]">{lesson.duration}</span>
+              ) : null}
             </div>
           </div>
 
           <h3 className="mt-5 text-3xl text-[#4f433b]">گل {lesson.title}</h3>
-          <p className="mt-4 text-base leading-8 text-[#73645a]">{lesson.summary}</p>
+          <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{lesson.summary}</p>
 
           <div className="mt-6 flex flex-wrap justify-end gap-2">
             {(lesson.materials || []).map((item) => (
@@ -1163,7 +1162,6 @@ function CourseDetailPage() {
         <section className="overflow-hidden rounded-[40px] border border-[#e8dfd5] bg-[#faf7f3] shadow-[0_24px_60px_rgba(85,63,45,0.06)]">
           <div className="border-b border-[#eee5db] px-6 py-14 md:px-10 lg:px-14">
             <div className="mx-auto max-w-4xl text-center">
-              <SectionLabel>صفحه جزئیات دوره</SectionLabel>
               <h1 className="mt-5 text-5xl leading-[1.18] text-[#4f433b] md:text-6xl">{course.title}</h1>
               <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a] md:text-xl">{course.description}</p>
             </div>
@@ -1189,22 +1187,22 @@ function CourseDetailPage() {
           </div>
 
           <div className="px-6 py-12 md:px-10 lg:px-14">
-            <div className="mb-8 flex items-end justify-between">
-              <div className="text-sm text-[#9c8a7f]">{(course.lessons || []).length} آموزش ویدیویی</div>
-              <div className="text-right">
+            <div className="mb-8 flex flex-col items-start gap-3 text-right md:flex-row md:items-end md:justify-between">
+              <div className="order-2 text-sm text-[#9c8a7f] md:order-1">{(course.lessons || []).length} آموزش ویدیویی</div>
+              <div className="order-1 md:order-2">
                 <h2 className="text-2xl text-[#4f433b]">سرفصل‌های دوره</h2>
                 <p className="mt-2 text-sm text-[#8f7f73]">هر درس با متریال موردنیاز و سطح سختی مشخص شده است.</p>
               </div>
             </div>
 
             <div className="space-y-6">
-              {(course.lessons || []).map((lesson, index) => (
+              {(course.lessons || []).map((lesson) => (
                 <LessonCard
                   key={lesson.id}
                   lesson={lesson}
-                  featured={index === 0 || index === course.lessons.length - 1}
                 />
               ))}
+              <CourseSignupForm />
             </div>
           </div>
         </section>
