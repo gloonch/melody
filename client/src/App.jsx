@@ -282,10 +282,10 @@ function MaterialPill({ children }) {
   );
 }
 
-function CourseVisual({ imageUrl, title }) {
+function CourseVisual({ imageUrl, title, className = "h-full w-full object-cover object-right" }) {
   if (imageUrl) {
     return (
-      <img src={imageUrl} alt={title} loading="lazy" decoding="async" className="h-full w-full object-cover object-right" />
+      <img src={imageUrl} alt={title} loading="lazy" decoding="async" className={className} />
     );
   }
 
@@ -306,15 +306,22 @@ function CoursePreviewCard({ course }) {
     <motion.article
       whileHover={{ y: -6 }}
       transition={{ duration: 0.3 }}
-      className="group relative min-h-[470px] overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
+      className="group relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
     >
-      <div className="absolute inset-0">
+      <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
+        <CourseVisual
+          imageUrl={course.imageUrl}
+          title={course.title}
+          className="h-full w-full object-cover object-center"
+        />
+      </div>
+      <div className="absolute inset-0 hidden md:block">
         <CourseVisual imageUrl={course.imageUrl} title={course.title} />
       </div>
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.95)_56%,#fffaf6_100%)] md:bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)]" />
-      <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:w-[72%]" />
+      <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
+      <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
 
-      <div className="relative z-10 flex min-h-[470px] items-end p-5 md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
+      <div className="relative z-10 p-5 md:flex md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
         <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
@@ -1091,15 +1098,22 @@ function LessonCard({ lesson }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.5 }}
-      className="relative min-h-[500px] overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[420px]"
+      className="relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[420px]"
     >
-      <div className="absolute inset-0">
+      <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
+        <CourseVisual
+          imageUrl={lesson.imageUrl}
+          title={lesson.title}
+          className="h-full w-full object-cover object-center"
+        />
+      </div>
+      <div className="absolute inset-0 hidden md:block">
         <CourseVisual imageUrl={lesson.imageUrl} title={lesson.title} />
       </div>
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.95)_56%,#fffaf6_100%)] md:bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)]" />
-      <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:w-[72%]" />
+      <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
+      <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
 
-      <div className="relative z-10 flex min-h-[500px] items-end p-5 md:min-h-[420px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
+      <div className="relative z-10 p-5 md:flex md:min-h-[420px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
         <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-[#a49084]">
@@ -1116,7 +1130,7 @@ function LessonCard({ lesson }) {
             </div>
           </div>
 
-          <h3 className="mt-5 text-3xl text-[#4f433b]">گل {lesson.title}</h3>
+          <h3 className="mt-5 text-3xl leading-tight text-[#4f433b]">گل {lesson.title}</h3>
           <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{lesson.summary}</p>
 
           <div className="mt-6 flex flex-wrap justify-end gap-2">
