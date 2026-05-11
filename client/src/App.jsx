@@ -941,7 +941,7 @@ function MelodyLandingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">آموزش گل‌سازی پارچه‌ای</h2>
             <p className="text-lg leading-9 text-[#75655a]">
-              دوره‌ها از پنل مدیریت اضافه و ویرایش می‌شوند و هر دوره صفحه جزئیات مستقل خودش را دارد.
+              دوره‌های آموزشی که می‌توانید تهیه کنید
             </p>
           </div>
 
