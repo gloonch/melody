@@ -1,7 +1,15 @@
 FROM docker.abrha.net/node:20-alpine AS dev
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+ENV NPM_CONFIG_REGISTRY=https://package-mirror.liara.ir/repository/npm/ \
+    NPM_CONFIG_REPLACE_REGISTRY_HOST=always \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_FACTOR=2 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000
+COPY package*.json .npmrc ./
+RUN npm ci
 COPY . .
 EXPOSE 5174
 CMD ["npm", "run", "dev"]
@@ -12,7 +20,15 @@ ARG VITE_API_BASE_URL=/api/v1
 ARG VITE_BASE_PATH=/
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 ENV VITE_BASE_PATH=${VITE_BASE_PATH}
-COPY package*.json ./
+ENV NPM_CONFIG_REGISTRY=https://package-mirror.liara.ir/repository/npm/ \
+    NPM_CONFIG_REPLACE_REGISTRY_HOST=always \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_FACTOR=2 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000
+COPY package*.json .npmrc ./
 RUN npm ci
 COPY . .
 RUN npm run build
