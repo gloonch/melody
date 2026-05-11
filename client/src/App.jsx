@@ -170,6 +170,7 @@ function SiteNavbar({ activeSection = "hero", onNavClick, onLogoClick }) {
             <img
               src={logoImage}
               alt="golmelo logo"
+              decoding="async"
               className="h-9 w-auto object-contain brightness-110"
             />
           </button>
@@ -178,6 +179,7 @@ function SiteNavbar({ activeSection = "hero", onNavClick, onLogoClick }) {
             <img
               src={logoImage}
               alt="golmelo logo"
+              decoding="async"
               className="h-9 w-auto object-contain brightness-110"
             />
           </Link>
@@ -240,6 +242,7 @@ function AppCard({ item }) {
           src={item.image}
           alt={item.title}
           loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
       </div>
@@ -264,6 +267,7 @@ function WorkCard({ item, index, onSelect }) {
         src={item.image}
         alt={item.alt}
         loading="lazy"
+        decoding="async"
         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
       />
     </motion.button>
@@ -281,7 +285,7 @@ function MaterialPill({ children }) {
 function CourseVisual({ imageUrl, title }) {
   if (imageUrl) {
     return (
-      <img src={imageUrl} alt={title} loading="lazy" className="h-full w-full object-cover object-right" />
+      <img src={imageUrl} alt={title} loading="lazy" decoding="async" className="h-full w-full object-cover object-right" />
     );
   }
 
@@ -487,6 +491,17 @@ function MelodyLandingPage() {
   }, [heroSlides.length]);
 
   useEffect(() => {
+    if (heroSlides.length <= 1) return;
+
+    const nextSlide = heroSlides[(activeHeroSlide + 1) % heroSlides.length];
+    if (!nextSlide?.image) return;
+
+    const image = new Image();
+    image.decoding = "async";
+    image.src = nextSlide.image;
+  }, [activeHeroSlide, heroSlides]);
+
+  useEffect(() => {
     if (contactStatus.type !== "success") {
       return undefined;
     }
@@ -628,6 +643,9 @@ function MelodyLandingPage() {
 
   const isSendingContactRequest = contactStatus.type === "loading";
   const successToastMessage = contactStatus.type === "success" ? contactStatus.message : "";
+  const activeHero = heroSlides.length
+    ? heroSlides[activeHeroSlide % heroSlides.length]
+    : null;
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
@@ -676,6 +694,7 @@ function MelodyLandingPage() {
               <motion.img
                 src={selectedWork.image}
                 alt={selectedWork.alt}
+                decoding="async"
                 initial={{ opacity: 0.25 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -699,22 +718,23 @@ function MelodyLandingPage() {
         className="relative isolate scroll-mt-28 overflow-hidden bg-[#2f3b33] text-[#fbf5ee] md:scroll-mt-32"
       >
         <div className="pointer-events-none absolute inset-0">
-          {heroSlides.map((slide, index) => {
-            const isActive = index === activeHeroSlide % heroSlides.length;
-
-            return (
+          <AnimatePresence initial={false}>
+            {activeHero ? (
               <motion.img
-                key={slide.id}
-                src={slide.image}
-                alt={slide.alt}
-                initial={false}
-                animate={{ opacity: isActive ? 1 : 0 }}
+                key={activeHero.id}
+                src={activeHero.image}
+                alt={activeHero.alt}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 1.55, ease: [0.45, 0, 0.2, 1] }}
-                style={{ zIndex: isActive ? 2 : 1 }}
                 className="absolute inset-0 h-full w-full object-cover object-center"
               />
-            );
-          })}
+            ) : null}
+          </AnimatePresence>
         </div>
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(25,34,29,0.82)_0%,rgba(47,59,51,0.54)_34%,rgba(65,55,45,0.3)_64%,rgba(47,59,51,0.12)_100%)]" />
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(25,34,29,0.62)_0%,rgba(47,59,51,0.34)_38%,rgba(47,59,51,0.1)_68%,rgba(47,59,51,0)_100%)]" />
@@ -789,6 +809,7 @@ function MelodyLandingPage() {
                   src={item.image}
                   alt={item.title}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               </motion.div>
@@ -822,6 +843,7 @@ function MelodyLandingPage() {
                   src={image}
                   alt={`بافت پارچه ${index + 1}`}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               </motion.div>
@@ -854,6 +876,7 @@ function MelodyLandingPage() {
                   src={item.image}
                   alt={item.title}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               </motion.div>
