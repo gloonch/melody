@@ -274,6 +274,40 @@ function WorkCard({ item, index, onSelect }) {
   );
 }
 
+function SuccessToast({ message, toastKey = "success" }) {
+  return (
+    <AnimatePresence>
+      {message ? (
+        <>
+          <motion.div
+            key={`${toastKey}-overlay`}
+            className="pointer-events-none fixed inset-0 z-[60] bg-[linear-gradient(180deg,rgba(47,59,51,0.08)_0%,rgba(47,59,51,0.18)_52%,rgba(47,59,51,0.08)_100%)] backdrop-blur-[1px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.65, ease: "easeOut" }}
+          />
+          <motion.div
+            key={`${toastKey}-toast`}
+            role="status"
+            aria-live="polite"
+            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.45, ease: [0.33, 1, 0.68, 1] }}
+            className="fixed inset-x-4 bottom-5 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-[#d7ddd4] bg-[#fbfff9] px-5 py-4 text-right text-sm leading-7 text-[#3f5248] shadow-[0_18px_45px_rgba(47,59,51,0.2)] md:text-base"
+          >
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e3ece3] text-[#51645a]">
+              <CheckCircle2 className="h-5 w-5" />
+            </span>
+            <span>{message}</span>
+          </motion.div>
+        </>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 function MaterialPill({ children }) {
   return (
     <span className="rounded-full border border-[#e8ded4] bg-[#fbf8f4] px-3 py-1.5 text-sm text-[#74645a]">
@@ -656,35 +690,7 @@ function MelodyLandingPage() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
-      <AnimatePresence>
-        {successToastMessage ? (
-          <>
-            <motion.div
-              key="contact-success-overlay"
-              className="pointer-events-none fixed inset-0 z-[60] bg-[linear-gradient(180deg,rgba(47,59,51,0.08)_0%,rgba(47,59,51,0.18)_52%,rgba(47,59,51,0.08)_100%)] backdrop-blur-[1px]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.65, ease: "easeOut" }}
-            />
-            <motion.div
-              key="contact-success-toast"
-              role="status"
-              aria-live="polite"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.98 }}
-              transition={{ duration: 0.45, ease: [0.33, 1, 0.68, 1] }}
-              className="fixed inset-x-4 bottom-5 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-[#d7ddd4] bg-[#fbfff9] px-5 py-4 text-right text-sm leading-7 text-[#3f5248] shadow-[0_18px_45px_rgba(47,59,51,0.2)] md:text-base"
-            >
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e3ece3] text-[#51645a]">
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <span>{successToastMessage}</span>
-            </motion.div>
-          </>
-        ) : null}
-      </AnimatePresence>
+      <SuccessToast message={successToastMessage} toastKey="contact-success" />
 
       <AnimatePresence>
         {selectedWork ? (
@@ -1012,6 +1018,19 @@ function CourseSignupForm() {
   const [coursePhone, setCoursePhone] = useState("");
   const [courseStatus, setCourseStatus] = useState({ type: "idle", message: "" });
   const isSubmitting = courseStatus.type === "loading";
+  const successToastMessage = courseStatus.type === "success" ? courseStatus.message : "";
+
+  useEffect(() => {
+    if (courseStatus.type !== "success") {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCourseStatus({ type: "idle", message: "" });
+    }, 4500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [courseStatus.type]);
 
   const handleCourseSignupSubmit = async (event) => {
     event.preventDefault();
@@ -1048,6 +1067,8 @@ function CourseSignupForm() {
 
   return (
     <div className="overflow-hidden rounded-[28px] border border-[#e6dbcf] bg-white/70 p-6 shadow-[0_18px_40px_rgba(85,63,45,0.05)]">
+      <SuccessToast message={successToastMessage} toastKey="course-signup-success" />
+
       <div className="mx-auto max-w-2xl text-center">
         <h3 className="text-2xl text-[#4f433b]">برای اطلاع از زمان برگزاری و ثبت‌نام</h3>
         <p className="mt-3 text-sm leading-7 text-[#807269]">
@@ -1078,15 +1099,15 @@ function CourseSignupForm() {
         </button>
       </form>
 
-      <p
-        aria-live="polite"
-        className={`mx-auto mt-3 max-w-xl text-right text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
-          }`}
-      >
-        {courseStatus.type === "success"
-          ? "شماره شما ثبت شد و اطلاعات دوره برایتان ارسال می‌شود."
-          : courseStatus.message || "فقط شماره تلفن خود را وارد کنید."}
-      </p>
+      {courseStatus.type !== "success" ? (
+        <p
+          aria-live="polite"
+          className={`mx-auto mt-3 max-w-xl text-right text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
+            }`}
+        >
+          {courseStatus.message || "فقط شماره تلفن خود را وارد کنید."}
+        </p>
+      ) : null}
     </div>
   );
 }

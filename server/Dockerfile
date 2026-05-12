@@ -1,7 +1,7 @@
 FROM docker.abrha.net/golang:1.25-alpine AS base
 WORKDIR /app
 ENV GOPROXY=https://package-mirror.liara.ir/repository/go/
-RUN apk add --no-cache git
+
 COPY go.mod go.sum ./
 RUN go mod download
 
