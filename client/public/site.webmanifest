@@ -1,0 +1,24 @@
+{
+  "name": "golmelo | گل‌های پارچه‌ای دست‌ساز",
+  "short_name": "golmelo",
+  "description": "گلملو، طراحی و ساخت گل‌های پارچه‌ای دست‌ساز برای لباس، مو، کلاه و اکسسوری‌های خاص.",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f1eb",
+  "theme_color": "#c08081",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
