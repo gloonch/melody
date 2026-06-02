@@ -1,6 +1,9 @@
 User-agent: *
 Allow: /
+Allow: /api/v1/images/
+Allow: /api/v1/hero-slides/
+Allow: /api/v1/courses/
 Disallow: /admin/
-Disallow: /api/
+Disallow: /api/v1/admin/
 
 Sitemap: https://golmelo.com/sitemap.xml

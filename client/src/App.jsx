@@ -220,55 +220,6 @@ const applications = [
   },
 ];
 
-const courseKeywords = [
-  "آموزش گل نسترن پارچه‌ای",
-  "آموزش گل داوودی پارچه‌ای",
-  "آموزش گل لیلیوم پارچه‌ای",
-  "آموزش گل رز پارچه‌ای",
-  "آموزش رز حلزونی حریری",
-];
-
-const materialKeywords = [
-  "گل کریشه",
-  "گل حریری",
-  "ساتن مرلین",
-  "ساتن آمریکایی",
-  "مخمل کره‌ای",
-  "تافته",
-  "حریر ایتالیایی",
-  "ارگاندی",
-  "زانفیکس",
-  "سیم گل‌سازی",
-  "کارگاه گل‌سازی",
-];
-
-const faqItems = [
-  {
-    question: "آیا دوره آموزش گل‌سازی پارچه‌ای برای مبتدی‌ها مناسب است؟",
-    answer:
-      "بله، ترم اول از مدل‌های ساده‌تر شروع می‌شود و هنرجو قدم‌به‌قدم با متریال، ابزار و تکنیک‌های اولیه گل‌سازی پارچه‌ای آشنا می‌شود.",
-  },
-  {
-    question: "در ترم اول چه گل‌هایی آموزش داده می‌شود؟",
-    answer:
-      "در این دوره ساخت ۵ گل آموزش داده می‌شود: نسترن، داوودی، لیلیوم، رز و رز حلزونی.",
-  },
-  {
-    question: "گل‌های پارچه‌ای گلملو برای چه چیزهایی استفاده می‌شوند؟",
-    answer:
-      "گل‌های پارچه‌ای می‌توانند روی لباس، کلاه، سنجاق سینه، کیف، اکسسوری مو و لباس عروس استفاده شوند.",
-  },
-  {
-    question: "آیا امکان سفارش گل پارچه‌ای اختصاصی وجود دارد؟",
-    answer:
-      "بله، امکان سفارش گل پارچه‌ای بر اساس رنگ، کاربرد، نوع لباس یا اکسسوری موردنظر وجود دارد.",
-  },
-  {
-    question: "تفاوت گل کریشه و گل حریری چیست؟",
-    answer:
-      "گل‌های کریشه معمولاً با فرم‌دهی و چین‌دار کردن پارچه ساخته می‌شوند، در حالی که گل‌های حریری با متریال سبک‌تر و ظریف‌تر مثل حریر و ارگاندی اجرا می‌شوند.",
-  },
-];
 
 const navItems = [
   { id: "hero", label: "خانه" },
@@ -532,18 +483,7 @@ function MelodyLandingPage() {
       logo: `${SITE_URL}/logo.png`,
     },
   });
-  useJsonLd("golmelo-faq-jsonld", {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqItems.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
-      },
-    })),
-  });
+
 
   const [activeSection, setActiveSection] = useState("hero");
   const [heroSlides, setHeroSlides] = useState([]);
@@ -912,10 +852,6 @@ function MelodyLandingPage() {
             transition={{ duration: 0.8 }}
             className="max-w-xl text-right"
           >
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#d7ddd4]/20 bg-[#51645a]/20 px-4 py-2 text-sm text-[#f0ddd1] backdrop-blur-sm">
-              <Flower2 className="h-4 w-4" />
-              گلملو، گل‌های پارچه‌ای دست‌ساز و آموزش گل‌سازی
-            </div>
             <h1
               className="mb-6 text-5xl leading-[1.1] md:text-7xl"
               style={{ textShadow: "0 4px 24px rgba(0,0,0,0.62), 0 1px 2px rgba(0,0,0,0.72)" }}
@@ -926,8 +862,8 @@ function MelodyLandingPage() {
               className="max-w-lg text-lg leading-9 text-[#f7eadf]/92 md:text-xl"
               style={{ textShadow: "0 3px 18px rgba(0,0,0,0.58), 0 1px 2px rgba(0,0,0,0.68)" }}
             >
-              Golmelo دنیایی از گل‌های پارچه‌ای دست‌ساز است؛ گل‌هایی برای لباس، کلاه،
-              سنجاق سینه و اکسسوری، همراه با مسیری آموزشی برای یادگیری گل‌سازی پارچه‌ای
+              دنیایی از گل‌های پارچه‌ای دست‌ساز است؛ گل‌هایی برای لباس، کلاه،
+              سنجاق سینه و اکسسوری، همراه با مسیری آموزشی برای  گل‌سازی
               از پایه تا ساخت مدل‌های ظریف‌تر و حرفه‌ای‌تر.
             </p>
             <div className="mt-8 flex flex-wrap justify-start gap-4 md:mt-10">
@@ -962,15 +898,13 @@ function MelodyLandingPage() {
       <main className="relative z-10 -mt-1">
         <section id="inspiration" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
-              گل‌های پارچه‌ای دست‌ساز برای لباس، کلاه و اکسسوری
-            </h2>
+            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">الهام‌گرفته از زیبایی زنده</h2>
             <p className="text-lg leading-9 text-[#75655a]">
-              هر گل پارچه‌ای در گلملو با توجه به رنگ، بافت، فرم و کاربرد نهایی ساخته می‌شود.
-              این قطعات می‌توانند روی لباس مجلسی، لباس عروس، کلاه، کیف، سنجاق سینه یا
-              اکسسوری مو قرار بگیرند و به استایل، لطافت و شخصیت بیشتری بدهند.
+              هر گل نیروی آرام خود را دارد؛ لطافتی درونی، حرکتی نرم، و نظمی پنهان در دل طبیعت.
+              این مجموعه از همین زیبایی زنده الهام می‌گیرد و آن را به زبانی تازه و لمس‌پذیر بازمی‌گوید.
             </p>
           </div>
+
 
           <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {flowerStudies.map((item, index) => (
@@ -1127,7 +1061,7 @@ function MelodyLandingPage() {
         <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
-              دوره آموزش گل‌سازی پارچه‌ای؛ ترم اول
+              دوره های آموزش گل‌سازی پارچه‌ای
             </h2>
             <p className="text-lg leading-9 text-[#75655a]">
               در دوره آموزش گل‌سازی پارچه‌ای ترم اول، هنرجو ساخت ۵ گل را به‌صورت ویدیویی
@@ -1147,54 +1081,7 @@ function MelodyLandingPage() {
             ) : null}
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[28px] border border-[#e6dbcf] bg-white/70 p-6 text-right shadow-[0_18px_40px_rgba(85,63,45,0.05)]">
-              <h3 className="text-2xl text-[#4f433b]">در ترم اول چه گل‌هایی یاد می‌گیرید؟</h3>
-              <ul className="mt-4 grid gap-2 text-sm leading-7 text-[#75655a]">
-                {courseKeywords.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-[28px] border border-[#e6dbcf] bg-white/70 p-6 text-right shadow-[0_18px_40px_rgba(85,63,45,0.05)]">
-              <h3 className="text-2xl text-[#4f433b]">تکنیک‌ها و متریال دوره</h3>
-              <p className="mt-3 text-sm leading-7 text-[#75655a]">
-                در ترم اول گل‌سازی پارچه‌ای با تکنیک‌های پایه مانند گل کریشه، گل حریری،
-                فرم‌دهی پارچه و کار با متریال تخصصی آشنا می‌شوید.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {materialKeywords.map((item) => (
-                  <MaterialPill key={item}>{item}</MaterialPill>
-                ))}
-              </div>
-            </div>
-          </div>
         </section>
-
-        <section className="mx-auto max-w-7xl px-6 pb-24 md:px-8 lg:px-12">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
-              سوالات پرتکرار درباره گل پارچه‌ای و آموزش گل‌سازی
-            </h2>
-            <p className="text-lg leading-9 text-[#75655a]">
-              پاسخ کوتاه به سوال‌هایی که قبل از سفارش گل پارچه‌ای یا ثبت‌نام در دوره آموزش
-              گل‌سازی پارچه‌ای معمولاً مطرح می‌شوند.
-            </p>
-          </div>
-
-          <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-2">
-            {faqItems.map((item) => (
-              <article
-                key={item.question}
-                className="rounded-[26px] border border-[#e6dbcf] bg-white/70 p-6 text-right shadow-[0_12px_30px_rgba(83,63,47,0.06)]"
-              >
-                <h3 className="text-xl text-[#4f433b]">{item.question}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#75655a]">{item.answer}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
         <section id="works" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">نمونه‌کارهای منتخب</h2>
