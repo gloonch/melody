@@ -856,15 +856,15 @@ function MelodyLandingPage() {
               className="mb-6 text-5xl leading-[1.1] md:text-7xl"
               style={{ textShadow: "0 4px 24px rgba(0,0,0,0.62), 0 1px 2px rgba(0,0,0,0.72)" }}
             >
-              گلملو؛ گل‌های پارچه‌ای دست‌ساز و آموزش گل‌سازی پارچه‌ای
+              گلملو؛ آموزش و گل‌های پارچه‌ای دست‌ساز
             </h1>
             <p
               className="max-w-lg text-lg leading-9 text-[#f7eadf]/92 md:text-xl"
               style={{ textShadow: "0 3px 18px rgba(0,0,0,0.58), 0 1px 2px rgba(0,0,0,0.68)" }}
             >
-              دنیایی از گل‌های پارچه‌ای دست‌ساز است؛ گل‌هایی برای لباس، کلاه،
-              سنجاق سینه و اکسسوری، همراه با مسیری آموزشی برای  گل‌سازی
-              از پایه تا ساخت مدل‌های ظریف‌تر و حرفه‌ای‌تر.
+              دنیایی از گل‌های پارچه‌ای دست‌ساز؛ برای لباس، کلاه،
+              سنجاق سینه و اکسسوری، همراه با مسیری آموزشی برای گل‌سازی
+              از پایه تا مدل‌های ظریف‌تر و حرفه‌ای‌تر.
             </p>
             <div className="mt-8 flex flex-wrap justify-start gap-4 md:mt-10">
               <a
@@ -879,7 +879,7 @@ function MelodyLandingPage() {
                 onClick={handleCtaClick("courses")}
                 className="rounded-full bg-[#c08081] px-7 py-3.5 text-base text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
               >
-                مشاهده دوره ترم اول
+                مشاهده دوره ها
               </a>
               <a
                 href="#contact"
