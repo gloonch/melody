@@ -13,6 +13,7 @@ type Config struct {
 	Database DatabaseConfig
 	Seed     SeedConfig
 	Admin    AdminConfig
+	Auth     AuthConfig
 }
 
 type AppConfig struct {
@@ -43,6 +44,14 @@ type AdminConfig struct {
 	Username string
 	Password string
 	Token    string
+}
+
+type AuthConfig struct {
+	JWTSecret          string
+	Issuer             string
+	AccessTokenMinutes int
+	RefreshTokenDays   int
+	CookieSecure       bool
 }
 
 func Load() *Config {
@@ -79,6 +88,13 @@ func Load() *Config {
 			Username: getEnv("ADMIN_USERNAME", "admin"),
 			Password: getEnv("ADMIN_PASSWORD", "admin@123!"),
 			Token:    getEnv("ADMIN_TOKEN", "melody-admin-dev-token"),
+		},
+		Auth: AuthConfig{
+			JWTSecret:          getEnv("JWT_SECRET", "golmelo-dev-jwt-secret-change-me"),
+			Issuer:             getEnv("JWT_ISSUER", "golmelo-user"),
+			AccessTokenMinutes: getEnvAsInt("ACCESS_TOKEN_MINUTES", 15),
+			RefreshTokenDays:   getEnvAsInt("REFRESH_TOKEN_DAYS", 30),
+			CookieSecure:       getEnvAsBool("COOKIE_SECURE", false),
 		},
 	}
 }
@@ -119,6 +135,18 @@ func getEnvAsInt(key string, defaultValue int) int {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := strings.ToLower(strings.TrimSpace(getEnv(key, "")))
+	switch valueStr {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return defaultValue
+	}
 }
 
 func splitCSV(value string) []string {

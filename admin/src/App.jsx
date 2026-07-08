@@ -4,6 +4,7 @@ import {
   ImagePlus,
   LayoutDashboard,
   Loader2,
+  Lock,
   LogOut,
   MessageSquareText,
   Plus,
@@ -12,14 +13,30 @@ import {
   Send,
   Trash2,
   Upload,
+  Users,
+  Video,
 } from "lucide-react";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1").replace(/\/+$/, "");
 const TOKEN_KEY = "melody_admin_token";
 const courseStatusOptions = [
-  { value: "in_progress", label: "در حال برگزاری" },
+  { value: "recording", label: "در حال ضبط" },
+  { value: "for_sale", label: "قابل فروش" },
+  { value: "sold_out", label: "تکمیل ظرفیت" },
   { value: "in_production", label: "در حال تولید" },
+  { value: "in_progress", label: "در حال برگزاری" },
   { value: "completed", label: "اتمام دوره" },
+  { value: "draft", label: "پیش‌نویس" },
+  { value: "archived", label: "آرشیو" },
+];
+const orderStatusOptions = [
+  { value: "pending_review", label: "در انتظار بررسی" },
+  { value: "need_more_info", label: "نیازمند اطلاعات بیشتر" },
+  { value: "confirmed", label: "تایید شده" },
+  { value: "in_progress", label: "در حال ساخت" },
+  { value: "ready", label: "آماده تحویل" },
+  { value: "delivered", label: "تحویل شده" },
+  { value: "cancelled", label: "لغو شده" },
 ];
 
 function apiEndpoint(path) {
@@ -274,15 +291,16 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
   return (
     <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-[#3f352f]">ثبت‌نام اطلاع‌رسانی دوره‌ها</h2>
-        <p className="mt-1 text-sm text-[#807269]">شماره‌هایی که خواسته‌اند از شروع دوره‌های آموزشی باخبر شوند.</p>
+        <h2 className="text-lg font-semibold text-[#3f352f]">درخواست‌های خرید دوره</h2>
+        <p className="mt-1 text-sm text-[#807269]">شماره‌هایی که از صفحه دوره درخواست خرید یا هماهنگی ثبت کرده‌اند.</p>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] border-separate border-spacing-0 text-right text-sm">
+        <table className="w-full min-w-[680px] border-separate border-spacing-0 text-right text-sm">
           <thead>
             <tr className="bg-[#f4eee8] text-[#5f544d]">
               <th className="rounded-r-md border-y border-r border-[#e0d7cd] px-3 py-3 font-medium">شماره تلفن</th>
+              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">دوره</th>
               <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">تاریخ ثبت</th>
               <th className="rounded-l-md border-y border-l border-[#e0d7cd] px-3 py-3 font-medium">عملیات</th>
             </tr>
@@ -290,14 +308,17 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
           <tbody>
             {signups.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-3 py-8 text-center text-[#807269]">
-                  هنوز شماره‌ای ثبت نشده است.
+                <td colSpan={4} className="px-3 py-8 text-center text-[#807269]">
+                  هنوز درخواستی ثبت نشده است.
                 </td>
               </tr>
             ) : (
               signups.map((signup) => (
                 <tr key={signup.id}>
                   <td className="border-b border-[#eee7df] px-3 py-3 font-medium text-[#3f352f]">{signup.phone}</td>
+                  <td className="border-b border-[#eee7df] px-3 py-3 text-[#5f544d]">
+                    {signup.courseTitle || signup.courseSlug || signup.courseId || "-"}
+                  </td>
                   <td className="whitespace-nowrap border-b border-[#eee7df] px-3 py-3 text-[#807269]">
                     {formatDate(signup.createdAt)}
                   </td>
@@ -322,6 +343,122 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
   );
 }
 
+function OrderStatusBadge({ status }) {
+  const label = orderStatusOptions.find((item) => item.value === status)?.label || status || "نامشخص";
+  const tone = {
+    delivered: "bg-[#edf7f0] text-[#4d9a61]",
+    cancelled: "bg-[#fff1f1] text-[#b85d60]",
+    ready: "bg-[#fff8e8] text-[#b07b28]",
+    in_progress: "bg-[#eef6ff] text-[#4372a6]",
+    confirmed: "bg-[#f1f4ff] text-[#5669b0]",
+    need_more_info: "bg-[#fff7ed] text-[#b06d32]",
+    pending_review: "bg-[#f5f7fb] text-[#6f7e96]",
+  }[status] || "bg-[#f5f7fb] text-[#6f7e96]";
+
+  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${tone}`}>{label}</span>;
+}
+
+function OrdersTable({ orders, onUpdateStatus, updatingId }) {
+  const [drafts, setDrafts] = useState({});
+
+  const draftFor = (order) => drafts[order.id] || { status: order.status || "pending_review", adminNote: order.adminNote || "" };
+
+  const updateDraft = (order, field, value) => {
+    setDrafts((current) => ({
+      ...current,
+      [order.id]: {
+        ...draftFor(order),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSubmit = async (event, order) => {
+    event.preventDefault();
+    const draft = draftFor(order);
+    await onUpdateStatus(order.id, draft.status, draft.adminNote);
+  };
+
+  return (
+    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+      <div className="mb-5">
+        <h2 className="text-lg font-semibold text-[#3f352f]">سفارش‌های مشتریان</h2>
+        <p className="mt-1 text-sm text-[#807269]">درخواست‌های ثبت‌شده از پنل مشتری و تغییر وضعیت سفارش.</p>
+      </div>
+
+      <div className="grid gap-4">
+        {orders.length === 0 ? (
+          <div className="rounded-md border border-dashed border-[#d9cfc5] bg-[#fbf9f6] p-6 text-center text-sm text-[#807269]">
+            هنوز سفارشی ثبت نشده است.
+          </div>
+        ) : (
+          orders.map((order) => {
+            const draft = draftFor(order);
+            return (
+              <article key={order.id} className="grid gap-4 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
+                <div className="grid gap-3 lg:grid-cols-[96px_1fr_auto] lg:items-start">
+                  <div className="aspect-square overflow-hidden rounded-md bg-[#efe8df]">
+                    {order.productSnapshot?.coverImageUrl ? (
+                      <img src={order.productSnapshot.coverImageUrl} alt={order.productSnapshot.title} className="h-full w-full object-cover" />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-[#3f352f]">{order.productSnapshot?.title || "سفارش گلملو"}</h3>
+                      <OrderStatusBadge status={order.status} />
+                    </div>
+                    <p className="text-sm leading-6 text-[#5f544d]">
+                      مشتری: {order.userName || "کاربر گلملو"} · {order.userPhone || "بدون شماره"}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-[#807269]">
+                      کاربرد: {order.usage || "-"} · رنگ: {order.preferredColor || "-"} · تاریخ موردنیاز: {order.neededBy || "-"}
+                    </p>
+                    {order.customerNote ? <p className="mt-2 rounded-md bg-white px-3 py-2 text-sm leading-6 text-[#5f544d]">{order.customerNote}</p> : null}
+                    <p className="mt-2 text-xs text-[#9a8a80]">ثبت: {formatDate(order.createdAt)}</p>
+                  </div>
+                  <div className="text-xs text-[#807269]">#{order.id}</div>
+                </div>
+
+                <form className="grid gap-3 border-t border-[#eee7df] pt-4 lg:grid-cols-[220px_1fr_auto] lg:items-end" onSubmit={(event) => handleSubmit(event, order)}>
+                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                    وضعیت
+                    <select
+                      value={draft.status}
+                      onChange={(event) => updateDraft(order, "status", event.target.value)}
+                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none"
+                    >
+                      {orderStatusOptions.map((item) => (
+                        <option key={item.value} value={item.value}>{item.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                    یادداشت تیم
+                    <input
+                      value={draft.adminNote}
+                      onChange={(event) => updateDraft(order, "adminNote", event.target.value)}
+                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none"
+                      placeholder="مثلاً برای تایید رنگ با مشتری تماس گرفته شد."
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={updatingId === order.id}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#c08081] px-4 text-sm font-medium text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {updatingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    ذخیره وضعیت
+                  </button>
+                </form>
+              </article>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
 const emptyCourseForm = {
   id: "",
   slug: "",
@@ -333,7 +470,8 @@ const emptyCourseForm = {
   duration: "",
   summary: "",
   description: "",
-  status: "in_progress",
+  status: "recording",
+  priceLabel: "",
   imageId: "",
   sortOrder: 0,
   outcomes: [""],
@@ -345,11 +483,15 @@ function emptyLesson(index = 0) {
   const id = String(index + 1).padStart(2, "0");
   return {
     id,
+    chapterId: "chapter-01",
+    chapterTitle: "فصل اول",
     title: "",
     level: "",
     type: "",
     duration: "",
     summary: "",
+    body: "",
+    videoUrl: "",
     imageId: "",
     materialsText: "",
   };
@@ -368,18 +510,23 @@ function courseToForm(course) {
     duration: course.duration || "",
     summary: course.summary || "",
     description: course.description || "",
-    status: course.status === "published" ? "in_progress" : course.status || "in_progress",
+    status: course.status === "published" ? "in_progress" : course.status || "recording",
+    priceLabel: course.priceLabel || "",
     imageId: course.imageId || "",
     sortOrder: course.sortOrder || 0,
     outcomes: course.outcomes && course.outcomes.length > 0 ? course.outcomes : [""],
     audience: course.audience && course.audience.length > 0 ? course.audience : [""],
     lessons: (course.lessons && course.lessons.length > 0 ? course.lessons : [emptyLesson()]).map((lesson, index) => ({
       id: lesson.id || String(index + 1).padStart(2, "0"),
+      chapterId: lesson.chapterId || `chapter-${String(index + 1).padStart(2, "0")}`,
+      chapterTitle: lesson.chapterTitle || "فصل اول",
       title: lesson.title || "",
       level: lesson.level || "",
       type: lesson.type || "",
       duration: lesson.duration || "",
       summary: lesson.summary || "",
+      body: lesson.body || "",
+      videoUrl: lesson.videoUrl || "",
       imageId: lesson.imageId || "",
       materialsText: (lesson.materials || []).join("\n"),
     })),
@@ -401,6 +548,7 @@ function courseFromForm(form) {
     summary: form.summary.trim(),
     description: form.description.trim(),
     status: form.status,
+    priceLabel: form.priceLabel.trim(),
     imageId: form.imageId,
     sortOrder: Number(form.sortOrder) || 0,
     outcomes: compactTextList(form.outcomes),
@@ -408,11 +556,15 @@ function courseFromForm(form) {
     lessons: form.lessons
       .map((lesson, index) => ({
         id: lesson.id.trim() || String(index + 1).padStart(2, "0"),
+        chapterId: lesson.chapterId.trim() || `chapter-${String(index + 1).padStart(2, "0")}`,
+        chapterTitle: lesson.chapterTitle.trim() || "فصل اول",
         title: lesson.title.trim(),
         level: lesson.level.trim(),
         type: lesson.type.trim(),
         duration: lesson.duration.trim(),
         summary: lesson.summary.trim(),
+        body: lesson.body.trim(),
+        videoUrl: lesson.videoUrl.trim(),
         imageId: lesson.imageId,
         materials: compactTextList(lesson.materialsText.split("\n")),
       }))
@@ -424,6 +576,8 @@ function CourseManager({ courses, token, onReload, onStatus }) {
   const [selectedId, setSelectedId] = useState("");
   const [form, setForm] = useState(() => courseToForm(null));
   const [images, setImages] = useState([]);
+  const [accesses, setAccesses] = useState([]);
+  const [accessPhone, setAccessPhone] = useState("");
   const [busy, setBusy] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -446,13 +600,19 @@ function CourseManager({ courses, token, onReload, onStatus }) {
   useEffect(() => {
     if (!isFormOpen || !selectedId) {
       setImages([]);
+      setAccesses([]);
       return;
     }
 
     let cancelled = false;
-    apiRequest(`admin/courses/${selectedId}/images`, { token })
-      .then((data) => {
-        if (!cancelled) setImages(data.images || []);
+    Promise.all([
+      apiRequest(`admin/courses/${selectedId}/images`, { token }),
+      apiRequest(`admin/courses/${selectedId}/accesses`, { token }),
+    ])
+      .then(([imagesData, accessesData]) => {
+        if (cancelled) return;
+        setImages(imagesData.images || []);
+        setAccesses(accessesData.accesses || []);
       })
       .catch((error) => onStatus({ type: "error", message: error.message }));
 
@@ -511,12 +671,13 @@ function CourseManager({ courses, token, onReload, onStatus }) {
 
   const persistExistingCourse = async (nextForm) => {
     if (!selectedId) return;
-    await apiRequest(`admin/courses/${selectedId}`, {
+    const data = await apiRequest(`admin/courses/${selectedId}`, {
       method: "PUT",
       token,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(courseFromForm(nextForm)),
     });
+    setForm(courseToForm(data.course));
     await onReload();
   };
 
@@ -634,6 +795,8 @@ function CourseManager({ courses, token, onReload, onStatus }) {
     setIsFormOpen(false);
     setSelectedId("");
     setImages([]);
+    setAccesses([]);
+    setAccessPhone("");
     setForm(courseToForm(null));
   };
 
@@ -670,6 +833,51 @@ function CourseManager({ courses, token, onReload, onStatus }) {
     }
   };
 
+  const refreshAccesses = async (courseId = selectedId) => {
+    if (!courseId) return;
+    const data = await apiRequest(`admin/courses/${courseId}/accesses`, { token });
+    setAccesses(data.accesses || []);
+  };
+
+  const handleGrantAccess = async (event) => {
+    event.preventDefault();
+    if (!selectedId || !accessPhone.trim()) return;
+
+    setBusy("grant-access");
+    try {
+      await apiRequest(`admin/courses/${selectedId}/accesses`, {
+        method: "POST",
+        token,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: accessPhone.trim() }),
+      });
+      setAccessPhone("");
+      await refreshAccesses();
+      onStatus({ type: "idle", message: "" });
+    } catch (error) {
+      onStatus({ type: "error", message: error.message });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const handleRevokeAccess = async (accessId) => {
+    if (!selectedId || !accessId || !window.confirm("دسترسی این کاربر به دوره حذف شود؟")) return;
+
+    setBusy(`revoke-access-${accessId}`);
+    try {
+      await apiRequest(`admin/courses/${selectedId}/accesses/${accessId}`, {
+        method: "DELETE",
+        token,
+      });
+      await refreshAccesses();
+    } catch (error) {
+      onStatus({ type: "error", message: error.message });
+    } finally {
+      setBusy("");
+    }
+  };
+
   const currentCourseImage = imageById.get(form.imageId);
 
   return (
@@ -697,7 +905,10 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                   {courseStatusOptions.find((item) => item.value === course.status)?.label || course.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-[#807269]">{course.slug} · {course.lessons?.length || 0} سرفصل</p>
+              <p className="mt-1 text-sm text-[#807269]">
+                {course.slug} · {course.lessons?.length || 0} قسمت
+                {course.priceLabel ? ` · ${course.priceLabel}` : ""}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => handleEdit(course)} className="inline-flex h-9 items-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">
@@ -732,6 +943,7 @@ function CourseManager({ courses, token, onReload, onStatus }) {
               ["level", "سطح"],
               ["format", "فرمت"],
               ["duration", "مدت"],
+              ["priceLabel", "قیمت"],
               ["sortOrder", "ترتیب"],
             ].map(([field, label]) => (
               <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
@@ -837,6 +1049,8 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                   <div className="grid gap-3 md:grid-cols-4">
                     {[
                       ["id", "شناسه"],
+                      ["chapterId", "شناسه فصل"],
+                      ["chapterTitle", "نام فصل"],
                       ["title", "عنوان"],
                       ["level", "سطح"],
                       ["type", "نوع"],
@@ -848,6 +1062,19 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                       </label>
                     ))}
                   </div>
+                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                    لینک ویدئو
+                    <div className="flex items-center gap-2 rounded-md border border-[#d9cfc5] bg-white px-3 focus-within:border-[#c08081]">
+                      <Video className="h-4 w-4 shrink-0 text-[#9b867d]" />
+                      <input
+                        value={lesson.videoUrl}
+                        onChange={(event) => updateLesson(index, "videoUrl", event.target.value)}
+                        dir="ltr"
+                        className="h-10 min-w-0 flex-1 bg-transparent text-left text-[#3f352f] outline-none"
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </label>
                   <div className="grid gap-3 rounded-md border border-[#eee7df] bg-[#fbf9f6] p-3 md:grid-cols-[1fr_auto] md:items-center">
                     <div>
                       <h5 className="text-sm font-medium text-[#3f352f]">تصویر سرفصل</h5>
@@ -862,6 +1089,10 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                   <label className="grid gap-2 text-sm text-[#5f544d]">
                     توضیح سرفصل
                     <textarea value={lesson.summary} onChange={(event) => updateLesson(index, "summary", event.target.value)} rows={3} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
+                  </label>
+                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                    متن کامل قسمت
+                    <textarea value={lesson.body} onChange={(event) => updateLesson(index, "body", event.target.value)} rows={4} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
                   </label>
                   <label className="grid gap-2 text-sm text-[#5f544d]">
                     متریال‌ها، هر مورد در یک خط
@@ -884,7 +1115,63 @@ function CourseManager({ courses, token, onReload, onStatus }) {
           </div>
 
           {selectedId ? (
-            <div className="mt-2 border-t border-[#eee7df] pt-5">
+            <div className="mt-2 grid gap-5 border-t border-[#eee7df] pt-5">
+              <section className="rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-[#c08081]" />
+                      <h4 className="font-semibold text-[#3f352f]">دسترسی کاربران به این دوره</h4>
+                    </div>
+                    <p className="mt-1 text-sm text-[#807269]">شماره تلفن کاربر ثبت‌نام‌شده را وارد کنید تا دوره در پنل او فعال شود.</p>
+                  </div>
+                  <form onSubmit={handleGrantAccess} className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[340px] sm:flex-row">
+                    <input
+                      value={accessPhone}
+                      onChange={(event) => setAccessPhone(event.target.value)}
+                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]"
+                      placeholder="شماره تلفن کاربر"
+                      inputMode="tel"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busy === "grant-access" || !accessPhone.trim()}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:opacity-60"
+                    >
+                      {busy === "grant-access" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                      فعال‌سازی
+                    </button>
+                  </form>
+                </div>
+
+                {accesses.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-[#d9cfc5] bg-white p-5 text-center text-sm text-[#807269]">
+                    هنوز کاربری به این دوره دسترسی ندارد.
+                  </div>
+                ) : (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {accesses.map((access) => (
+                      <article key={access.id} className="flex items-center justify-between gap-3 rounded-md border border-[#e5ddd5] bg-white px-3 py-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-[#3f352f]">{access.userName || "کاربر گلملو"}</p>
+                          <p className="mt-1 text-sm text-[#807269]">{access.userPhone}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeAccess(access.id)}
+                          disabled={busy === `revoke-access-${access.id}`}
+                          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-3 text-sm text-[#b85d60] disabled:opacity-50"
+                        >
+                          {busy === `revoke-access-${access.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          حذف دسترسی
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section>
               <h4 className="mb-3 font-semibold text-[#3f352f]">تصاویر آپلودشده این دوره</h4>
               {images.length === 0 ? (
                 <div className="rounded-md border border-dashed border-[#d9cfc5] bg-[#fbf9f6] p-5 text-center text-sm text-[#807269]">فعلاً تصویری برای این دوره ثبت نشده است.</div>
@@ -905,6 +1192,7 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                   ))}
                 </div>
               )}
+              </section>
             </div>
           ) : null}
         </form>
@@ -917,21 +1205,24 @@ function Dashboard({ token, onLogout }) {
   const [contactRequests, setContactRequests] = useState([]);
   const [courseSignups, setCourseSignups] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [projectImages, setProjectImages] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [status, setStatus] = useState({ type: "loading", message: "" });
   const [uploading, setUploading] = useState("");
   const [deleting, setDeleting] = useState("");
+  const [updatingOrderId, setUpdatingOrderId] = useState("");
 
   const headers = useMemo(() => ({ token }), [token]);
 
   const loadData = async () => {
     setStatus({ type: "loading", message: "" });
     try {
-      const [contactsData, courseData, coursesData, projectData, heroData] = await Promise.all([
+      const [contactsData, courseData, coursesData, ordersData, projectData, heroData] = await Promise.all([
         apiRequest("admin/contact-requests", headers),
         apiRequest("admin/course-signups", headers),
         apiRequest("admin/courses", headers),
+        apiRequest("admin/orders", headers),
         apiRequest("admin/project-images", headers),
         apiRequest("admin/hero-slides", headers),
       ]);
@@ -939,6 +1230,7 @@ function Dashboard({ token, onLogout }) {
       setContactRequests(contactsData.contactRequests || []);
       setCourseSignups(courseData.courseSignups || []);
       setCourses(coursesData.courses || []);
+      setOrders(ordersData.orders || []);
       setProjectImages(projectData.images || []);
       setHeroSlides(heroData.images || []);
       setStatus({ type: "idle", message: "" });
@@ -1005,6 +1297,23 @@ function Dashboard({ token, onLogout }) {
     }
   };
 
+  const updateOrderStatus = async (id, nextStatus, adminNote) => {
+    setUpdatingOrderId(id);
+    try {
+      await apiRequest(`admin/orders/${id}/status`, {
+        method: "PATCH",
+        token,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus, adminNote }),
+      });
+      await loadData();
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    } finally {
+      setUpdatingOrderId("");
+    }
+  };
+
   return (
     <main dir="rtl" className="min-h-screen bg-[#f6f3ef]">
       <header className="sticky top-0 z-20 border-b border-[#e0d7cd] bg-white/90 backdrop-blur">
@@ -1015,7 +1324,7 @@ function Dashboard({ token, onLogout }) {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-[#3f352f]">مدیریت golmelo</h1>
-              <p className="text-sm text-[#807269]">محتوا، تصاویر، پیام‌ها و ثبت‌نام‌های دوره</p>
+              <p className="text-sm text-[#807269]">محتوا، دوره‌ها، سفارش‌ها و دسترسی کاربران</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1044,13 +1353,16 @@ function Dashboard({ token, onLogout }) {
           <div className="rounded-lg border border-[#efb8ba] bg-[#fff6f6] px-4 py-3 text-sm text-[#b85d60]">{status.message}</div>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-5">
+        <section className="grid gap-4 md:grid-cols-6">
           <StatBox label="پیام ثبت‌شده" value={contactRequests.length} icon={MessageSquareText} />
-          <StatBox label="ثبت‌نام دوره" value={courseSignups.length} icon={Send} />
+          <StatBox label="درخواست خرید دوره" value={courseSignups.length} icon={Send} />
           <StatBox label="دوره آموزشی" value={courses.length} icon={BookOpen} />
+          <StatBox label="سفارش مشتری" value={orders.length} icon={Save} />
           <StatBox label="نمونه‌کار" value={projectImages.length} icon={ImagePlus} />
           <StatBox label="اسلاید بخش اول" value={heroSlides.length} icon={LayoutDashboard} />
         </section>
+
+        <OrdersTable orders={orders} onUpdateStatus={updateOrderStatus} updatingId={updatingOrderId} />
 
         <CourseManager courses={courses} token={token} onReload={loadData} onStatus={setStatus} />
 

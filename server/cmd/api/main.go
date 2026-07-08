@@ -45,6 +45,13 @@ func main() {
 	}
 	seedCancel()
 
+	productSeedCtx, productSeedCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := repository.NewProductRepository(db.Pool()).SeedFromProjectImages(productSeedCtx); err != nil {
+		productSeedCancel()
+		log.Fatalf("product seed failed: %v", err)
+	}
+	productSeedCancel()
+
 	router := httpapi.NewRouter(db, cfg)
 	server := &http.Server{
 		Addr:              ":" + cfg.App.Port,

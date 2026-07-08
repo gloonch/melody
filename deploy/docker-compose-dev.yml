@@ -5,10 +5,6 @@ services:
     environment:
       VITE_API_BASE_URL: http://localhost:8080/api/v1
       VITE_IMAGE_BASE_URL: ""
-      NPM_CONFIG_REGISTRY: https://package-mirror.liara.ir/repository/npm/
-      NPM_CONFIG_REPLACE_REGISTRY_HOST: always
-      NPM_CONFIG_AUDIT: "false"
-      NPM_CONFIG_FUND: "false"
     ports:
       - "5173:5173"
     volumes:
@@ -21,10 +17,6 @@ services:
     working_dir: /app
     environment:
       VITE_API_BASE_URL: http://localhost:8080/api/v1
-      NPM_CONFIG_REGISTRY: https://package-mirror.liara.ir/repository/npm/
-      NPM_CONFIG_REPLACE_REGISTRY_HOST: always
-      NPM_CONFIG_AUDIT: "false"
-      NPM_CONFIG_FUND: "false"
     ports:
       - "5174:5174"
     volumes:
@@ -53,8 +45,6 @@ services:
     container_name: melody-backend-dev
     env_file: .dev.env
     environment:
-      GOPROXY: https://package-mirror.liara.ir/repository/go/
-      GOSUMDB: "off"
       PROJECT_IMAGES_DIR: /seed/project_images
     depends_on:
       db:
@@ -64,7 +54,6 @@ services:
     volumes:
       - ../server:/app
       - ../client/src/assets/project_images:/seed/project_images:ro
-      - ${HOME}/go/pkg/mod:/go/pkg/mod:ro
       - go_build_cache:/root/.cache/go-build
 
 volumes:

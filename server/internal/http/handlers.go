@@ -24,12 +24,17 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
-	db      *database.PostgresDB
-	cfg     *config.Config
-	courses *repository.CourseRepository
+	db        *database.PostgresDB
+	cfg       *config.Config
+	courses   *repository.CourseRepository
+	products  *repository.ProductRepository
+	orders    *repository.OrderRepository
+	addresses *repository.AddressRepository
+	users     *repository.UserRepository
 }
 
 const (
@@ -47,12 +52,68 @@ type createContactRequestBody struct {
 }
 
 type createCourseSignupBody struct {
-	Phone string `json:"phone" binding:"required,max=32"`
+	Phone       string `json:"phone" binding:"required,max=32"`
+	CourseID    string `json:"courseId" binding:"max=120"`
+	CourseSlug  string `json:"courseSlug" binding:"max=180"`
+	CourseTitle string `json:"courseTitle" binding:"max=240"`
 }
 
 type adminLoginBody struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+type authCredentialsBody struct {
+	Phone    string `json:"phone" binding:"required,max=32"`
+	Password string `json:"password" binding:"required,min=6,max=128"`
+}
+
+type updateMeBody struct {
+	Email           string `json:"email" binding:"max=180"`
+	FullName        string `json:"fullName" binding:"max=160"`
+	FirstName       string `json:"firstName" binding:"max=80"`
+	LastName        string `json:"lastName" binding:"max=80"`
+	Phone           string `json:"phone" binding:"max=32"`
+	BirthDate       string `json:"birthDate" binding:"max=32"`
+	Instagram       string `json:"instagram" binding:"max=120"`
+	Website         string `json:"website" binding:"max=180"`
+	NewPassword     string `json:"newPassword" binding:"max=128"`
+	RepeatPassword  string `json:"repeatPassword" binding:"max=128"`
+	CurrentPassword string `json:"currentPassword" binding:"max=128"`
+}
+
+type createOrderBody struct {
+	Type              string `json:"type" binding:"max=40"`
+	ProductID         string `json:"productId" binding:"max=120"`
+	Status            string `json:"status" binding:"max=40"`
+	Usage             string `json:"usage" binding:"max=180"`
+	UsageOtherText    string `json:"usageOtherText" binding:"max=180"`
+	PreferredColor    string `json:"preferredColor" binding:"max=120"`
+	StyleNote         string `json:"styleNote" binding:"max=240"`
+	Quantity          int    `json:"quantity"`
+	NeededBy          string `json:"neededBy" binding:"max=80"`
+	CustomerNote      string `json:"customerNote" binding:"max=1200"`
+	DeliveryAddressID string `json:"deliveryAddressId" binding:"max=120"`
+}
+
+type updateOrderStatusBody struct {
+	Status    string `json:"status" binding:"required,max=40"`
+	AdminNote string `json:"adminNote" binding:"max=1200"`
+}
+
+type addressBody struct {
+	Title         string   `json:"title" binding:"required,max=120"`
+	FullAddress   string   `json:"fullAddress" binding:"required,max=1200"`
+	ReceiverName  string   `json:"receiverName" binding:"max=160"`
+	ReceiverPhone string   `json:"receiverPhone" binding:"max=32"`
+	IsDefault     bool     `json:"isDefault"`
+	Lat           *float64 `json:"lat"`
+	Lng           *float64 `json:"lng"`
+	MapProvider   string   `json:"mapProvider" binding:"max=80"`
+	PlaceID       string   `json:"placeId" binding:"max=180"`
+	PostalCode    string   `json:"postalCode" binding:"max=32"`
+	City          string   `json:"city" binding:"max=120"`
+	Province      string   `json:"province" binding:"max=120"`
 }
 
 type contactRequestResponse struct {
@@ -64,9 +125,16 @@ type contactRequestResponse struct {
 }
 
 type courseSignupResponse struct {
-	ID        string    `json:"id"`
-	Phone     string    `json:"phone"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID          string    `json:"id"`
+	Phone       string    `json:"phone"`
+	CourseID    string    `json:"courseId"`
+	CourseSlug  string    `json:"courseSlug"`
+	CourseTitle string    `json:"courseTitle"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+type courseAccessBody struct {
+	Phone string `json:"phone" binding:"required,max=32"`
 }
 
 type projectImageResponse struct {
@@ -91,7 +159,15 @@ type courseWithImagesResponse struct {
 }
 
 func NewHandler(db *database.PostgresDB, cfg *config.Config) *Handler {
-	return &Handler{db: db, cfg: cfg, courses: repository.NewCourseRepository(db.Pool())}
+	return &Handler{
+		db:        db,
+		cfg:       cfg,
+		courses:   repository.NewCourseRepository(db.Pool()),
+		products:  repository.NewProductRepository(db.Pool()),
+		orders:    repository.NewOrderRepository(db.Pool()),
+		addresses: repository.NewAddressRepository(db.Pool()),
+		users:     repository.NewUserRepository(db.Pool()),
+	}
 }
 
 func (h *Handler) AdminLogin(c *gin.Context) {
@@ -114,6 +190,471 @@ func (h *Handler) AdminLogin(c *gin.Context) {
 			"username": h.cfg.Admin.Username,
 		},
 	})
+}
+
+func (h *Handler) Signup(c *gin.Context) {
+	var body authCredentialsBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شماره تلفن و رمز عبور معتبر وارد کنید."})
+		return
+	}
+
+	phone, err := normalizePhone(body.Phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	password := strings.TrimSpace(body.Password)
+	if len(password) < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "رمز عبور باید حداقل ۶ کاراکتر باشد."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	if _, err := h.users.GetByPhone(ctx, phone); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "این شماره قبلاً ثبت شده است."})
+		return
+	} else if !errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "بررسی شماره تلفن انجام نشد."})
+		return
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ساخت حساب انجام نشد."})
+		return
+	}
+
+	user, err := h.users.CreateUser(ctx, models.User{
+		Phone:        phone,
+		PasswordHash: string(passwordHash),
+		FullName:     "کاربر گلملو",
+		FirstName:    "کاربر",
+		Role:         "user",
+	})
+	if err != nil {
+		if isUniqueViolation(err) {
+			c.JSON(http.StatusConflict, gin.H{"error": "این شماره قبلاً ثبت شده است."})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ساخت حساب انجام نشد."})
+		return
+	}
+
+	if err := h.issueAuthSession(c, ctx, user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ورود به حساب انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"user": user})
+}
+
+func (h *Handler) Login(c *gin.Context) {
+	var body authCredentialsBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شماره تلفن و رمز عبور معتبر وارد کنید."})
+		return
+	}
+
+	phone, err := normalizePhone(body.Phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	user, err := h.users.GetByPhone(ctx, phone)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "شماره تلفن یا رمز عبور درست نیست."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ورود انجام نشد."})
+		return
+	}
+	if !user.IsActive {
+		c.JSON(http.StatusForbidden, gin.H{"error": "حساب کاربری غیرفعال است."})
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(body.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "شماره تلفن یا رمز عبور درست نیست."})
+		return
+	}
+
+	if err := h.users.UpdateLastLogin(ctx, user.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ورود انجام نشد."})
+		return
+	}
+	user, _ = h.users.GetByID(ctx, user.ID)
+
+	if err := h.issueAuthSession(c, ctx, user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ورود انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+func (h *Handler) Logout(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	if err := h.users.DeleteRefreshTokensForUser(ctx, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "خروج از حساب انجام نشد."})
+		return
+	}
+	clearAuthCookies(c, h.cfg.Auth.CookieSecure)
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) Refresh(c *gin.Context) {
+	refreshToken, err := c.Cookie(refreshTokenCookieName)
+	if err != nil || strings.TrimSpace(refreshToken) == "" {
+		clearAuthCookies(c, h.cfg.Auth.CookieSecure)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست قابل تمدید نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	storedToken, err := h.users.GetRefreshTokenByHash(ctx, hashRefreshToken(refreshToken))
+	if errors.Is(err, repository.ErrNotFound) {
+		clearAuthCookies(c, h.cfg.Auth.CookieSecure)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست قابل تمدید نیست."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تمدید نشست انجام نشد."})
+		return
+	}
+	if storedToken.RevokedAt != nil || time.Now().UTC().After(storedToken.ExpiresAt) {
+		clearAuthCookies(c, h.cfg.Auth.CookieSecure)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست منقضی شده است."})
+		return
+	}
+
+	user, err := h.users.GetByID(ctx, storedToken.UserID)
+	if err != nil || !user.IsActive {
+		clearAuthCookies(c, h.cfg.Auth.CookieSecure)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	if err := h.users.RevokeRefreshToken(ctx, storedToken.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تمدید نشست انجام نشد."})
+		return
+	}
+	if err := h.issueAuthSession(c, ctx, user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "تمدید نشست انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+func (h *Handler) Session(c *gin.Context) {
+	token, err := c.Cookie(accessTokenCookieName)
+	if err != nil || strings.TrimSpace(token) == "" {
+		c.JSON(http.StatusOK, gin.H{"authenticated": false, "user": nil})
+		return
+	}
+
+	claims, err := validateAccessToken(h.cfg.Auth, token)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"authenticated": false, "user": nil})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	user, err := h.users.GetByID(ctx, claims.Subject)
+	if err != nil || !user.IsActive {
+		c.JSON(http.StatusOK, gin.H{"authenticated": false, "user": nil})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"authenticated": true, "user": user})
+}
+
+func (h *Handler) GetMe(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	user, err := h.users.GetByID(ctx, userID)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "کاربر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت اطلاعات کاربر انجام نشد."})
+		return
+	}
+	if !user.IsActive {
+		c.JSON(http.StatusForbidden, gin.H{"error": "حساب کاربری غیرفعال است."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+func (h *Handler) UpdateMe(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	var body updateMeBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات پروفایل معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	currentUser, err := h.users.GetByID(ctx, userID)
+	if err != nil || !currentUser.IsActive {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	phone := currentUser.Phone
+	if strings.TrimSpace(body.Phone) != "" {
+		phone, err = normalizePhone(body.Phone)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	firstName := strings.TrimSpace(body.FirstName)
+	lastName := strings.TrimSpace(body.LastName)
+	fullName := strings.TrimSpace(body.FullName)
+	if fullName == "" {
+		fullName = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
+	}
+	if fullName == "" {
+		fullName = currentUser.FullName
+	}
+
+	updated, err := h.users.UpdateProfile(ctx, userID, repository.UserProfileUpdate{
+		Email:     body.Email,
+		FullName:  fullName,
+		FirstName: firstName,
+		LastName:  lastName,
+		Phone:     phone,
+		BirthDate: body.BirthDate,
+		Instagram: body.Instagram,
+		Website:   body.Website,
+	})
+	if err != nil {
+		if isUniqueViolation(err) {
+			c.JSON(http.StatusConflict, gin.H{"error": "این شماره تلفن یا ایمیل قبلاً ثبت شده است."})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره پروفایل انجام نشد."})
+		return
+	}
+
+	newPassword := strings.TrimSpace(body.NewPassword)
+	if newPassword != "" || strings.TrimSpace(body.RepeatPassword) != "" {
+		if len(newPassword) < 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "رمز عبور جدید باید حداقل ۶ کاراکتر باشد."})
+			return
+		}
+		if newPassword != strings.TrimSpace(body.RepeatPassword) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "تکرار رمز عبور با رمز جدید یکسان نیست."})
+			return
+		}
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره رمز عبور انجام نشد."})
+			return
+		}
+		if err := h.users.UpdatePassword(ctx, userID, string(passwordHash)); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره رمز عبور انجام نشد."})
+			return
+		}
+		updated, _ = h.users.GetByID(ctx, userID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": updated})
+}
+
+func (h *Handler) ListAddresses(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	addresses, err := h.addresses.ListByUser(ctx, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت آدرس‌ها انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"addresses": addresses})
+}
+
+func (h *Handler) CreateAddress(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	var body addressBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "عنوان و متن آدرس الزامی است."})
+		return
+	}
+
+	address := addressFromBody(userID, body)
+	if address.Title == "" || address.FullAddress == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "عنوان و متن آدرس الزامی است."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	created, err := h.addresses.Create(ctx, address)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره آدرس انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"address": created})
+}
+
+func (h *Handler) UpdateAddress(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	var body addressBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "عنوان و متن آدرس الزامی است."})
+		return
+	}
+
+	address := addressFromBody(userID, body)
+	if address.Title == "" || address.FullAddress == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "عنوان و متن آدرس الزامی است."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	updated, err := h.addresses.Update(ctx, userID, strings.TrimSpace(c.Param("id")), address)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "آدرس پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ویرایش آدرس انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"address": updated})
+}
+
+func (h *Handler) DeleteAddress(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := h.addresses.Delete(ctx, userID, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "آدرس پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف آدرس انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) SetDefaultAddress(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	address, err := h.addresses.SetDefault(ctx, userID, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "آدرس پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "انتخاب آدرس پیش‌فرض انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"address": address})
+}
+
+func (h *Handler) issueAuthSession(c *gin.Context, ctx context.Context, user models.User) error {
+	accessToken, err := createAccessToken(h.cfg.Auth, user.ID, user.Role)
+	if err != nil {
+		return err
+	}
+
+	refreshToken, err := generateSecureToken()
+	if err != nil {
+		return err
+	}
+
+	refreshDuration := time.Duration(h.cfg.Auth.RefreshTokenDays) * 24 * time.Hour
+	if _, err := h.users.CreateRefreshToken(ctx, models.RefreshToken{
+		UserID:    user.ID,
+		TokenHash: hashRefreshToken(refreshToken),
+		ExpiresAt: time.Now().UTC().Add(refreshDuration),
+	}); err != nil {
+		return err
+	}
+
+	accessDuration := time.Duration(h.cfg.Auth.AccessTokenMinutes) * time.Minute
+	setCookie(c, accessTokenCookieName, accessToken, authCookieMaxAge(accessDuration), h.cfg.Auth.CookieSecure)
+	setCookie(c, refreshTokenCookieName, refreshToken, authCookieMaxAge(refreshDuration), h.cfg.Auth.CookieSecure)
+	return nil
 }
 
 func (h *Handler) CreateContactRequest(c *gin.Context) {
@@ -245,9 +786,12 @@ func (h *Handler) CreateCourseSignup(c *gin.Context) {
 
 	now := time.Now().UTC()
 	signup := models.CourseSignup{
-		ID:        generateID(),
-		Phone:     body.Phone,
-		CreatedAt: now,
+		ID:          generateID(),
+		Phone:       body.Phone,
+		CourseID:    strings.TrimSpace(body.CourseID),
+		CourseSlug:  strings.TrimSpace(body.CourseSlug),
+		CourseTitle: strings.TrimSpace(body.CourseTitle),
+		CreatedAt:   now,
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
@@ -255,9 +799,13 @@ func (h *Handler) CreateCourseSignup(c *gin.Context) {
 
 	_, err := h.db.Pool().Exec(
 		ctx,
-		`INSERT INTO course_signups (id, phone, created_at) VALUES ($1, $2, $3)`,
+		`INSERT INTO course_signups (id, phone, course_id, course_slug, course_title, created_at)
+		 VALUES ($1, $2, $3, $4, $5, $6)`,
 		signup.ID,
 		signup.Phone,
+		signup.CourseID,
+		signup.CourseSlug,
+		signup.CourseTitle,
 		signup.CreatedAt,
 	)
 	if err != nil {
@@ -266,9 +814,12 @@ func (h *Handler) CreateCourseSignup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, courseSignupResponse{
-		ID:        signup.ID,
-		Phone:     signup.Phone,
-		CreatedAt: signup.CreatedAt,
+		ID:          signup.ID,
+		Phone:       signup.Phone,
+		CourseID:    signup.CourseID,
+		CourseSlug:  signup.CourseSlug,
+		CourseTitle: signup.CourseTitle,
+		CreatedAt:   signup.CreatedAt,
 	})
 }
 
@@ -278,7 +829,7 @@ func (h *Handler) ListCourseSignups(c *gin.Context) {
 
 	rows, err := h.db.Pool().Query(
 		ctx,
-		`SELECT id, phone, created_at FROM course_signups ORDER BY created_at DESC`,
+		`SELECT id, phone, course_id, course_slug, course_title, created_at FROM course_signups ORDER BY created_at DESC`,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت ثبت‌نام‌های دوره انجام نشد."})
@@ -289,7 +840,7 @@ func (h *Handler) ListCourseSignups(c *gin.Context) {
 	signups := make([]courseSignupResponse, 0)
 	for rows.Next() {
 		var signup courseSignupResponse
-		if err := rows.Scan(&signup.ID, &signup.Phone, &signup.CreatedAt); err != nil {
+		if err := rows.Scan(&signup.ID, &signup.Phone, &signup.CourseID, &signup.CourseSlug, &signup.CourseTitle, &signup.CreatedAt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن ثبت‌نام‌های دوره انجام نشد."})
 			return
 		}
@@ -366,6 +917,533 @@ func (h *Handler) ListAdminCourses(c *gin.Context) {
 
 func (h *Handler) GetAdminCourse(c *gin.Context) {
 	h.getCourse(c, true)
+}
+
+func (h *Handler) ListMyCourseAccesses(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	courseAccessIds, err := h.courses.ListAccessIDsByUser(ctx, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دسترسی دوره‌ها انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courseAccessIds": courseAccessIds})
+}
+
+func (h *Handler) ListAdminCourseAccesses(c *gin.Context) {
+	courseID := strings.TrimSpace(c.Param("id"))
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, courseID, true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	accesses, err := h.courses.ListAccesses(ctx, course.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دسترسی‌ها انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"accesses": accesses})
+}
+
+func (h *Handler) GrantAdminCourseAccess(c *gin.Context) {
+	courseID := strings.TrimSpace(c.Param("id"))
+
+	var body courseAccessBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شماره تلفن کاربر الزامی است."})
+		return
+	}
+
+	phone, err := normalizePhone(body.Phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, courseID, true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	user, err := h.users.GetByPhone(ctx, phone)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "کاربری با این شماره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت کاربر انجام نشد."})
+		return
+	}
+
+	access, err := h.courses.GrantAccess(ctx, course.ID, user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ثبت دسترسی دوره انجام نشد."})
+		return
+	}
+	access.UserName = user.FullName
+	access.UserPhone = user.Phone
+
+	c.JSON(http.StatusCreated, gin.H{"access": access})
+}
+
+func (h *Handler) RevokeAdminCourseAccess(c *gin.Context) {
+	courseID := strings.TrimSpace(c.Param("id"))
+	accessID := strings.TrimSpace(c.Param("accessId"))
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	course, err := h.courses.GetCourse(ctx, courseID, true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	err = h.courses.RevokeAccess(ctx, course.ID, accessID)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دسترسی پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف دسترسی انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) ListProducts(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	products, err := h.products.ListProducts(ctx, false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات انجام نشد."})
+		return
+	}
+	h.attachProductImageURLs(products)
+
+	c.JSON(http.StatusOK, gin.H{"products": products})
+}
+
+func (h *Handler) GetProduct(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	product, err := h.products.GetProduct(ctx, strings.TrimSpace(c.Param("id")), false)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
+		return
+	}
+	h.attachProductImageURL(&product)
+
+	c.JSON(http.StatusOK, gin.H{"product": product})
+}
+
+func (h *Handler) ListOrders(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	orders, err := h.orders.ListOrdersByUser(ctx, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت سفارش‌ها انجام نشد."})
+		return
+	}
+	if err := h.attachReferenceImagesToOrders(ctx, orders); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"orders": orders})
+}
+
+func (h *Handler) GetOrder(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	order, err := h.orders.GetOrderByUser(ctx, userID, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "سفارش پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت سفارش انجام نشد."})
+		return
+	}
+	if err := h.attachReferenceImagesToOrder(ctx, &order); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"order": order})
+}
+
+func (h *Handler) CreateOrder(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	var body createOrderBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات سفارش معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	order, err := h.orderFromBody(ctx, userID, body)
+	if err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, repository.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	created, err := h.orders.CreateOrder(ctx, order)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ثبت سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"order": created})
+}
+
+func (h *Handler) UpdateOrder(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	var body createOrderBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات سفارش معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	order, err := h.orderFromBody(ctx, userID, body)
+	if err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, repository.ErrNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	updated, err := h.orders.UpdateDraft(ctx, userID, strings.TrimSpace(c.Param("id")), order)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "پیش‌نویس پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "فقط پیش‌نویس‌ها قابل ویرایش هستند."})
+		return
+	}
+	if err := h.attachReferenceImagesToOrder(ctx, &updated); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"order": updated})
+}
+
+func (h *Handler) SubmitOrder(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	current, err := h.orders.GetOrderByUser(ctx, userID, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "پیش‌نویس پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت پیش‌نویس انجام نشد."})
+		return
+	}
+	if validationError := validateOrderForSubmit(current); validationError != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationError})
+		return
+	}
+
+	order, err := h.orders.SubmitDraft(ctx, userID, current.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ثبت نهایی سفارش انجام نشد."})
+		return
+	}
+	if err := h.attachReferenceImagesToOrder(ctx, &order); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"order": order})
+}
+
+func (h *Handler) DeleteOrder(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := h.orders.DeleteDraft(ctx, userID, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "پیش‌نویس پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف پیش‌نویس انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) UploadOrderReferenceImages(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "فایل‌های تصویر معتبر نیستند."})
+		return
+	}
+
+	files := uploadedFiles(c.Request.MultipartForm)
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "حداقل یک تصویر انتخاب کنید."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	order, err := h.orders.GetOrderByUser(ctx, userID, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "سفارش پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت سفارش انجام نشد."})
+		return
+	}
+
+	existing, err := h.orders.ListReferenceImages(ctx, order.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "آماده‌سازی آپلود انجام نشد."})
+		return
+	}
+	if len(existing)+len(files) > 5 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "حداکثر ۵ تصویر مرجع قابل آپلود است."})
+		return
+	}
+
+	uploaded := make([]models.OrderReferenceImage, 0, len(files))
+	for index, header := range files {
+		imageDoc, err := referenceImageFromUploadHeader(header, len(existing)+index, time.Now().UTC())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		image, err := h.orders.CreateReferenceImage(ctx, models.OrderReferenceImage{
+			ID:          imageDoc.ID,
+			OrderID:     order.ID,
+			Filename:    imageDoc.Filename,
+			ContentType: imageDoc.ContentType,
+			Data:        imageDoc.Data,
+			SortOrder:   imageDoc.SortOrder,
+			CreatedAt:   imageDoc.CreatedAt,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصویر مرجع انجام نشد."})
+			return
+		}
+		image.URL = h.orderReferenceImageURL(order.ID, image.ID)
+		uploaded = append(uploaded, image)
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"images": uploaded})
+}
+
+func (h *Handler) DeleteOrderReferenceImage(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := h.orders.DeleteReferenceImageByUser(ctx, userID, strings.TrimSpace(c.Param("id")), strings.TrimSpace(c.Param("imageId")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف تصویر انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) GetOrderReferenceImageContent(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	image, err := h.orders.GetReferenceImageContentByUser(ctx, userID, strings.TrimSpace(c.Param("id")), strings.TrimSpace(c.Param("imageId")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصویر انجام نشد."})
+		return
+	}
+
+	c.Header("Cache-Control", "private, max-age=3600")
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", image.Filename))
+	c.Data(http.StatusOK, image.ContentType, image.Data)
+}
+
+func (h *Handler) ListAdminOrders(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	orders, err := h.orders.ListAdminOrders(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت سفارش‌ها انجام نشد."})
+		return
+	}
+	if err := h.attachReferenceImagesToOrders(ctx, orders); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"orders": orders})
+}
+
+func (h *Handler) GetAdminOrder(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	order, err := h.orders.GetAdminOrder(ctx, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "سفارش پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت سفارش انجام نشد."})
+		return
+	}
+	if err := h.attachReferenceImagesToOrder(ctx, &order); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"order": order})
+}
+
+func (h *Handler) UpdateAdminOrderStatus(c *gin.Context) {
+	var body updateOrderStatusBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "وضعیت سفارش معتبر نیست."})
+		return
+	}
+
+	status := strings.TrimSpace(body.Status)
+	if !repository.IsValidOrderStatus(status) || status == "draft" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "وضعیت سفارش معتبر نیست."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	order, err := h.orders.UpdateStatus(ctx, strings.TrimSpace(c.Param("id")), status, body.AdminNote)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "سفارش پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "به‌روزرسانی سفارش انجام نشد."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"order": order})
 }
 
 func (h *Handler) CreateAdminCourse(c *gin.Context) {
@@ -825,6 +1903,168 @@ func (h *Handler) courseImageURL(courseID string, imageID string) string {
 	return fmt.Sprintf("%s/api/v1/courses/%s/images/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), courseID, imageID)
 }
 
+func (h *Handler) attachProductImageURLs(products []models.Product) {
+	for index := range products {
+		h.attachProductImageURL(&products[index])
+	}
+}
+
+func (h *Handler) attachProductImageURL(product *models.Product) {
+	if product.CoverImageID == "" {
+		return
+	}
+	product.CoverImageURL = h.projectImageURL(product.CoverImageID)
+}
+
+func productSnapshot(product models.Product) models.ProductSnapshot {
+	return models.ProductSnapshot{
+		ID:               product.ID,
+		Slug:             product.Slug,
+		Title:            product.Title,
+		ShortDescription: product.ShortDescription,
+		CoverImageURL:    product.CoverImageURL,
+		PriceLabel:       product.PriceLabel,
+		PreparationTime:  product.PreparationTime,
+	}
+}
+
+func addressFromBody(userID string, body addressBody) models.Address {
+	return models.Address{
+		UserID:        userID,
+		Title:         strings.TrimSpace(body.Title),
+		FullAddress:   strings.TrimSpace(body.FullAddress),
+		ReceiverName:  strings.TrimSpace(body.ReceiverName),
+		ReceiverPhone: normalizeDigits(strings.TrimSpace(body.ReceiverPhone)),
+		IsDefault:     body.IsDefault,
+		Lat:           body.Lat,
+		Lng:           body.Lng,
+		MapProvider:   strings.TrimSpace(body.MapProvider),
+		PlaceID:       strings.TrimSpace(body.PlaceID),
+		PostalCode:    strings.TrimSpace(body.PostalCode),
+		City:          strings.TrimSpace(body.City),
+		Province:      strings.TrimSpace(body.Province),
+	}
+}
+
+func (h *Handler) orderFromBody(ctx context.Context, userID string, body createOrderBody) (models.Order, error) {
+	orderType := strings.TrimSpace(body.Type)
+	productID := strings.TrimSpace(body.ProductID)
+	if orderType == "" {
+		if productID == "" {
+			orderType = "custom"
+		} else {
+			orderType = "product"
+		}
+	}
+	if orderType != "product" && orderType != "custom" {
+		return models.Order{}, fmt.Errorf("نوع سفارش معتبر نیست.")
+	}
+	if orderType == "product" && productID == "" {
+		return models.Order{}, fmt.Errorf("انتخاب محصول الزامی است.")
+	}
+
+	status := strings.TrimSpace(body.Status)
+	if status == "" {
+		status = "draft"
+	}
+	if !repository.IsValidOrderStatus(status) {
+		return models.Order{}, fmt.Errorf("وضعیت سفارش معتبر نیست.")
+	}
+
+	order := models.Order{
+		UserID:            userID,
+		Type:              orderType,
+		ProductID:         productID,
+		Status:            status,
+		Usage:             strings.TrimSpace(body.Usage),
+		UsageOtherText:    strings.TrimSpace(body.UsageOtherText),
+		PreferredColor:    strings.TrimSpace(body.PreferredColor),
+		StyleNote:         strings.TrimSpace(body.StyleNote),
+		Quantity:          body.Quantity,
+		NeededBy:          strings.TrimSpace(body.NeededBy),
+		CustomerNote:      strings.TrimSpace(body.CustomerNote),
+		DeliveryAddressID: strings.TrimSpace(body.DeliveryAddressID),
+	}
+	if order.Quantity <= 0 {
+		order.Quantity = 1
+	}
+
+	if order.Type == "product" {
+		product, err := h.products.GetProduct(ctx, productID, false)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return models.Order{}, fmt.Errorf("محصول انتخاب‌شده پیدا نشد.")
+			}
+			return models.Order{}, fmt.Errorf("دریافت محصول انجام نشد.")
+		}
+		h.attachProductImageURL(&product)
+		order.ProductID = product.ID
+		order.ProductSnapshot = productSnapshot(product)
+	}
+
+	if order.DeliveryAddressID != "" {
+		address, err := h.addresses.GetByUser(ctx, userID, order.DeliveryAddressID)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return models.Order{}, fmt.Errorf("آدرس تحویل پیدا نشد.")
+			}
+			return models.Order{}, fmt.Errorf("دریافت آدرس تحویل انجام نشد.")
+		}
+		order.DeliveryAddressSnapshot = repository.AddressSnapshot(address)
+	}
+
+	return order, nil
+}
+
+func validateOrderForSubmit(order models.Order) string {
+	if order.Status != "draft" {
+		return "این سفارش قبلاً ثبت نهایی شده است."
+	}
+	if order.Type == "product" && order.ProductID == "" {
+		return "انتخاب محصول الزامی است."
+	}
+	if order.Type == "custom" {
+		if strings.TrimSpace(order.Usage) == "" {
+			return "نوع استفاده را انتخاب کنید."
+		}
+		if strings.TrimSpace(order.CustomerNote) == "" {
+			return "توضیح سفارش اختصاصی الزامی است."
+		}
+	}
+	if order.Quantity <= 0 {
+		return "تعداد سفارش معتبر نیست."
+	}
+	if strings.TrimSpace(order.DeliveryAddressID) == "" {
+		return "انتخاب آدرس تحویل الزامی است."
+	}
+	return ""
+}
+
+func (h *Handler) attachReferenceImagesToOrders(ctx context.Context, orders []models.Order) error {
+	for index := range orders {
+		if err := h.attachReferenceImagesToOrder(ctx, &orders[index]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *Handler) attachReferenceImagesToOrder(ctx context.Context, order *models.Order) error {
+	images, err := h.orders.ListReferenceImages(ctx, order.ID)
+	if err != nil {
+		return err
+	}
+	for index := range images {
+		images[index].URL = h.orderReferenceImageURL(order.ID, images[index].ID)
+	}
+	order.ReferenceImages = images
+	return nil
+}
+
+func (h *Handler) orderReferenceImageURL(orderID string, imageID string) string {
+	return fmt.Sprintf("%s/api/v1/orders/%s/reference-images/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), orderID, imageID)
+}
+
 func (h *Handler) courseImagesWithURLs(ctx context.Context, courseID string) ([]models.CourseImage, error) {
 	images, err := h.courses.ListImages(ctx, courseID)
 	if err != nil {
@@ -913,6 +2153,13 @@ func imageFromUploadHeader(header *multipart.FileHeader, alt string, sortOrder i
 		SortOrder:   sortOrder,
 		CreatedAt:   createdAt,
 	}, nil
+}
+
+func referenceImageFromUploadHeader(header *multipart.FileHeader, sortOrder int, createdAt time.Time) (models.ImageDocument, error) {
+	if header.Size > 5<<20 {
+		return models.ImageDocument{}, fmt.Errorf("حجم هر تصویر مرجع باید حداکثر ۵ مگابایت باشد.")
+	}
+	return imageFromUploadHeader(header, "تصویر مرجع سفارش", sortOrder, createdAt)
 }
 
 func nextSortOrder(ctx context.Context, pool *pgxpool.Pool, table string) (int, error) {
@@ -1007,6 +2254,28 @@ func normalizeDigits(value string) string {
 			return r
 		}
 	}, value)
+}
+
+func normalizePhone(value string) (string, error) {
+	phone := normalizeDigits(strings.TrimSpace(value))
+	replacer := strings.NewReplacer(" ", "", "\t", "", "\n", "", "\r", "", "-", "", "_", "", "(", "", ")", "")
+	phone = replacer.Replace(phone)
+	if strings.HasPrefix(phone, "00") {
+		phone = "+" + strings.TrimPrefix(phone, "00")
+	}
+	if phone == "" {
+		return "", fmt.Errorf("شماره تلفن الزامی است.")
+	}
+	if strings.HasPrefix(phone, "+") {
+		if len(phone) < 2 || !isDigitsOnly(phone[1:]) {
+			return "", fmt.Errorf("شماره تلفن معتبر نیست.")
+		}
+		return phone, nil
+	}
+	if !isDigitsOnly(phone) {
+		return "", fmt.Errorf("شماره تلفن باید فقط شامل عدد باشد.")
+	}
+	return phone, nil
 }
 
 func isDigitsOnly(value string) bool {

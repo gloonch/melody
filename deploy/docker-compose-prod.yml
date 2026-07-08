@@ -1,6 +1,6 @@
 services:
   db:
-    image: docker.abrha.net/postgres:15-alpine
+    image: postgres:15-alpine
     container_name: melody-postgres-prod
     restart: unless-stopped
     env_file:
@@ -22,7 +22,6 @@ services:
     env_file:
       - .prod.env
     environment:
-      GOPROXY: https://package-mirror.liara.ir/repository/go/
       PROJECT_IMAGES_DIR: /seed/project_images
     depends_on:
       db:
@@ -62,7 +61,7 @@ services:
       - "80"
 
   nginx:
-    image: docker.abrha.net/nginx:alpine
+    image: nginx:alpine
     container_name: melody-nginx-prod
     restart: unless-stopped
     depends_on:

@@ -34,12 +34,50 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 
 	v1 := router.Group("/api/v1")
 	{
+		auth := v1.Group("/auth")
+		{
+			auth.POST("/signup", handler.Signup)
+			auth.POST("/login", handler.Login)
+			auth.POST("/refresh", handler.Refresh)
+
+			protected := auth.Group("")
+			protected.Use(userAuthMiddleware(cfg.Auth))
+			{
+				protected.POST("/logout", handler.Logout)
+			}
+		}
+
+		v1.GET("/session", handler.Session)
+		userProtected := v1.Group("")
+		userProtected.Use(userAuthMiddleware(cfg.Auth))
+		{
+			userProtected.GET("/me", handler.GetMe)
+			userProtected.PUT("/me", handler.UpdateMe)
+			userProtected.GET("/me/course-accesses", handler.ListMyCourseAccesses)
+			userProtected.GET("/me/addresses", handler.ListAddresses)
+			userProtected.POST("/me/addresses", handler.CreateAddress)
+			userProtected.PATCH("/me/addresses/:id", handler.UpdateAddress)
+			userProtected.DELETE("/me/addresses/:id", handler.DeleteAddress)
+			userProtected.PATCH("/me/addresses/:id/default", handler.SetDefaultAddress)
+			userProtected.GET("/orders", handler.ListOrders)
+			userProtected.POST("/orders", handler.CreateOrder)
+			userProtected.PATCH("/orders/:id", handler.UpdateOrder)
+			userProtected.DELETE("/orders/:id", handler.DeleteOrder)
+			userProtected.POST("/orders/:id/submit", handler.SubmitOrder)
+			userProtected.POST("/orders/:id/reference-images", handler.UploadOrderReferenceImages)
+			userProtected.DELETE("/orders/:id/reference-images/:imageId", handler.DeleteOrderReferenceImage)
+			userProtected.GET("/orders/:id/reference-images/:imageId/content", handler.GetOrderReferenceImageContent)
+			userProtected.GET("/orders/:id", handler.GetOrder)
+		}
+
 		v1.POST("/contact-requests", handler.CreateContactRequest)
 		v1.POST("/course-signups", handler.CreateCourseSignup)
 		v1.GET("/images", handler.ListProjectImages)
 		v1.GET("/images/:id/content", handler.GetProjectImageContent)
 		v1.GET("/hero-slides", handler.ListHeroSlides)
 		v1.GET("/hero-slides/:id/content", handler.GetHeroSlideContent)
+		v1.GET("/products", handler.ListProducts)
+		v1.GET("/products/:id", handler.GetProduct)
 		v1.GET("/courses", handler.ListCourses)
 		v1.GET("/courses/:id", handler.GetCourse)
 		v1.GET("/courses/:id/images/:imageId/content", handler.GetCourseImageContent)
@@ -61,11 +99,17 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 				protected.GET("/hero-slides", handler.ListHeroSlides)
 				protected.POST("/hero-slides", handler.UploadHeroSlides)
 				protected.DELETE("/hero-slides/:id", handler.DeleteHeroSlide)
+				protected.GET("/orders", handler.ListAdminOrders)
+				protected.GET("/orders/:id", handler.GetAdminOrder)
+				protected.PATCH("/orders/:id/status", handler.UpdateAdminOrderStatus)
 				protected.GET("/courses", handler.ListAdminCourses)
 				protected.POST("/courses", handler.CreateAdminCourse)
 				protected.GET("/courses/:id", handler.GetAdminCourse)
 				protected.PUT("/courses/:id", handler.UpdateAdminCourse)
 				protected.DELETE("/courses/:id", handler.DeleteAdminCourse)
+				protected.GET("/courses/:id/accesses", handler.ListAdminCourseAccesses)
+				protected.POST("/courses/:id/accesses", handler.GrantAdminCourseAccess)
+				protected.DELETE("/courses/:id/accesses/:accessId", handler.RevokeAdminCourseAccess)
 				protected.GET("/courses/:id/images", handler.ListCourseImages)
 				protected.POST("/courses/:id/images", handler.UploadCourseImages)
 				protected.DELETE("/courses/:id/images/:imageId", handler.DeleteCourseImage)
@@ -99,7 +143,7 @@ func corsMiddleware(allowedOrigins []string) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}
 
-		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Header("Access-Control-Max-Age", "86400")
 

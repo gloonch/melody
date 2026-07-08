@@ -32,8 +32,8 @@ func (r *CourseRepository) SeedDefaultCourse(ctx context.Context) error {
 		ctx,
 		`INSERT INTO courses (
 			id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 		ON CONFLICT (slug) DO NOTHING`,
 		course.ID,
 		course.Slug,
@@ -46,6 +46,7 @@ func (r *CourseRepository) SeedDefaultCourse(ctx context.Context) error {
 		course.Summary,
 		course.Description,
 		course.Status,
+		course.PriceLabel,
 		course.ImageID,
 		course.SortOrder,
 		mustJSON(course.Outcomes),
@@ -61,9 +62,9 @@ func (r *CourseRepository) ListCourses(ctx context.Context, includeDrafts bool) 
 	rows, err := r.pool.Query(
 		ctx,
 		`SELECT id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
 		 FROM courses
-		 WHERE ($1 OR status <> 'draft')
+		 WHERE ($1 OR status NOT IN ('draft', 'archived'))
 		 ORDER BY sort_order ASC, slug ASC`,
 		includeDrafts,
 	)
@@ -90,9 +91,9 @@ func (r *CourseRepository) GetCourse(ctx context.Context, idOrSlug string, inclu
 	row := r.pool.QueryRow(
 		ctx,
 		`SELECT id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
 		 FROM courses
-		 WHERE (id = $1 OR slug = $1) AND ($2 OR status <> 'draft')
+		 WHERE (id = $1 OR slug = $1) AND ($2 OR status NOT IN ('draft', 'archived'))
 		 LIMIT 1`,
 		idOrSlug,
 		includeDrafts,
@@ -117,8 +118,8 @@ func (r *CourseRepository) CreateCourse(ctx context.Context, course models.Cours
 		ctx,
 		`INSERT INTO courses (
 			id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
 		course.ID,
 		course.Slug,
 		course.Title,
@@ -130,6 +131,7 @@ func (r *CourseRepository) CreateCourse(ctx context.Context, course models.Cours
 		course.Summary,
 		course.Description,
 		course.Status,
+		course.PriceLabel,
 		course.ImageID,
 		course.SortOrder,
 		mustJSON(course.Outcomes),
@@ -159,15 +161,16 @@ func (r *CourseRepository) UpdateCourse(ctx context.Context, id string, course m
 			summary = $9,
 			description = $10,
 			status = $11,
-			image_id = $12,
-			sort_order = $13,
-			outcomes = $14,
-			audience = $15,
-			lessons = $16,
-			updated_at = $17
+			price_label = $12,
+			image_id = $13,
+			sort_order = $14,
+			outcomes = $15,
+			audience = $16,
+			lessons = $17,
+			updated_at = $18
 		 WHERE id = $1
 		 RETURNING id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at`,
+			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at`,
 		course.ID,
 		course.Slug,
 		course.Title,
@@ -179,6 +182,7 @@ func (r *CourseRepository) UpdateCourse(ctx context.Context, id string, course m
 		course.Summary,
 		course.Description,
 		course.Status,
+		course.PriceLabel,
 		course.ImageID,
 		course.SortOrder,
 		mustJSON(course.Outcomes),
@@ -191,6 +195,116 @@ func (r *CourseRepository) UpdateCourse(ctx context.Context, id string, course m
 		return models.Course{}, ErrNotFound
 	}
 	return updated, err
+}
+
+func (r *CourseRepository) ListAccesses(ctx context.Context, courseID string) ([]models.CourseAccess, error) {
+	rows, err := r.pool.Query(
+		ctx,
+		`SELECT ca.id, ca.course_id, ca.user_id, COALESCE(u.full_name, ''), COALESCE(u.phone, ''), ca.created_at
+		 FROM course_accesses ca
+		 JOIN users u ON u.id = ca.user_id
+		 WHERE ca.course_id = $1
+		 ORDER BY ca.created_at DESC`,
+		strings.TrimSpace(courseID),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	accesses := make([]models.CourseAccess, 0)
+	for rows.Next() {
+		var access models.CourseAccess
+		if err := rows.Scan(&access.ID, &access.CourseID, &access.UserID, &access.UserName, &access.UserPhone, &access.CreatedAt); err != nil {
+			return nil, err
+		}
+		accesses = append(accesses, access)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return accesses, nil
+}
+
+func (r *CourseRepository) ListAccessIDsByUser(ctx context.Context, userID string) ([]string, error) {
+	rows, err := r.pool.Query(
+		ctx,
+		`SELECT c.id, c.slug
+		 FROM course_accesses ca
+		 JOIN courses c ON c.id = ca.course_id
+		 WHERE ca.user_id = $1
+		 ORDER BY ca.created_at DESC`,
+		strings.TrimSpace(userID),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	seen := make(map[string]struct{})
+	for rows.Next() {
+		var id string
+		var slug string
+		if err := rows.Scan(&id, &slug); err != nil {
+			return nil, err
+		}
+		for _, value := range []string{id, slug} {
+			value = strings.TrimSpace(value)
+			if value == "" {
+				continue
+			}
+			if _, ok := seen[value]; ok {
+				continue
+			}
+			seen[value] = struct{}{}
+			ids = append(ids, value)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+func (r *CourseRepository) GrantAccess(ctx context.Context, courseID string, userID string) (models.CourseAccess, error) {
+	now := time.Now().UTC()
+	access := models.CourseAccess{
+		ID:        generateID(),
+		CourseID:  strings.TrimSpace(courseID),
+		UserID:    strings.TrimSpace(userID),
+		CreatedAt: now,
+	}
+
+	row := r.pool.QueryRow(
+		ctx,
+		`INSERT INTO course_accesses (id, course_id, user_id, created_at)
+		 VALUES ($1,$2,$3,$4)
+		 ON CONFLICT (course_id, user_id) DO UPDATE SET course_id = EXCLUDED.course_id
+		 RETURNING id, course_id, user_id, created_at`,
+		access.ID,
+		access.CourseID,
+		access.UserID,
+		access.CreatedAt,
+	)
+	err := row.Scan(&access.ID, &access.CourseID, &access.UserID, &access.CreatedAt)
+	return access, err
+}
+
+func (r *CourseRepository) RevokeAccess(ctx context.Context, courseID string, accessID string) error {
+	result, err := r.pool.Exec(
+		ctx,
+		`DELETE FROM course_accesses WHERE course_id = $1 AND id = $2`,
+		strings.TrimSpace(courseID),
+		strings.TrimSpace(accessID),
+	)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *CourseRepository) DeleteCourse(ctx context.Context, id string) error {
@@ -306,6 +420,7 @@ func scanCourse(scanner interface {
 		&course.Summary,
 		&course.Description,
 		&course.Status,
+		&course.PriceLabel,
 		&course.ImageID,
 		&course.SortOrder,
 		&outcomesJSON,
@@ -342,19 +457,48 @@ func normalizeCourse(course *models.Course) {
 	course.Summary = strings.TrimSpace(course.Summary)
 	course.Description = strings.TrimSpace(course.Description)
 	course.Status = strings.TrimSpace(course.Status)
+	course.PriceLabel = strings.TrimSpace(course.PriceLabel)
 	course.ImageID = strings.TrimSpace(course.ImageID)
+	for index := range course.Lessons {
+		course.Lessons[index].ID = strings.TrimSpace(course.Lessons[index].ID)
+		course.Lessons[index].ChapterID = strings.TrimSpace(course.Lessons[index].ChapterID)
+		course.Lessons[index].ChapterTitle = strings.TrimSpace(course.Lessons[index].ChapterTitle)
+		course.Lessons[index].Title = strings.TrimSpace(course.Lessons[index].Title)
+		course.Lessons[index].Level = strings.TrimSpace(course.Lessons[index].Level)
+		course.Lessons[index].Type = strings.TrimSpace(course.Lessons[index].Type)
+		course.Lessons[index].Duration = strings.TrimSpace(course.Lessons[index].Duration)
+		course.Lessons[index].Summary = strings.TrimSpace(course.Lessons[index].Summary)
+		course.Lessons[index].Body = strings.TrimSpace(course.Lessons[index].Body)
+		course.Lessons[index].VideoURL = strings.TrimSpace(course.Lessons[index].VideoURL)
+		course.Lessons[index].ImageID = strings.TrimSpace(course.Lessons[index].ImageID)
+		if course.Lessons[index].ChapterTitle == "" {
+			course.Lessons[index].ChapterTitle = "سرفصل‌ها"
+		}
+		if course.Lessons[index].ChapterID == "" {
+			course.Lessons[index].ChapterID = slugLike(course.Lessons[index].ChapterTitle)
+		}
+	}
 
 	if course.Slug == "" {
 		course.Slug = course.ID
 	}
 	if course.Status == "" {
-		course.Status = "in_progress"
+		course.Status = "recording"
 	}
 	switch course.Status {
-	case "in_progress", "in_production", "completed", "draft":
+	case "recording", "for_sale", "sold_out", "in_progress", "in_production", "completed", "draft", "archived":
 	default:
-		course.Status = "in_progress"
+		course.Status = "recording"
 	}
+}
+
+func slugLike(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "chapter"
+	}
+	replacer := strings.NewReplacer(" ", "-", "/", "-", "\\", "-", "_", "-")
+	return strings.ToLower(replacer.Replace(value))
 }
 
 func mustJSON(value any) []byte {
@@ -387,6 +531,7 @@ func DefaultCourse() models.Course {
 		Summary:     "یادگیری ۵ گل پارچه‌ای به‌صورت ویدیویی، با مسیری که از مدل‌های ساده‌تر شروع می‌شود و قدم‌به‌قدم به ساخت فرم‌های پیچیده‌تر می‌رسد.",
 		Description: "در ترم اول، هنرجو ساخت ۵ گل پارچه‌ای را به‌صورت ویدیویی و مرحله‌به‌مرحله یاد می‌گیرد؛ مسیری آرام و منظم که از مدل‌های ساده‌تر آغاز می‌شود و به فرم‌های پیچیده‌تر و حرفه‌ای‌تر می‌رسد.",
 		Status:      "in_progress",
+		PriceLabel:  "پس از بررسی اعلام می‌شود",
 		SortOrder:   1,
 		Outcomes: []string{
 			"آشنایی با ۵ مدل گل پارچه‌ای",
