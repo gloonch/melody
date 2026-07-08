@@ -266,6 +266,46 @@ function resolveApiURL(value) {
   }
 }
 
+function sortProductsNewestFirst(products) {
+  return [...products]
+    .map((product, index) => ({ product, index }))
+    .sort((first, second) => {
+      const firstCreatedAt = Date.parse(first.product?.createdAt || "");
+      const secondCreatedAt = Date.parse(second.product?.createdAt || "");
+      const firstTimestamp = Number.isFinite(firstCreatedAt) ? firstCreatedAt : 0;
+      const secondTimestamp = Number.isFinite(secondCreatedAt) ? secondCreatedAt : 0;
+
+      return secondTimestamp - firstTimestamp || first.index - second.index;
+    })
+    .map(({ product }) => product);
+}
+
+function getProductBackTarget(state) {
+  const from = state?.from;
+  if (from && typeof from === "object" && from.pathname) return from;
+
+  return { pathname: "/products" };
+}
+
+function getProductBackState(state) {
+  return typeof state?.scrollY === "number" ? { restoreScrollY: state.scrollY } : undefined;
+}
+
+function useRestoreScrollPosition(ready) {
+  const location = useLocation();
+  const restoreScrollY = location.state?.restoreScrollY;
+
+  useEffect(() => {
+    if (!ready || typeof restoreScrollY !== "number") return undefined;
+
+    const frameID = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: restoreScrollY, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(frameID);
+  }, [location.key, ready, restoreScrollY]);
+}
+
 const flowerStudies = [
   {
     title: "گل پارچه‌ای دست‌ساز برای لباس مجلسی",
@@ -777,13 +817,8 @@ function usePanelSEO(title) {
 
 
 const navItems = [
-  { id: "hero", label: "خانه" },
   { id: "products", label: "محصولات" },
-  { id: "inspiration", label: "الهام" },
-  { id: "craft", label: "فرآیند ساخت" },
-  { id: "usage", label: "کاربردها" },
   { id: "courses", label: "دوره‌ها" },
-  { id: "custom-order", label: "سفارش اختصاصی", path: "/custom-order" },
 ];
 
 function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick }) {
@@ -851,7 +886,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
 
   return (
     <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081cc] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081]/90 px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-sm">
         {onLogoClick ? (
           <button
             type="button"
@@ -900,43 +935,44 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
         <AnimatePresence>
           {isMenuOpen ? (
             <motion.div
-              className="fixed inset-0 z-[90] bg-[#1f2a24]/45 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[2px] md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
             >
               <motion.aside
-                className="absolute left-4 right-4 top-4 rounded-[28px] border border-white/25 bg-[#c08081] p-4 text-white shadow-[0_24px_70px_rgba(73,55,48,0.24)]"
-                initial={{ y: -18, opacity: 0.7 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -18, opacity: 0 }}
+                className="relative flex h-full w-full flex-col items-center justify-center px-2 py-16 text-center text-white"
+                initial={{ y: 12, opacity: 0.7, scale: 0.98 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 12, opacity: 0, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 340, damping: 32 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <Link to="/" className="inline-flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-[#c08081]/90 shadow-[0_14px_34px_rgba(73,55,48,0.2)] backdrop-blur"
+                  aria-label="بستن منو"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="flex w-full max-w-xs flex-col items-center">
+                  <Link to="/" className="mb-8 inline-flex items-center justify-center gap-3" onClick={() => setIsMenuOpen(false)}>
                     <img src={logoImage} alt="نشان گلملو" className="h-9 w-auto object-contain brightness-110" />
                     <span className="text-sm font-bold">Golmelo</span>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/12"
-                    aria-label="بستن منو"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+                  <nav className="flex w-full flex-col items-center gap-3">
+                    {navItems.map((item) =>
+                      renderNavLink(
+                        item,
+                        "flex w-full items-center justify-center rounded-2xl bg-[#c08081]/90 px-4 py-3 text-center text-sm font-bold text-white shadow-[0_14px_34px_rgba(73,55,48,0.16)] backdrop-blur transition hover:bg-[#c08081]",
+                      ),
+                    )}
+                  </nav>
+                  <div className="mt-8 flex justify-center">{authAction}</div>
                 </div>
-                <nav className="grid gap-2">
-                  {navItems.map((item) =>
-                    renderNavLink(
-                      item,
-                      "rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/18",
-                    ),
-                  )}
-                </nav>
-                <div className="mt-4">{authAction}</div>
               </motion.aside>
             </motion.div>
           ) : null}
@@ -968,8 +1004,36 @@ function AppCard({ item }) {
   );
 }
 
-function ProductCard({ product, index }) {
+function ProductCard({ product, index, showOverlay = true }) {
   const productPath = product.slug || product.id;
+  const productHref = `/products/${productPath}`;
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleProductClick = (event) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigate(productHref, {
+      state: {
+        from: {
+          pathname: location.pathname,
+          search: location.search,
+          hash: location.hash,
+        },
+        scrollY: window.scrollY,
+      },
+    });
+  };
 
   return (
     <motion.article
@@ -977,31 +1041,28 @@ function ProductCard({ product, index }) {
       whileInView={{ y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group overflow-hidden rounded-[26px] border border-[#e5dbd0] bg-white text-right shadow-[0_12px_30px_rgba(83,63,47,0.12)]"
+      className="group overflow-hidden rounded-[26px] border border-[#e5dbd0] bg-[#f7f0e8] text-right shadow-[0_12px_30px_rgba(83,63,47,0.12)]"
     >
-      <Link to={`/products/${productPath}`} className="block">
-        <div className="aspect-square overflow-hidden bg-[#f7f0e8]">
-          <img
-            src={product.coverImageUrl}
-            alt={product.title}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-          />
-        </div>
-        <div className="grid gap-3 p-4">
-          <div>
-            <h3 className="text-lg leading-8 text-[#4f433b]">{product.title}</h3>
-            <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#7d6e63]">{product.shortDescription}</p>
-          </div>
-          <div className="flex items-center justify-between gap-3 text-xs text-[#9b867d]">
-            <span>{product.priceLabel || "پس از بررسی اعلام می‌شود"}</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#f7f0e8] px-3 py-1.5 font-bold text-[#c08081]">
-              جزئیات
-              <ChevronLeft className="h-4 w-4" />
-            </span>
-          </div>
-        </div>
+      <Link to={productHref} onClick={handleProductClick} className="relative block aspect-square overflow-hidden">
+        <img
+          src={product.coverImageUrl}
+          alt={product.title}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+        {showOverlay ? (
+          <>
+            <div className="absolute inset-x-0 bottom-0 h-1/4 bg-[linear-gradient(180deg,rgba(250,247,243,0)_0%,rgba(250,247,243,0.7)_56%,rgba(250,247,243,0.96)_100%)]" />
+            <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 p-4">
+              <h3 className="line-clamp-2 max-w-[62%] text-right text-lg leading-7 text-[#4f433b]">{product.title}</h3>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#c08081] px-3 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(192,128,129,0.24)]">
+                جزئیات
+                <ChevronLeft className="h-4 w-4" />
+              </span>
+            </div>
+          </>
+        ) : null}
       </Link>
     </motion.article>
   );
@@ -1066,61 +1127,156 @@ function CourseVisual({ imageUrl, title, className = "h-full w-full object-cover
   );
 }
 
+function normalizePublicCourse(course) {
+  if (!course) return null;
+
+  return {
+    ...course,
+    imageUrl: resolveApiURL(course.imageUrl || course.imageURL || course.cover),
+  };
+}
+
+function normalizePreparationTimeLabel(value) {
+  const normalized = value?.trim();
+  if (!normalized) return "پس از بررسی اعلام می‌شود";
+
+  return normalized.replace(/^زمان آماده‌سازی\s*/, "").trim() || normalized;
+}
+
 function CoursePreviewCard({ course }) {
   const href = `/courses/${course.slug || course.id}`;
 
   return (
-    <motion.article
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.3 }}
-      className="group relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
+    <Link
+      to={href}
+      className="block"
+      aria-label={`مشاهده جزئیات دوره ${course.title}`}
     >
-      <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
-        <CourseVisual
-          imageUrl={course.imageUrl}
-          title={course.title}
-          className="h-full w-full object-cover object-center"
-        />
-      </div>
-      <div className="absolute inset-0 hidden md:block">
-        <CourseVisual imageUrl={course.imageUrl} title={course.title} />
-      </div>
-      <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
-      <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
+      <motion.article
+        whileHover={{ y: -6 }}
+        transition={{ duration: 0.3 }}
+        className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
+      >
+        <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
+          <CourseVisual
+            imageUrl={course.imageUrl}
+            title={course.title}
+            className="h-full w-full object-cover object-center"
+          />
+        </div>
+        <div className="absolute inset-0 hidden md:block">
+          <CourseVisual imageUrl={course.imageUrl} title={course.title} />
+        </div>
+        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
+        <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
 
-      <div className="relative z-10 p-5 md:flex md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
-        <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
-              {course.term ? (
-                <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{course.term}</span>
-              ) : null}
-              {course.level ? (
-                <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{course.level}</span>
-              ) : null}
-              {course.format ? (
-                <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{course.format}</span>
-              ) : null}
-              <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#b06d6f]">
-                {COURSE_STATUS_LABELS[course.status] || course.status}
-              </span>
+        <div className="relative z-10 p-5 md:flex md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
+          <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
+                {course.term ? (
+                  <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{course.term}</span>
+                ) : null}
+                {course.level ? (
+                  <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{course.level}</span>
+                ) : null}
+                {course.format ? (
+                  <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{course.format}</span>
+                ) : null}
+                <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#b06d6f]">
+                  {COURSE_STATUS_LABELS[course.status] || course.status}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <h3 className="mt-5 text-3xl leading-tight text-[#4f433b] md:text-[2.05rem]">{course.title}</h3>
-          <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
-
-          <div className="mt-6 flex items-center justify-start">
-            <Link
-              to={href}
-              className="inline-flex items-center gap-2 rounded-full bg-[#c08081] px-5 py-3 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5"
-            >
-              مشاهده جزئیات دوره
-            </Link>
+            <h3 className="mt-5 text-3xl leading-tight text-[#4f433b] md:text-[2.05rem]">{course.title}</h3>
+            <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
           </div>
         </div>
+      </motion.article>
+    </Link>
+  );
+}
+
+function CourseSlider({ courses }) {
+  const sliderRef = useRef(null);
+  const canSlide = courses.length > 1;
+
+  const scrollCourses = (direction) => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const scrollAmount = slider.clientWidth * 0.86;
+    slider.scrollBy({
+      left: direction === "right" ? scrollAmount : -scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
+  if (!canSlide) {
+    return (
+      <div className="mt-12">
+        <div className="mx-auto w-full max-w-[980px]">
+          <CoursePreviewCard course={courses[0]} />
+        </div>
+
+        <div className="mt-5 flex justify-center">
+          <Link
+            to="/courses"
+            className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+          >
+            مشاهده دوره‌ها
+          </Link>
+        </div>
       </div>
-    </motion.article>
+    );
+  }
+
+  const controlClassName = "absolute top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center text-[#c08081] transition hover:scale-110 hover:text-[#ad7274]";
+
+  return (
+    <div className="relative mt-12">
+      <button
+        type="button"
+        onClick={() => scrollCourses("left")}
+        className={`${controlClassName} left-0`}
+        aria-label="اسلاید به چپ"
+      >
+        <ChevronLeft className="h-8 w-8" />
+      </button>
+      <button
+        type="button"
+        onClick={() => scrollCourses("right")}
+        className={`${controlClassName} right-0`}
+        aria-label="اسلاید به راست"
+      >
+        <ChevronRight className="h-8 w-8" />
+      </button>
+      <div
+        ref={sliderRef}
+        dir="ltr"
+        className="-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-6 pb-5 [scrollbar-width:none] md:-mx-8 md:gap-6 md:px-8 lg:-mx-12 lg:px-12 [&::-webkit-scrollbar]:hidden"
+      >
+        {courses.map((course) => (
+          <div
+            key={course.id}
+            dir="rtl"
+            className="w-[min(86vw,760px)] flex-none snap-center md:w-[760px] lg:w-[900px] xl:w-[980px]"
+          >
+            <CoursePreviewCard course={course} />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 flex justify-center">
+        <Link
+          to="/courses"
+          className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+        >
+          مشاهده دوره‌ها
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -1152,6 +1308,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
   });
   const [contactStatus, setContactStatus] = useState({ type: "idle", message: "" });
   const scrollRafRef = useRef(null);
+  useRestoreScrollPosition(products.length > 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -1195,10 +1352,10 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
         }
 
         setProducts(
-          nextProducts.map((item) => ({
+          sortProductsNewestFirst(nextProducts.map((item) => ({
             ...item,
             coverImageUrl: resolveApiURL(item.coverImageUrl),
-          })),
+          }))).slice(0, 3),
         );
       } catch (error) {
         console.error(error);
@@ -1214,7 +1371,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 
         const data = await response.json();
         if (cancelled) return;
-        setCourses(Array.isArray(data.courses) ? data.courses : []);
+        setCourses((Array.isArray(data.courses) ? data.courses : []).map(normalizePublicCourse).filter(Boolean));
       } catch (error) {
         console.error(error);
       }
@@ -1446,12 +1603,6 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
               >
                 مشاهده دوره ها
               </a>
-              <Link
-                to="/custom-order"
-                className="rounded-full border border-[#f0c7c8]/50 bg-[#c08081]/20 px-7 py-3.5 text-base text-white shadow-[0_14px_32px_rgba(192,128,129,0.18)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[#c08081]/32"
-              >
-                ثبت سفارش
-              </Link>
             </div>
           </motion.div>
 
@@ -1558,16 +1709,13 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6">
-            {courses.map((course) => (
-              <CoursePreviewCard key={course.id} course={course} />
-            ))}
-            {courses.length === 0 ? (
-              <div className="rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
-                هنوز دوره‌ای منتشر نشده است.
-              </div>
-            ) : null}
-          </div>
+          {courses.length > 0 ? (
+            <CourseSlider courses={courses} />
+          ) : (
+            <div className="mt-12 rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
+              هنوز دوره‌ای منتشر نشده است.
+            </div>
+          )}
 
         </section>
         <section id="products" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
@@ -1580,12 +1728,22 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 
           <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
             {products.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
+              <ProductCard key={product.id} product={product} index={index} showOverlay={false} />
             ))}
           </div>
           {products.length === 0 ? (
             <div className="mt-10 rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
               هنوز محصولی برای سفارش ثبت نشده است.
+            </div>
+          ) : null}
+          {products.length > 0 ? (
+            <div className="mt-10 flex justify-center">
+              <Link
+                to="/products"
+                className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+              >
+                مشاهده محصولات
+              </Link>
             </div>
           ) : null}
         </section>
@@ -1597,6 +1755,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 function ProductsPage({ authStatus = "guest", user = null }) {
   const [products, setProducts] = useState([]);
   const [status, setStatus] = useState({ type: "loading", message: "" });
+  useRestoreScrollPosition(status.type !== "loading");
 
   usePageSEO({
     title: "محصولات قابل سفارش گلملو | گل‌های پارچه‌ای دست‌ساز",
@@ -1613,10 +1772,10 @@ function ProductsPage({ authStatus = "guest", user = null }) {
         const data = await apiRequest("products");
         if (cancelled) return;
         setProducts(
-          (data.products || []).map((product) => ({
+          sortProductsNewestFirst((data.products || []).map((product) => ({
             ...product,
             coverImageUrl: resolveApiURL(product.coverImageUrl),
-          })),
+          }))),
         );
         setStatus({ type: "idle", message: "" });
       } catch (error) {
@@ -1664,52 +1823,69 @@ function ProductsPage({ authStatus = "guest", user = null }) {
   );
 }
 
-function CustomOrderPage({ authStatus = "guest", user = null }) {
-  const isAuthenticated = authStatus === "authenticated" && user;
-  const orderPath = "/panel/orders/new?type=custom";
-  const authPath = `/auth?mode=login&redirect=${encodeURIComponent(orderPath)}`;
+function CoursesPage({ authStatus = "guest", user = null }) {
+  const [courses, setCourses] = useState([]);
+  const [status, setStatus] = useState({ type: "loading", message: "" });
 
   usePageSEO({
-    title: "سفارش اختصاصی گلملو | گل پارچه‌ای برای لباس، کلاه و اکسسوری",
-    description: "ثبت سفارش اختصاصی گل پارچه‌ای دست‌ساز برای لباس، لباس عروس، کلاه، کیف، سنجاق سینه و اکسسوری مو.",
-    url: `${SITE_URL}/custom-order`,
+    title: "دوره‌های آموزش گلملو | آموزش گل‌سازی پارچه‌ای",
+    description: "دوره‌های آموزش گل‌سازی پارچه‌ای گلملو با امکان مشاهده جزئیات هر دوره و ثبت درخواست خرید.",
+    url: `${SITE_URL}/courses`,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCourses() {
+      setStatus({ type: "loading", message: "" });
+      try {
+        const data = await apiRequest("courses");
+        if (cancelled) return;
+
+        setCourses((Array.isArray(data?.courses) ? data.courses : []).map(normalizePublicCourse).filter(Boolean));
+        setStatus({ type: "idle", message: "" });
+      } catch (error) {
+        if (!cancelled) setStatus({ type: "error", message: error.message });
+      }
+    }
+
+    loadCourses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
       <SiteNavbar authStatus={authStatus} user={user} />
-      <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-8 lg:px-12">
-        <section className="grid gap-8 rounded-[34px] border border-[#e8dfd5] bg-[#faf7f3] p-6 text-right shadow-[0_24px_60px_rgba(85,63,45,0.06)] lg:grid-cols-[1.1fr_0.9fr] lg:p-10">
-          <div className="flex flex-col justify-center">
-            <p className="text-sm font-bold text-[#c08081]">Custom Order</p>
-            <h1 className="mt-3 text-4xl leading-tight text-[#4f433b] md:text-6xl">سفارش اختصاصی گل پارچه‌ای</h1>
-            <p className="mt-6 max-w-2xl text-lg leading-9 text-[#75655a]">
-              اگر محصول آماده‌ای دقیقاً مناسب لباس، کلاه، کیف یا اکسسوری شما نیست، جزئیات سفارش را ثبت کنید تا Golmelo بر اساس رنگ، کاربرد، تعداد و تصویر مرجع شما بررسی کند.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to={isAuthenticated ? orderPath : authPath}
-                className="inline-flex h-12 items-center justify-center rounded-full bg-[#c08081] px-6 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
-              >
-                ثبت سفارش اختصاصی
-              </Link>
-              <Link
-                to="/products"
-                className="inline-flex h-12 items-center justify-center rounded-full border border-[#d8cabd] bg-white px-6 text-sm font-bold text-[#6d5d53] transition hover:border-[#c08081]/50 hover:text-[#c08081]"
-              >
-                مشاهده محصولات
-              </Link>
-            </div>
-          </div>
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-32 md:px-8 lg:px-12">
+        <div className="mx-auto mb-10 max-w-3xl text-center">
+          <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">دوره‌های گلملو</h1>
+          <p className="mt-4 text-base leading-8 text-[#75655a] md:text-lg">
+            هر دوره را جداگانه ببینید، جزئیات آموزش‌ها را بررسی کنید و از صفحه همان دوره درخواست خرید را ثبت کنید.
+          </p>
+        </div>
 
-          <div className="grid gap-3">
-            {["گل پارچه‌ای برای کلاه", "گل پارچه‌ای برای لباس", "سفارش هماهنگ با لباس عروس", "سنجاق سینه و اکسسوری مو", "اکسسوری کیف", "رنگ یا استایل خاص"].map((item) => (
-              <div key={item} className="rounded-2xl border border-[#ece4db] bg-white px-4 py-4 text-sm font-bold text-[#5f544d]">
-                {item}
-              </div>
+        {status.type === "loading" ? (
+          <div className="rounded-[28px] bg-white/70 p-8 text-center text-[#807269]">در حال بارگذاری دوره‌ها...</div>
+        ) : null}
+        {status.type === "error" ? (
+          <div className="rounded-[28px] border border-[#efb8ba] bg-[#fff6f6] p-8 text-center text-[#b85d60]">{status.message}</div>
+        ) : null}
+        {status.type !== "loading" && courses.length === 0 ? (
+          <div className="rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
+            هنوز دوره‌ای منتشر نشده است.
+          </div>
+        ) : null}
+
+        {courses.length > 0 ? (
+          <div className="grid gap-6">
+            {courses.map((course) => (
+              <CoursePreviewCard key={course.id} course={course} />
             ))}
           </div>
-        </section>
+        ) : null}
       </main>
     </div>
   );
@@ -1717,11 +1893,14 @@ function CustomOrderPage({ authStatus = "guest", user = null }) {
 
 function ProductDetailPage({ authStatus = "guest", user = null }) {
   const { id } = useParams();
+  const location = useLocation();
   const [product, setProduct] = useState(null);
   const [status, setStatus] = useState({ type: "loading", message: "" });
   const isAuthenticated = authStatus === "authenticated" && user;
   const orderPath = product ? `/panel/orders/new?productId=${encodeURIComponent(product.id)}` : "/panel/orders/new";
   const authPath = `/auth?mode=login&redirect=${encodeURIComponent(orderPath)}`;
+  const productBackTarget = getProductBackTarget(location.state);
+  const productBackState = getProductBackState(location.state);
 
   usePageSEO({
     title: product ? `${product.title} | محصول قابل سفارش گلملو` : "محصول قابل سفارش گلملو",
@@ -1769,7 +1948,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
       <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] px-6 text-center text-[#75655a]">
         <div>
           <p>{status.message || "محصول پیدا نشد."}</p>
-          <Link to="/products" className="mt-4 inline-flex rounded-full bg-[#c08081] px-5 py-3 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">بازگشت به محصولات</Link>
+          <Link to={productBackTarget} state={productBackState} className="mt-4 inline-flex rounded-full bg-[#c08081] px-5 py-3 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">بازگشت به محصولات</Link>
         </div>
       </div>
     );
@@ -1788,30 +1967,19 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
             <h1 className="mt-3 text-4xl leading-tight text-[#4f433b] md:text-5xl">{product.title}</h1>
             <p className="mt-5 text-lg leading-9 text-[#75655a]">{product.description || product.shortDescription}</p>
 
-            <div className="mt-7 grid gap-3 text-sm text-[#6f6259] sm:grid-cols-2">
-              <div className="rounded-2xl border border-[#ece4db] bg-white px-4 py-3">
-                <span className="block text-xs text-[#a18f83]">قیمت</span>
-                <strong className="mt-1 block text-[#4f433b]">{product.priceLabel || "پس از بررسی اعلام می‌شود"}</strong>
-              </div>
-              <div className="rounded-2xl border border-[#ece4db] bg-white px-4 py-3">
-                <span className="block text-xs text-[#a18f83]">زمان آماده‌سازی</span>
-                <strong className="mt-1 block text-[#4f433b]">{product.preparationTime || "پس از بررسی اعلام می‌شود"}</strong>
-              </div>
-              <div className="rounded-2xl border border-[#ece4db] bg-white px-4 py-3">
-                <span className="block text-xs text-[#a18f83]">کاربرد</span>
-                <strong className="mt-1 block text-[#4f433b]">{product.usageLabel || "سفارشی"}</strong>
-              </div>
-              <div className="rounded-2xl border border-[#ece4db] bg-white px-4 py-3">
-                <span className="block text-xs text-[#a18f83]">سفارشی‌سازی</span>
-                <strong className="mt-1 block text-[#4f433b]">{product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت"}</strong>
-              </div>
-            </div>
-
-            <div className="mt-7 flex flex-wrap gap-2">
-              {(product.materials || []).map((item) => (
-                <span key={item} className="rounded-full bg-white px-3 py-1.5 text-xs text-[#7d6e63]">{item}</span>
+            <dl className="mt-5 grid gap-x-5 gap-y-3 rounded-2xl border border-[#ece4db] bg-white/80 p-4 text-sm text-[#6f6259] sm:grid-cols-2">
+              {[
+                ["قیمت", product.priceLabel || "پس از بررسی اعلام می‌شود"],
+                ["زمان آماده‌سازی", normalizePreparationTimeLabel(product.preparationTime)],
+                ["کاربرد", product.usageLabel || "سفارشی"],
+                ["سفارشی‌سازی", product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت"],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-start justify-between gap-4 border-b border-[#f0e7de] pb-2 last:border-b-0 last:pb-0 sm:[&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-last-child(-n+2)]:pb-0">
+                  <dt className="shrink-0 text-xs text-[#a18f83]">{label}</dt>
+                  <dd className="text-left text-sm font-bold leading-6 text-[#4f433b]">{value}</dd>
+                </div>
               ))}
-            </div>
+            </dl>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -1821,7 +1989,8 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
                 ثبت سفارش
               </Link>
               <Link
-                to="/products"
+                to={productBackTarget}
+                state={productBackState}
                 className="inline-flex h-12 items-center justify-center rounded-full border border-[#d8cabd] bg-white px-6 text-sm font-bold text-[#6d5d53] transition hover:border-[#c08081]/50 hover:text-[#c08081]"
               >
                 بازگشت به محصولات
@@ -3792,7 +3961,7 @@ function PanelOrdersPage() {
               <Link to="/products" className="inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5">
                 مشاهده محصولات
               </Link>
-              <Link to="/custom-order" className="inline-flex h-12 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]">
+              <Link to="/panel/orders/new?type=custom" className="inline-flex h-12 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]">
                 سفارش اختصاصی
               </Link>
             </div>
@@ -3928,7 +4097,7 @@ function PanelNewOrderPage() {
             <Link to="/products" className="inline-flex h-11 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white">
               مشاهده محصولات
             </Link>
-            <Link to="/custom-order" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]">
+            <Link to="/panel/orders/new?type=custom" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]">
               سفارش اختصاصی
             </Link>
           </div>
@@ -4667,7 +4836,8 @@ function AppRoutes() {
       <Route path="/" element={<MelodyLandingPage authStatus={authStatus} user={user} />} />
       <Route path="/products" element={<ProductsPage authStatus={authStatus} user={user} />} />
       <Route path="/products/:id" element={<ProductDetailPage authStatus={authStatus} user={user} />} />
-      <Route path="/custom-order" element={<CustomOrderPage authStatus={authStatus} user={user} />} />
+      <Route path="/custom-order" element={<Navigate to="/products" replace />} />
+      <Route path="/courses" element={<CoursesPage authStatus={authStatus} user={user} />} />
       <Route path="/courses/:id" element={<CourseDetailPage authStatus={authStatus} user={user} />} />
       <Route path="/auth" element={<AuthPage authStatus={authStatus} user={user} onAuthenticate={authenticate} />} />
       <Route path="/login" element={<Navigate to="/auth" replace />} />
