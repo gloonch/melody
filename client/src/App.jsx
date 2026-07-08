@@ -886,7 +886,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
 
   return (
     <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081]/90 px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)]">
         {onLogoClick ? (
           <button
             type="button"
@@ -935,7 +935,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
         <AnimatePresence>
           {isMenuOpen ? (
             <motion.div
-              className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[2px] md:hidden"
+              className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[6px] md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -947,17 +947,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: 12, opacity: 0, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 340, damping: 32 }}
-                onClick={(event) => event.stopPropagation()}
               >
-                <button
-                  type="button"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-[#c08081]/90 shadow-[0_14px_34px_rgba(73,55,48,0.2)] backdrop-blur"
-                  aria-label="بستن منو"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-
                 <div className="flex w-full max-w-xs flex-col items-center">
                   <Link to="/" className="mb-8 inline-flex items-center justify-center gap-3" onClick={() => setIsMenuOpen(false)}>
                     <img src={logoImage} alt="نشان گلملو" className="h-9 w-auto object-contain brightness-110" />
@@ -967,7 +957,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
                     {navItems.map((item) =>
                       renderNavLink(
                         item,
-                        "flex w-full items-center justify-center rounded-2xl bg-[#c08081]/90 px-4 py-3 text-center text-sm font-bold text-white shadow-[0_14px_34px_rgba(73,55,48,0.16)] backdrop-blur transition hover:bg-[#c08081]",
+                        "flex w-full items-center justify-center rounded-2xl bg-[#c08081] px-4 py-3 text-center text-sm font-bold text-white shadow-[0_14px_34px_rgba(73,55,48,0.16)] transition hover:bg-[#ad7274]",
                       ),
                     )}
                   </nav>
@@ -2574,19 +2564,17 @@ function PanelSidebar({ user, onNavigate, onLogout, isLoggingOut }) {
               to={item.to}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `relative flex h-14 items-center gap-3 rounded-2xl px-4 text-sm transition ${
-                  isActive
-                    ? "bg-[#f7f9fc] font-bold text-[#1e2b3d]"
-                    : "text-[#6f7e96] hover:bg-[#f8fafc] hover:text-[#2d3b52]"
+                `relative flex h-14 items-center gap-3 rounded-2xl px-4 text-sm transition ${isActive
+                  ? "bg-[#f7f9fc] font-bold text-[#1e2b3d]"
+                  : "text-[#6f7e96] hover:bg-[#f8fafc] hover:text-[#2d3b52]"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   <span
-                    className={`absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-l-full transition ${
-                      isActive ? "bg-[#c08081]" : "bg-transparent"
-                    }`}
+                    className={`absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-l-full transition ${isActive ? "bg-[#c08081]" : "bg-transparent"
+                      }`}
                   />
                   <Icon className="h-5 w-5" strokeWidth={isActive ? 2.4 : 1.8} />
                   <span>{item.label}</span>
@@ -2632,8 +2620,8 @@ function PanelLayout({ user, onLogout, isLoggingOut, children }) {
   }, [isDrawerOpen]);
 
   return (
-      <div dir="rtl" className="min-h-screen bg-[#f3f7fb] text-[#27364d]">
-        <aside className="fixed bottom-0 right-0 top-0 z-40 hidden w-[300px] rounded-l-[34px] border-l border-[#edf1f6] bg-white shadow-[0_24px_70px_rgba(70,88,116,0.08)] lg:block">
+    <div dir="rtl" className="min-h-screen bg-[#f3f7fb] text-[#27364d]">
+      <aside className="fixed bottom-0 right-0 top-0 z-40 hidden w-[300px] rounded-l-[34px] border-l border-[#edf1f6] bg-white shadow-[0_24px_70px_rgba(70,88,116,0.08)] lg:block">
         <PanelSidebar user={user} onLogout={onLogout} isLoggingOut={isLoggingOut} />
       </aside>
 
@@ -2720,9 +2708,8 @@ function PanelInput(props) {
   return (
     <input
       {...props}
-      className={`h-[52px] rounded-2xl border border-transparent bg-[#f8fafc] px-4 text-sm text-[#2e3d54] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#c08081]/60 focus:bg-white ${
-        props.className || ""
-      }`}
+      className={`h-[52px] rounded-2xl border border-transparent bg-[#f8fafc] px-4 text-sm text-[#2e3d54] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#c08081]/60 focus:bg-white ${props.className || ""
+        }`}
     />
   );
 }
@@ -2748,9 +2735,8 @@ function PanelSwitch({ checked, onChange, label }) {
       <span>{label}</span>
       <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-[#c08081]" : "bg-[#d9e1ec]"}`}>
         <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition ${
-            checked ? "right-6" : "right-1"
-          }`}
+          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition ${checked ? "right-6" : "right-1"
+            }`}
         />
       </span>
     </button>
@@ -2873,9 +2859,8 @@ function AddressEditor({ initialValue, onCancel, onSave, isSaving }) {
 function AddressCard({ address, selected, selectable = false, onSelect, onEdit, onDelete, onSetDefault, busy }) {
   return (
     <article
-      className={`rounded-[20px] border bg-white p-4 text-right transition ${
-        selected ? "border-[#c08081] shadow-[0_14px_34px_rgba(192,128,129,0.14)]" : "border-[#edf1f6]"
-      }`}
+      className={`rounded-[20px] border bg-white p-4 text-right transition ${selected ? "border-[#c08081] shadow-[0_14px_34px_rgba(192,128,129,0.14)]" : "border-[#edf1f6]"
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -3163,115 +3148,115 @@ function PanelProfilePage({ user, onProfileUpdate }) {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <form onSubmit={handleSubmit} className="overflow-hidden rounded-[28px] bg-white shadow-[0_26px_70px_rgba(70,88,116,0.08)]">
-      <div className="flex flex-col gap-5 bg-[#f8fbff] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
-        <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#d8dde6] text-[#7b8492]">
-            <User className="h-9 w-9" />
+        <div className="flex flex-col gap-5 bg-[#f8fbff] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
+          <div className="flex items-center gap-4">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#d8dde6] text-[#7b8492]">
+              <User className="h-9 w-9" />
+            </div>
+            <div className="text-right">
+              <h1 className="text-2xl text-[#2f3f55]">{userName}</h1>
+              <p className="mt-1 text-sm text-[#8593a8]">{userPhone ? toPersianDigits(userPhone) : "شماره ثبت نشده"}</p>
+            </div>
           </div>
-          <div className="text-right">
-            <h1 className="text-2xl text-[#2f3f55]">{userName}</h1>
-            <p className="mt-1 text-sm text-[#8593a8]">{userPhone ? toPersianDigits(userPhone) : "شماره ثبت نشده"}</p>
+
+          <button
+            type="button"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#c08081] bg-white px-5 text-sm font-bold text-[#c08081] transition hover:bg-[#fff7f7]"
+          >
+            <Upload className="h-4 w-4" />
+            آپلود تصویر
+          </button>
+        </div>
+
+        <PanelSection title="مشخصات اصلی">
+          <div className="grid gap-5 md:grid-cols-2">
+            <PanelField label="نام" icon={User}>
+              <PanelInput value={form.firstName} onChange={updateForm("firstName")} placeholder="نام" />
+            </PanelField>
+            <PanelField label="نام خانوادگی" icon={User}>
+              <PanelInput value={form.lastName} onChange={updateForm("lastName")} placeholder="نام خانوادگی" />
+            </PanelField>
+            <PanelField label="ایمیل" icon={Mail}>
+              <PanelInput value={form.email} onChange={updateForm("email")} type="email" placeholder="ایمیل" dir="ltr" />
+            </PanelField>
+            <PanelField label="تاریخ تولد">
+              <PanelInput value={form.birthDate} onChange={updateForm("birthDate")} placeholder="تاریخ تولد" />
+            </PanelField>
+            <PanelField label="شماره تماس" icon={Phone}>
+              <PanelInput value={form.phone} onChange={updateForm("phone")} type="tel" placeholder="شماره تماس" />
+            </PanelField>
           </div>
-        </div>
+        </PanelSection>
 
-        <button
-          type="button"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#c08081] bg-white px-5 text-sm font-bold text-[#c08081] transition hover:bg-[#fff7f7]"
-        >
-          <Upload className="h-4 w-4" />
-          آپلود تصویر
-        </button>
-      </div>
+        <PanelSection title="تنظیمات رمز">
+          <div className="grid gap-5 md:grid-cols-2">
+            <PanelField label="رمز جدید">
+              <PasswordInput
+                value={form.newPassword}
+                onChange={updateForm("newPassword")}
+                placeholder="رمز جدید"
+                visible={visiblePasswords.newPassword}
+                onToggleVisibility={() =>
+                  setVisiblePasswords((current) => ({ ...current, newPassword: !current.newPassword }))
+                }
+              />
+            </PanelField>
+            <PanelField label="تکرار رمز جدید">
+              <PasswordInput
+                value={form.repeatPassword}
+                onChange={updateForm("repeatPassword")}
+                placeholder="تکرار رمز جدید"
+                visible={visiblePasswords.repeatPassword}
+                onToggleVisibility={() =>
+                  setVisiblePasswords((current) => ({ ...current, repeatPassword: !current.repeatPassword }))
+                }
+              />
+            </PanelField>
+          </div>
+        </PanelSection>
 
-      <PanelSection title="مشخصات اصلی">
-        <div className="grid gap-5 md:grid-cols-2">
-          <PanelField label="نام" icon={User}>
-            <PanelInput value={form.firstName} onChange={updateForm("firstName")} placeholder="نام" />
-          </PanelField>
-          <PanelField label="نام خانوادگی" icon={User}>
-            <PanelInput value={form.lastName} onChange={updateForm("lastName")} placeholder="نام خانوادگی" />
-          </PanelField>
-          <PanelField label="ایمیل" icon={Mail}>
-            <PanelInput value={form.email} onChange={updateForm("email")} type="email" placeholder="ایمیل" dir="ltr" />
-          </PanelField>
-          <PanelField label="تاریخ تولد">
-            <PanelInput value={form.birthDate} onChange={updateForm("birthDate")} placeholder="تاریخ تولد" />
-          </PanelField>
-          <PanelField label="شماره تماس" icon={Phone}>
-            <PanelInput value={form.phone} onChange={updateForm("phone")} type="tel" placeholder="شماره تماس" />
-          </PanelField>
-        </div>
-      </PanelSection>
+        <PanelSection title="سایر مشخصات">
+          <div className="grid gap-5 md:grid-cols-2">
+            <PanelField label="صفحه اینستاگرام" icon={AtSign}>
+              <PanelInput value={form.instagram} onChange={updateForm("instagram")} placeholder="صفحه اینستاگرام" dir="ltr" />
+            </PanelField>
+            <PanelField label="آدرس وب‌سایت" icon={Globe2}>
+              <PanelInput value={form.website} onChange={updateForm("website")} placeholder="آدرس وب‌سایت" dir="ltr" />
+            </PanelField>
+          </div>
+        </PanelSection>
 
-      <PanelSection title="تنظیمات رمز">
-        <div className="grid gap-5 md:grid-cols-2">
-          <PanelField label="رمز جدید">
-            <PasswordInput
-              value={form.newPassword}
-              onChange={updateForm("newPassword")}
-              placeholder="رمز جدید"
-              visible={visiblePasswords.newPassword}
-              onToggleVisibility={() =>
-                setVisiblePasswords((current) => ({ ...current, newPassword: !current.newPassword }))
-              }
+        <PanelSection title="تنظیمات اطلاع‌رسانی">
+          <div className="grid gap-4 md:grid-cols-2">
+            <PanelSwitch
+              checked={notifications.email}
+              onChange={(value) => setNotifications((current) => ({ ...current, email: value }))}
+              label="دریافت ایمیل اطلاع‌رسانی"
             />
-          </PanelField>
-          <PanelField label="تکرار رمز جدید">
-            <PasswordInput
-              value={form.repeatPassword}
-              onChange={updateForm("repeatPassword")}
-              placeholder="تکرار رمز جدید"
-              visible={visiblePasswords.repeatPassword}
-              onToggleVisibility={() =>
-                setVisiblePasswords((current) => ({ ...current, repeatPassword: !current.repeatPassword }))
-              }
+            <PanelSwitch
+              checked={notifications.sms}
+              onChange={(value) => setNotifications((current) => ({ ...current, sms: value }))}
+              label="دریافت پیامک تخفیف"
             />
-          </PanelField>
-        </div>
-      </PanelSection>
+          </div>
+        </PanelSection>
 
-      <PanelSection title="سایر مشخصات">
-        <div className="grid gap-5 md:grid-cols-2">
-          <PanelField label="صفحه اینستاگرام" icon={AtSign}>
-            <PanelInput value={form.instagram} onChange={updateForm("instagram")} placeholder="صفحه اینستاگرام" dir="ltr" />
-          </PanelField>
-          <PanelField label="آدرس وب‌سایت" icon={Globe2}>
-            <PanelInput value={form.website} onChange={updateForm("website")} placeholder="آدرس وب‌سایت" dir="ltr" />
-          </PanelField>
+        <div className="flex flex-col gap-3 border-t border-dashed border-[#dfe7f1] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
+          <p
+            className={`min-h-6 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#5b8c67]"}`}
+            aria-live="polite"
+          >
+            {status.message}
+          </p>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#2ecf7f] px-6 text-sm font-bold text-white shadow-[0_14px_32px_rgba(46,207,127,0.22)] transition hover:-translate-y-0.5 hover:bg-[#25bd72] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {isSaving ? "در حال ذخیره" : "ثبت تغییرات"}
+          </button>
         </div>
-      </PanelSection>
-
-      <PanelSection title="تنظیمات اطلاع‌رسانی">
-        <div className="grid gap-4 md:grid-cols-2">
-          <PanelSwitch
-            checked={notifications.email}
-            onChange={(value) => setNotifications((current) => ({ ...current, email: value }))}
-            label="دریافت ایمیل اطلاع‌رسانی"
-          />
-          <PanelSwitch
-            checked={notifications.sms}
-            onChange={(value) => setNotifications((current) => ({ ...current, sms: value }))}
-            label="دریافت پیامک تخفیف"
-          />
-        </div>
-      </PanelSection>
-
-      <div className="flex flex-col gap-3 border-t border-dashed border-[#dfe7f1] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
-        <p
-          className={`min-h-6 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#5b8c67]"}`}
-          aria-live="polite"
-        >
-          {status.message}
-        </p>
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#2ecf7f] px-6 text-sm font-bold text-white shadow-[0_14px_32px_rgba(46,207,127,0.22)] transition hover:-translate-y-0.5 hover:bg-[#25bd72] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
-        >
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          {isSaving ? "در حال ذخیره" : "ثبت تغییرات"}
-        </button>
-      </div>
       </form>
 
       <div className="overflow-hidden rounded-[28px] bg-white shadow-[0_26px_70px_rgba(70,88,116,0.08)]">
@@ -3415,7 +3400,7 @@ function PanelVideoFrame({
     if (!lesson.videoUrl || !videoRef.current) return;
 
     if (isPlaying) {
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     } else {
       videoRef.current.pause();
     }
@@ -3464,14 +3449,12 @@ function PanelLessonButton({ lesson, isActive, isWatched, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-right text-sm transition ${
-        isActive ? "bg-[#f4f7fb] text-[#26364c]" : "text-[#64748b] hover:bg-[#f8fafc]"
-      }`}
+      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-right text-sm transition ${isActive ? "bg-[#f4f7fb] text-[#26364c]" : "text-[#64748b] hover:bg-[#f8fafc]"
+        }`}
     >
       <span
-        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-          isActive ? "bg-[#ff6b78] text-white" : isWatched ? "bg-[#edf7f0] text-[#50a568]" : "bg-[#eef3f9] text-[#91a0b5]"
-        }`}
+        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isActive ? "bg-[#ff6b78] text-white" : isWatched ? "bg-[#edf7f0] text-[#50a568]" : "bg-[#eef3f9] text-[#91a0b5]"
+          }`}
       >
         {isWatched ? <CheckCircle2 className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}
       </span>
