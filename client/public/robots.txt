@@ -3,7 +3,12 @@ Allow: /
 Allow: /api/v1/images/
 Allow: /api/v1/hero-slides/
 Allow: /api/v1/courses/
+Disallow: /auth
+Disallow: /login
+Disallow: /panel/
+Disallow: /custom-order
 Disallow: /admin/
 Disallow: /api/v1/admin/
 
 Sitemap: https://golmelo.com/sitemap.xml
+Sitemap: https://golmelo.com/llm.txt
