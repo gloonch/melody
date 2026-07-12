@@ -1716,8 +1716,8 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             </p>
           </div>
 
-          <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-            {products.map((product, index) => (
+          <div className="mt-14 grid grid-cols-3 gap-6">
+            {products.slice(0, 3).map((product, index) => (
               <ProductCard key={product.id} product={product} index={index} showOverlay={false} />
             ))}
           </div>
@@ -1805,7 +1805,7 @@ function ProductsPage({ authStatus = "guest", user = null }) {
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
           {products.map((product, index) => (
-            <ProductCard key={product.id} product={product} index={index} />
+            <ProductCard key={product.id} product={product} index={index} showOverlay={false} />
           ))}
         </div>
       </main>
