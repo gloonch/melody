@@ -7,8 +7,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  EyeOff,
   Globe2,
   Home,
   Loader2,
@@ -48,6 +46,15 @@ import usageBlazerImage from "./assets/section-usage/blazer-flower.png";
 import usageDressImage from "./assets/section-usage/dress-flower.png";
 import usageHatImage from "./assets/section-usage/hat-flower.png";
 import usageHairImage from "./assets/section-usage/hair-flower.png";
+import { CourseSlider } from "./components/courses/CourseSlider";
+import { CourseVisual } from "./components/courses/CourseVisual";
+import { AppCard } from "./components/landing/AppCard";
+import { SiteNavbar } from "./components/layout/SiteNavbar";
+import { PanelField, PanelInput, PanelSection, PanelSwitch, PasswordInput } from "./components/panel/PanelForm";
+import { ProductCard } from "./components/product/ProductCard";
+import { MaterialPill } from "./components/ui/Badge";
+import { Button, ButtonLink, buttonClassName } from "./components/ui/Button";
+import { SuccessToast } from "./components/ui/SuccessToast";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1").replace(/\/+$/, "");
 const USER_SESSION_CACHE_KEY = "sh_me";
@@ -841,302 +848,6 @@ const navItems = [
   { id: "contact", label: "تماس با ما" },
 ];
 
-function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isAuthenticated = authStatus === "authenticated" && user;
-
-  useEffect(() => {
-    if (!isMenuOpen) return undefined;
-
-    const originalBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = originalBodyOverflow;
-    };
-  }, [isMenuOpen]);
-
-  const handleNavItemClick = (item) => (event) => {
-    setIsMenuOpen(false);
-    if (onNavClick) {
-      onNavClick(item.id)(event);
-    }
-  };
-
-  const renderNavLink = (item, className = "") => {
-    if (item.path) {
-      return (
-        <Link key={item.id} to={item.path} onClick={() => setIsMenuOpen(false)} className={className}>
-          {item.label}
-        </Link>
-      );
-    }
-
-    return (
-      <a
-        key={item.id}
-        href={onNavClick ? `#${item.id}` : `/#${item.id}`}
-        onClick={handleNavItemClick(item)}
-        className={className}
-      >
-        {item.label}
-      </a>
-    );
-  };
-
-  const authAction = isAuthenticated ? (
-    <Link
-      to="/panel/profile"
-      onClick={() => setIsMenuOpen(false)}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/20 text-white backdrop-blur transition hover:bg-white/28"
-      aria-label="پنل کاربری"
-      title={displayUserName(user)}
-    >
-      <User className="h-5 w-5" />
-    </Link>
-  ) : (
-    <Link
-      to="/auth?mode=login"
-      onClick={() => setIsMenuOpen(false)}
-      className="inline-flex h-10 items-center justify-center rounded-full border border-white/70 bg-white/40 px-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(75,55,45,0.12)] backdrop-blur transition hover:bg-white/50"
-    >
-      ورود | ثبت‌نام
-    </Link>
-  );
-
-  return (
-    <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-md">
-        {onLogoClick ? (
-          <button
-            type="button"
-            className="flex items-center"
-            onClick={onLogoClick}
-            aria-label="بازگشت به ابتدای صفحه"
-          >
-            <img
-              src={logoImage}
-              alt="نشان گلملو"
-              decoding="async"
-              className="h-9 w-auto object-contain brightness-110"
-            />
-          </button>
-        ) : (
-          <Link to="/" className="flex items-center" aria-label="بازگشت به ابتدای صفحه">
-            <img
-              src={logoImage}
-              alt="نشان گلملو"
-              decoding="async"
-              className="h-9 w-auto object-contain brightness-110"
-            />
-          </Link>
-        )}
-
-        <nav className="hidden items-center gap-1 rounded-full bg-white/[0.06] p-1 text-sm lg:flex">
-          {navItems.map((item) =>
-            renderNavLink(
-              item,
-              "rounded-full px-3 py-2 text-[#f7eee4]/88 transition hover:bg-white/14 hover:text-white lg:px-4",
-            ),
-          )}
-        </nav>
-
-        <div className="hidden lg:block">{authAction}</div>
-
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white backdrop-blur lg:hidden"
-          aria-label="باز کردن منو"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-
-        <AnimatePresence>
-          {isMenuOpen ? (
-            <motion.div
-              className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[6px] lg:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <motion.aside
-                className="relative flex h-full w-full flex-col items-center justify-center px-2 py-16 text-center text-white"
-                initial={{ y: 12, opacity: 0.7, scale: 0.98 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 12, opacity: 0, scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 340, damping: 32 }}
-              >
-                <div className="flex w-full max-w-xs flex-col items-center">
-                  <Link to="/" className="mb-8 inline-flex items-center justify-center gap-3" onClick={() => setIsMenuOpen(false)}>
-                    <img src={logoImage} alt="نشان گلملو" className="h-9 w-auto object-contain brightness-110" />
-                    <span className="text-sm font-bold">Golmelo</span>
-                  </Link>
-                  <nav className="flex w-full flex-col items-center gap-3">
-                    {navItems.map((item) =>
-                      renderNavLink(
-                        item,
-                        "flex w-full items-center justify-center rounded-2xl bg-[#c08081] px-4 py-3 text-center text-sm font-bold text-white shadow-[0_14px_34px_rgba(73,55,48,0.16)] transition hover:bg-[#ad7274]",
-                      ),
-                    )}
-                  </nav>
-                  <div className="mt-8 flex justify-center">{authAction}</div>
-                </div>
-              </motion.aside>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-function AppCard({ item }) {
-  return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.35 }}
-      className="group text-center"
-    >
-      <div className="mx-auto mb-5 flex aspect-square w-full max-w-[10.5rem] items-center justify-center sm:max-w-[13rem] lg:max-w-[14rem]">
-        <img
-          src={item.image}
-          alt={item.title}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-contain transition duration-500 group-hover:scale-[1.03]"
-        />
-      </div>
-      <h3 className="mb-2 text-base leading-7 text-[#4d4038] sm:text-xl">{item.title}</h3>
-      <p className="mx-auto max-w-[16rem] text-xs leading-6 text-[#7d6e63] sm:text-sm sm:leading-7">{item.desc}</p>
-    </motion.div>
-  );
-}
-
-function ProductCard({ product, index, showOverlay = true }) {
-  const productPath = product.slug || product.id;
-  const productHref = `/products/${productPath}`;
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const handleProductClick = (event) => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.shiftKey
-    ) {
-      return;
-    }
-
-    event.preventDefault();
-    navigate(productHref, {
-      state: {
-        from: {
-          pathname: location.pathname,
-          search: location.search,
-          hash: location.hash,
-        },
-        scrollY: window.scrollY,
-      },
-    });
-  };
-
-  return (
-    <motion.article
-      initial={{ y: 14 }}
-      whileInView={{ y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group overflow-hidden rounded-[18px] bg-[#f7f0e8] text-right"
-    >
-      <Link to={productHref} onClick={handleProductClick} className="relative block aspect-square overflow-hidden">
-        <img
-          src={product.coverImageUrl}
-          alt={product.title}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-        />
-        {showOverlay ? (
-          <>
-            <div className="absolute inset-x-0 bottom-0 h-1/4 bg-[linear-gradient(180deg,rgba(250,247,243,0)_0%,rgba(250,247,243,0.7)_56%,rgba(250,247,243,0.96)_100%)]" />
-            <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 p-4">
-              <h3 className="line-clamp-2 max-w-[62%] text-right text-lg leading-7 text-[#4f433b]">{product.title}</h3>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#c08081] px-3 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(192,128,129,0.24)]">
-                جزئیات
-                <ChevronLeft className="h-4 w-4" />
-              </span>
-            </div>
-          </>
-        ) : null}
-      </Link>
-    </motion.article>
-  );
-}
-
-function SuccessToast({ message, toastKey = "success" }) {
-  return (
-    <AnimatePresence>
-      {message ? (
-        <>
-          <motion.div
-            key={`${toastKey}-overlay`}
-            className="pointer-events-none fixed inset-0 z-[60] bg-[linear-gradient(180deg,rgba(47,59,51,0.08)_0%,rgba(47,59,51,0.18)_52%,rgba(47,59,51,0.08)_100%)] backdrop-blur-[1px]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.65, ease: "easeOut" }}
-          />
-          <motion.div
-            key={`${toastKey}-toast`}
-            role="status"
-            aria-live="polite"
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.45, ease: [0.33, 1, 0.68, 1] }}
-            className="fixed inset-x-4 bottom-5 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-[#d7ddd4] bg-[#fbfff9] px-5 py-4 text-right text-sm leading-7 text-[#3f5248] shadow-[0_18px_45px_rgba(47,59,51,0.2)] md:text-base"
-          >
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e3ece3] text-[#51645a]">
-              <CheckCircle2 className="h-5 w-5" />
-            </span>
-            <span>{message}</span>
-          </motion.div>
-        </>
-      ) : null}
-    </AnimatePresence>
-  );
-}
-
-function MaterialPill({ children }) {
-  return (
-    <span className="rounded-full border border-[#e8ded4] bg-[#fbf8f4] px-3 py-1.5 text-sm text-[#74645a]">
-      {children}
-    </span>
-  );
-}
-
-function CourseVisual({ imageUrl, title, className = "h-full w-full object-cover object-right" }) {
-  if (imageUrl) {
-    return (
-      <img src={imageUrl} alt={title} loading="lazy" decoding="async" className={className} />
-    );
-  }
-
-  return (
-    <div className="relative h-full min-h-[220px] overflow-hidden bg-[linear-gradient(145deg,#f7f2eb_0%,#eee4d8_100%)]">
-      <div className="absolute right-[22%] top-[16%] h-28 w-28 rotate-[14deg] rounded-[44%] border border-white/70 bg-white/45" />
-      <div className="absolute left-[24%] top-[34%] h-20 w-20 -rotate-[10deg] rounded-[46%] border border-white/60 bg-white/35" />
-      <div className="absolute right-[46%] top-[38%] h-16 w-px bg-[#b9a295]/70" />
-      <div className="absolute right-[46%] top-[48%] h-px w-14 rotate-[24deg] bg-[#b9a295]/70" />
-    </div>
-  );
-}
-
 function normalizePublicCourse(course) {
   if (!course) return null;
 
@@ -1151,143 +862,6 @@ function normalizePreparationTimeLabel(value) {
   if (!normalized) return "پس از بررسی اعلام می‌شود";
 
   return normalized.replace(/^زمان آماده‌سازی\s*/, "").trim() || normalized;
-}
-
-function CoursePreviewCard({ course }) {
-  const href = `/courses/${course.slug || course.id}`;
-
-  return (
-    <Link
-      to={href}
-      className="block"
-      aria-label={`مشاهده جزئیات دوره ${course.title}`}
-    >
-      <motion.article
-        whileHover={{ y: -6 }}
-        transition={{ duration: 0.3 }}
-        className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
-      >
-        <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
-          <CourseVisual
-            imageUrl={course.imageUrl}
-            title={course.title}
-            className="h-full w-full object-cover object-center"
-          />
-        </div>
-        <div className="absolute inset-0 hidden md:block">
-          <CourseVisual imageUrl={course.imageUrl} title={course.title} />
-        </div>
-        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
-        <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
-
-        <div className="relative z-10 p-5 md:flex md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
-          <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
-                {course.term ? (
-                  <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{course.term}</span>
-                ) : null}
-                {course.level ? (
-                  <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{course.level}</span>
-                ) : null}
-                {course.format ? (
-                  <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{course.format}</span>
-                ) : null}
-                <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#b06d6f]">
-                  {COURSE_STATUS_LABELS[course.status] || course.status}
-                </span>
-              </div>
-            </div>
-
-            <h3 className="mt-5 text-3xl leading-tight text-[#4f433b] md:text-[2.05rem]">{course.title}</h3>
-            <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
-          </div>
-        </div>
-      </motion.article>
-    </Link>
-  );
-}
-
-function CourseSlider({ courses }) {
-  const sliderRef = useRef(null);
-  const canSlide = courses.length > 1;
-
-  const scrollCourses = (direction) => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    const scrollAmount = slider.clientWidth * 0.86;
-    slider.scrollBy({
-      left: direction === "right" ? scrollAmount : -scrollAmount,
-      behavior: "smooth",
-    });
-  };
-
-  if (!canSlide) {
-    return (
-      <div className="mt-12">
-        <div className="mx-auto w-full max-w-[980px]">
-          <CoursePreviewCard course={courses[0]} />
-        </div>
-
-        <div className="mt-5 flex justify-center">
-          <Link
-            to="/courses"
-            className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
-          >
-            مشاهده دوره‌ها
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const controlClassName = "absolute top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center text-[#c08081] transition hover:scale-110 hover:text-[#ad7274]";
-
-  return (
-    <div className="relative mt-12">
-      <button
-        type="button"
-        onClick={() => scrollCourses("left")}
-        className={`${controlClassName} left-0`}
-        aria-label="اسلاید به چپ"
-      >
-        <ChevronLeft className="h-8 w-8" />
-      </button>
-      <button
-        type="button"
-        onClick={() => scrollCourses("right")}
-        className={`${controlClassName} right-0`}
-        aria-label="اسلاید به راست"
-      >
-        <ChevronRight className="h-8 w-8" />
-      </button>
-      <div
-        ref={sliderRef}
-        dir="ltr"
-        className="-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-6 pb-5 [scrollbar-width:none] md:-mx-8 md:gap-6 md:px-8 lg:-mx-12 lg:px-12 [&::-webkit-scrollbar]:hidden"
-      >
-        {courses.map((course) => (
-          <div
-            key={course.id}
-            dir="rtl"
-            className="w-[min(86vw,760px)] flex-none snap-center md:w-[760px] lg:w-[900px] xl:w-[980px]"
-          >
-            <CoursePreviewCard course={course} />
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-5 flex justify-center">
-        <Link
-          to="/courses"
-          className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
-        >
-          مشاهده دوره‌ها
-        </Link>
-      </div>
-    </div>
-  );
 }
 
 function MelodyLandingPage({ authStatus = "guest", user = null }) {
@@ -1561,8 +1135,10 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
       <SuccessToast message={successToastMessage} toastKey="contact-success" />
 
       <SiteNavbar
+        navItems={navItems}
         authStatus={authStatus}
         user={user}
+        userDisplayName={displayUserName(user)}
         onNavClick={handleNavClick}
         onLogoClick={handleLogoClick}
       />
@@ -1656,12 +1232,13 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
           ) : null}
           {products.length > 0 ? (
             <div className="mt-10">
-              <Link
+              <ButtonLink
                 to="/products"
-                className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+                variant="primary"
+                size="md"
               >
                 مشاهده همه گل‌ها
-              </Link>
+              </ButtonLink>
             </div>
           ) : null}
         </section>
@@ -1686,12 +1263,14 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
                 <span key={item}>{item}</span>
               ))}
             </div>
-            <Link
+            <ButtonLink
               to={customOrderHref}
-              className="mt-8 inline-flex h-12 items-center justify-center rounded-full bg-[#c08081] px-7 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+              variant="primary"
+              size="md"
+              className="mt-8"
             >
               شروع سفارش اختصاصی
-            </Link>
+            </ButtonLink>
           </div>
         </section>
 
@@ -1703,7 +1282,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
           </p>
 
           {courses.length > 0 ? (
-            <CourseSlider courses={courses} />
+            <CourseSlider courses={courses} statusLabels={COURSE_STATUS_LABELS} />
           ) : (
             <div className="mt-12 text-center text-[#807269]">
               هنوز دوره‌ای منتشر نشده است.
@@ -1764,14 +1343,15 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
                 placeholder="درباره سفارش، دوره یا مشاوره موردنیازتان بنویسید."
               />
             </label>
-            <button
+            <Button
               type="submit"
               disabled={isSendingContactRequest}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f7eadf] px-6 text-sm font-bold text-[#2f3b33] transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+              variant="light"
+              size="md"
             >
               {isSendingContactRequest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {isSendingContactRequest ? "در حال ارسال" : "ارسال پیام"}
-            </button>
+            </Button>
             {contactStatus.type !== "success" ? (
               <p aria-live="polite" className={`min-h-6 text-sm ${contactStatus.type === "error" ? "text-[#ffb7b9]" : "text-[#e4d2c1]"}`}>
                 {contactStatus.message}
@@ -1824,7 +1404,7 @@ function ProductsPage({ authStatus = "guest", user = null }) {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
-      <SiteNavbar authStatus={authStatus} user={user} />
+      <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-8 lg:px-12">
         <div className="mb-10 text-right">
           <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">محصولات قابل سفارش</h1>
@@ -1890,7 +1470,7 @@ function CoursesPage({ authStatus = "guest", user = null }) {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
-      <SiteNavbar authStatus={authStatus} user={user} />
+      <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-24 pt-32 md:px-8 lg:px-12">
         <div className="mx-auto mb-10 max-w-3xl text-center">
           <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">دوره‌های گلملو</h1>
@@ -1999,7 +1579,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
       <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] px-6 text-center text-[#75655a]">
         <div>
           <p>{status.message || "محصول پیدا نشد."}</p>
-          <Link to={productBackTarget} state={productBackState} className="mt-4 inline-flex rounded-full bg-[#c08081] px-5 py-3 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">بازگشت به محصولات</Link>
+          <ButtonLink to={productBackTarget} state={productBackState} variant="primary" size="md" className="mt-4">بازگشت به محصولات</ButtonLink>
         </div>
       </div>
     );
@@ -2007,7 +1587,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
-      <SiteNavbar authStatus={authStatus} user={user} />
+      <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-8 lg:px-12">
         <section className="grid gap-8 rounded-[34px] border border-[#e8dfd5] bg-[#faf7f3] p-5 shadow-[0_24px_60px_rgba(85,63,45,0.06)] md:grid-cols-[0.95fr_1.05fr] md:p-8">
           <div className="overflow-hidden rounded-[28px] bg-[#f2e9df]">
@@ -2033,12 +1613,13 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
             </dl>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
+              <ButtonLink
                 to={isAuthenticated ? orderPath : authPath}
-                className="inline-flex h-12 items-center justify-center rounded-full bg-[#c08081] px-6 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+                variant="primary"
+                size="md"
               >
                 ثبت سفارش
-              </Link>
+              </ButtonLink>
               <Link
                 to={productBackTarget}
                 state={productBackState}
@@ -2145,13 +1726,15 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
             ? `ادامه دوره از آخرین محل تماشا، حدود ${formatPlaybackTime(progressRecord.currentTime)}، باز می‌شود.`
             : "از پنل کاربری وارد دوره شوید و آموزش‌ها را از همان‌جا دنبال کنید."}
         </p>
-        <Link
+        <ButtonLink
           to={panelPath}
-          className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#c08081] px-7 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+          variant="primary"
+          size="lg"
+          className="mt-6"
         >
           <MonitorPlay className="h-4 w-4" />
           مشاهده دوره در پنل کاربری
-        </Link>
+        </ButtonLink>
       </>
     );
   } else if (authStatus === "authenticated" && user) {
@@ -2164,15 +1747,16 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#807269]">
           با حساب کاربری وارد شده‌اید. درخواست خرید را ثبت کنید تا تیم گلملو برای ظرفیت، قیمت و فعال‌سازی دوره با شما هماهنگ کند.
         </p>
-        <button
-          type="button"
+        <Button
           onClick={handleCoursePurchaseRequest}
           disabled={isSubmitting || hasRequested}
-          className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#c08081] px-7 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+          variant="primary"
+          size="lg"
+          className="mt-6"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {hasRequested ? "درخواست خرید ثبت شده است" : isSubmitting ? "در حال ثبت" : "ثبت درخواست خرید دوره"}
-        </button>
+        </Button>
       </>
     );
   } else {
@@ -2185,13 +1769,15 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#807269]">
           بعد از ورود یا ساخت حساب، به همین صفحه برمی‌گردید و می‌توانید درخواست خرید دوره را ثبت کنید.
         </p>
-        <Link
+        <ButtonLink
           to={loginPath}
-          className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#c08081] px-7 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+          variant="primary"
+          size="lg"
+          className="mt-6"
         >
           <User className="h-4 w-4" />
           ورود | ثبت‌نام
-        </Link>
+        </ButtonLink>
       </>
     );
   }
@@ -2341,7 +1927,7 @@ function CourseDetailPage({ authStatus = "guest", user = null }) {
       <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] px-6 text-center text-[#75655a]">
         <div>
           <p>{status.message || "دوره پیدا نشد."}</p>
-          <Link to="/" className="mt-4 inline-flex rounded-full bg-[#c08081] px-5 py-3 text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">بازگشت به خانه</Link>
+          <ButtonLink to="/" variant="primary" size="md" className="mt-4">بازگشت به خانه</ButtonLink>
         </div>
       </div>
     );
@@ -2349,7 +1935,7 @@ function CourseDetailPage({ authStatus = "guest", user = null }) {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
-      <SiteNavbar authStatus={authStatus} user={user} />
+      <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <div className="mx-auto max-w-7xl px-6 pb-8 pt-28 md:px-8 lg:px-12">
         <section className="overflow-hidden rounded-[40px] border border-[#e8dfd5] bg-[#faf7f3] shadow-[0_24px_60px_rgba(85,63,45,0.06)]">
           <div className="border-b border-[#eee5db] px-6 py-14 md:px-10 lg:px-14">
@@ -2540,14 +2126,17 @@ function AuthPage({ authStatus, user, onAuthenticate }) {
             </label>
           ) : null}
 
-          <button
+          <Button
             type="submit"
             disabled={isLoading}
-            className="mt-2 inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+            variant="primary"
+            size="panelMd"
+            shape="soft"
+            className="mt-2 h-[52px]"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {isSignup ? "ثبت‌نام و ورود" : "ورود به پنل"}
-          </button>
+          </Button>
 
           <p className={`min-h-6 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#708097]"}`} aria-live="polite">
             {status.message}
@@ -2753,81 +2342,6 @@ function PanelLayout({ user, onLogout, isLoggingOut, children }) {
   );
 }
 
-function PanelField({ label, icon: Icon, children }) {
-  return (
-    <label className="grid gap-2 text-right text-sm text-[#7f8ea5]">
-      <span className="flex items-center gap-2">
-        {Icon ? <Icon className="h-4 w-4 text-[#9aa8ba]" /> : null}
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function PanelInput(props) {
-  return (
-    <input
-      {...props}
-      className={`h-[52px] rounded-2xl border border-transparent bg-[#f8fafc] px-4 text-sm text-[#2e3d54] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#c08081]/60 focus:bg-white ${props.className || ""
-        }`}
-    />
-  );
-}
-
-function PanelSection({ title, children }) {
-  return (
-    <section className="border-t border-dashed border-[#dfe7f1] px-5 py-8 sm:px-7 lg:px-9">
-      <h2 className="mb-6 text-xl text-[#2f3f55]">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function PanelSwitch({ checked, onChange, label }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl bg-[#f8fafc] px-4 py-4 text-right text-sm text-[#64748b] transition hover:bg-[#f3f6fa]"
-    >
-      <span>{label}</span>
-      <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-[#c08081]" : "bg-[#d9e1ec]"}`}>
-        <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition ${checked ? "right-6" : "right-1"
-            }`}
-        />
-      </span>
-    </button>
-  );
-}
-
-function PasswordInput({ value, onChange, placeholder, visible, onToggleVisibility }) {
-  const VisibilityIcon = visible ? EyeOff : Eye;
-
-  return (
-    <div className="relative">
-      <PanelInput
-        value={value}
-        onChange={onChange}
-        type={visible ? "text" : "password"}
-        placeholder={placeholder}
-        className="w-full pl-12"
-      />
-      <button
-        type="button"
-        onClick={onToggleVisibility}
-        className="absolute left-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-[#91a0b5] transition hover:bg-white hover:text-[#c08081]"
-        aria-label={visible ? "مخفی کردن رمز" : "نمایش رمز"}
-      >
-        <VisibilityIcon className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
-
 const emptyAddressForm = {
   title: "",
   fullAddress: "",
@@ -2897,14 +2411,16 @@ function AddressEditor({ initialValue, onCancel, onSave, isSaving }) {
       </label>
 
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           type="submit"
           disabled={isSaving}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.2)] disabled:cursor-not-allowed disabled:opacity-65"
+          variant="primary"
+          size="panelSm"
+          shape="panel"
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           ذخیره آدرس
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}
@@ -3082,14 +2598,16 @@ function AddressManager({ selectable = false, selectedId = "", onSelect, compact
           <h2 className="text-xl text-[#2f3f55]">آدرس‌های من</h2>
           <p className="mt-1 text-sm text-[#7d8ca3]">فعلاً آدرس‌ها به صورت متن ذخیره می‌شوند و برای نقشه آینده آماده‌اند.</p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={openNew}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c08081] px-4 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.2)]"
+          variant="primary"
+          size="panelSm"
+          shape="panel"
         >
           <Plus className="h-4 w-4" />
           افزودن آدرس
-        </button>
+        </Button>
       </div>
 
       {status.type === "loading" ? <p className="text-sm text-[#7d8ca3]">در حال بارگذاری آدرس‌ها...</p> : null}
@@ -3426,12 +2944,15 @@ function PanelCoursesPage({ user }) {
           <div>
             <BookOpen className="mx-auto h-10 w-10 text-[#c08081]" />
             <h2 className="mt-5 text-2xl text-[#2f3f55]">هنوز به دوره‌ای دسترسی ندارید.</h2>
-            <Link
+            <ButtonLink
               to="/#courses"
-              className="mt-6 inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5"
+              variant="primary"
+              size="panelMd"
+              shape="panel"
+              className="mt-6"
             >
               مشاهده دوره‌ها
-            </Link>
+            </ButtonLink>
           </div>
         </div>
       )}
@@ -3781,12 +3302,15 @@ function PanelCourseDetailPage({ user }) {
         <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
           <BookOpen className="mx-auto h-10 w-10 text-[#c08081]" />
           <h1 className="mt-5 text-2xl text-[#2f3f55]">{loadStatus.message || "دوره پیدا نشد."}</h1>
-          <Link
+          <ButtonLink
             to="/panel/courses"
-            className="mt-6 inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white"
+            variant="primary"
+            size="panelMd"
+            shape="panel"
+            className="mt-6"
           >
             بازگشت به دوره‌ها
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     );
@@ -3799,12 +3323,15 @@ function PanelCourseDetailPage({ user }) {
           <Lock className="mx-auto h-10 w-10 text-[#c08081]" />
           <h1 className="mt-5 text-2xl text-[#2f3f55]">این دوره هنوز برای حساب شما فعال نیست.</h1>
           <p className="mt-3 max-w-md text-sm leading-7 text-[#7d8ca3]">از صفحه معرفی دوره درخواست خرید را ثبت کنید تا بعد از فعال‌سازی از همین مسیر وارد دوره شوید.</p>
-          <Link
+          <ButtonLink
             to={`/courses/${course.slug || course.id}`}
-            className="mt-6 inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white"
+            variant="primary"
+            size="panelMd"
+            shape="panel"
+            className="mt-6"
           >
             رفتن به صفحه دوره
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     );
@@ -3863,15 +3390,18 @@ function PanelCourseDetailPage({ user }) {
               <ChevronRight className="h-4 w-4" />
               بخش قبلی
             </button>
-            <button
+            <Button
               type="button"
               disabled={!nextLesson}
               onClick={() => nextLesson && selectLesson(nextLesson.id)}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-[#c08081]"
+              variant="primary"
+              size="panelMd"
+              shape="panel"
+              className="disabled:opacity-45"
             >
               بخش بعدی
               <ChevronLeft className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -3969,12 +3499,14 @@ function PanelOrdersPage() {
           <p className="mt-2 text-sm text-[#7d8ca3]">وضعیت سفارش‌های گل پارچه‌ای خود را تا زمان تحویل پیگیری کنید.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
+          <ButtonLink
             to="/panel/orders/new?type=custom"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5"
+            variant="primary"
+            size="panelSm"
+            shape="panel"
           >
             سفارش اختصاصی
-          </Link>
+          </ButtonLink>
           <Link
             to="/products"
             className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088] transition hover:border-[#c08081]/40 hover:text-[#c08081]"
@@ -4002,12 +3534,12 @@ function PanelOrdersPage() {
             <Send className="mx-auto h-10 w-10 text-[#c08081]" />
             <h2 className="mt-5 text-2xl text-[#2f3f55]">هنوز سفارشی ثبت نشده است.</h2>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <Link to="/products" className="inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5">
+              <ButtonLink to="/products" variant="primary" size="panelMd" shape="panel">
                 مشاهده محصولات
-              </Link>
-              <Link to="/panel/orders/new?type=custom" className="inline-flex h-12 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]">
+              </ButtonLink>
+              <ButtonLink to="/panel/orders/new?type=custom" variant="outlineNeutral" size="panelMd" shape="panel">
                 سفارش اختصاصی
-              </Link>
+              </ButtonLink>
             </div>
           </div>
         </div>
@@ -4034,12 +3566,14 @@ function PanelOrdersPage() {
                   <p className="mt-2 text-xs text-[#9aa8ba]">آخرین تغییر: {formatPersianDate(order.updatedAt || order.createdAt)}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
-                  <Link
+                  <ButtonLink
                     to={`/panel/orders/drafts/${order.id}`}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[#c08081] px-4 text-sm font-bold text-white"
+                    variant="primary"
+                    size="sm"
+                    shape="panel"
                   >
                     ادامه ثبت سفارش
-                  </Link>
+                  </ButtonLink>
                   <button
                     type="button"
                     onClick={() => deleteDraft(order.id)}
@@ -4138,12 +3672,12 @@ function PanelNewOrderPage() {
         <p className={status.type === "error" ? "text-[#b85d60]" : ""}>{status.message}</p>
         {status.type === "error" ? (
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <Link to="/products" className="inline-flex h-11 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white">
+            <ButtonLink to="/products" variant="primary" size="panelSm" shape="panel">
               مشاهده محصولات
-            </Link>
-            <Link to="/panel/orders/new?type=custom" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]">
+            </ButtonLink>
+            <ButtonLink to="/panel/orders/new?type=custom" variant="outlineNeutral" size="panelSm" shape="panel">
               سفارش اختصاصی
-            </Link>
+            </ButtonLink>
           </div>
         ) : null}
       </div>
@@ -4232,7 +3766,7 @@ function ReferenceImagesField({ orderId, images = [], onImagesChange }) {
           <h2 className="text-xl text-[#2f3f55]">تصاویر مرجع</h2>
           <p className="mt-1 text-sm text-[#7d8ca3]">برای توضیح رنگ، فرم یا نمونه مشابه، تا ۵ تصویر اضافه کنید.</p>
         </div>
-        <label className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#c08081] px-4 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.18)] ${isUploading ? "pointer-events-none opacity-70" : ""}`}>
+        <label className={buttonClassName({ variant: "primary", size: "panelSm", shape: "panel", className: `cursor-pointer ${isUploading ? "pointer-events-none opacity-70" : ""}` })}>
           {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
           افزودن تصویر
           <input type="file" accept="image/*" multiple onChange={handleUpload} className="sr-only" disabled={isUploading} />
@@ -4465,24 +3999,28 @@ function DraftOrderEditor({ order, onOrderChange }) {
             {submitStatus.message || saveStatus.message || "تغییرات به صورت پیش‌نویس ذخیره می‌شود."}
           </p>
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               type="button"
               onClick={handleManualSave}
               disabled={isSaving || isSubmitting}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088] disabled:cursor-not-allowed disabled:opacity-65"
+              variant="outlineNeutral"
+              size="panelMd"
+              shape="panel"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               ذخیره پیش‌نویس
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleSubmitOrder}
               disabled={isSaving || isSubmitting}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c08081] px-6 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.24)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-65"
+              variant="primary"
+              size="md"
+              shape="panel"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               ثبت نهایی سفارش
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -4528,9 +4066,9 @@ function PanelDraftOrderPage() {
       <div className="grid min-h-[50vh] place-items-center py-10">
         <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
           <h1 className="text-2xl text-[#2f3f55]">{status.message || "پیش‌نویس پیدا نشد."}</h1>
-          <Link to="/panel/orders" className="mt-6 inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white">
+          <ButtonLink to="/panel/orders" variant="primary" size="panelMd" shape="panel" className="mt-6">
             بازگشت به سفارش‌ها
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     );
@@ -4542,9 +4080,9 @@ function PanelDraftOrderPage() {
         <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
           <OrderStatusBadge status={order.status} />
           <h1 className="mt-4 text-2xl text-[#2f3f55]">این سفارش قبلاً ثبت نهایی شده است.</h1>
-          <Link to={`/panel/orders/${order.id}`} className="mt-6 inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white">
+          <ButtonLink to={`/panel/orders/${order.id}`} variant="primary" size="panelMd" shape="panel" className="mt-6">
             مشاهده جزئیات سفارش
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     );
@@ -4607,9 +4145,9 @@ function PanelOrderDetailPage() {
       <div className="grid min-h-[50vh] place-items-center py-10">
         <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
           <h1 className="text-2xl text-[#2f3f55]">{status.message || "سفارش پیدا نشد."}</h1>
-          <Link to="/panel/orders" className="mt-6 inline-flex h-12 items-center justify-center rounded-xl bg-[#c08081] px-5 text-sm font-bold text-white">
+          <ButtonLink to="/panel/orders" variant="primary" size="panelMd" shape="panel" className="mt-6">
             بازگشت به سفارش‌ها
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     );
@@ -4632,9 +4170,9 @@ function PanelOrderDetailPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {order.status === "draft" ? (
-            <Link to={`/panel/orders/drafts/${order.id}`} className="inline-flex h-11 items-center justify-center rounded-xl bg-[#c08081] px-4 text-sm font-bold text-white">
+            <ButtonLink to={`/panel/orders/drafts/${order.id}`} variant="primary" size="panelSm" shape="panel">
               ادامه پیش‌نویس
-            </Link>
+            </ButtonLink>
           ) : null}
           <Link to="/panel/orders" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#e1e8f2] bg-white px-4 text-sm text-[#617088] transition hover:border-[#c08081]/40 hover:text-[#c08081]">
             بازگشت به سفارش‌ها
