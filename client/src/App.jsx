@@ -43,9 +43,7 @@ import styleImage1 from "./assets/section-four/1.png";
 import styleImage2 from "./assets/section-four/2.png";
 import styleImage3 from "./assets/section-four/3.png";
 import styleImage4 from "./assets/section-four/4.png";
-import inspirationBackgroundImage from "./assets/section-inspiration/abstract-flower-background.png";
 import customOrderBackgroundImage from "./assets/section-inspiration/custom-order-fabric-background.png";
-import petalsOverlayImage from "./assets/section-inspiration/petals-overlay-transparent.png";
 import usageBlazerImage from "./assets/section-usage/blazer-flower.png";
 import usageDressImage from "./assets/section-usage/dress-flower.png";
 import usageHatImage from "./assets/section-usage/hat-flower.png";
@@ -62,9 +60,9 @@ const LOGO_SCROLL_DURATION = 900;
 const SITE_URL = "https://golmelo.com";
 const SITE_NAME = "golmelo";
 const DEFAULT_SEO = {
-  title: "گلملو | گل‌های پارچه‌ای دست‌ساز و آموزش گل‌سازی پارچه‌ای",
+  title: "گلملو | خرید گل پارچه‌ای دست‌ساز و آموزش گل‌سازی",
   description:
-    "Golmelo دنیای گل‌های پارچه‌ای دست‌ساز برای لباس، کلاه، سنجاق سینه و اکسسوری است؛ همراه با دوره آموزش گل‌سازی پارچه‌ای از پایه تا ساخت گل‌های ظریف‌تر.",
+    "خرید و سفارش اختصاصی گل‌های پارچه‌ای دست‌ساز برای لباس و اکسسوری، همراه با مشاوره تخصصی و دوره‌های آنلاین آموزش گل‌سازی گلملو.",
   image: `${SITE_URL}/og-image.png`,
   url: `${SITE_URL}/`,
 };
@@ -347,6 +345,26 @@ const applications = [
     image: usageHairImage,
   },
 ];
+
+const brandPaths = [
+  {
+    title: "گل‌های آماده",
+    text: "محصولات آماده ارسال برای لباس، کلاه، کیف و اکسسوری با امکان انتخاب سریع و مشاهده جزئیات.",
+    target: "products",
+  },
+  {
+    title: "سفارش اختصاصی",
+    text: "تغییر رنگ، اندازه، جنس، ترکیب و نوع اتصال بر اساس لباس، موقعیت استفاده و بودجه شما.",
+    target: "custom-order",
+  },
+  {
+    title: "آموزش آنلاین",
+    text: "یادگیری ساخت گل‌های پارچه‌ای با آموزش‌های مرحله‌به‌مرحله، روان و قابل دنبال‌کردن.",
+    target: "courses",
+  },
+];
+
+const customOrderOptions = ["رنگ", "اندازه", "جنس پارچه", "نوع گل", "نوع اتصال", "تعداد", "ترکیب چند گل", "کاربرد روی لباس یا اکسسوری"];
 
 const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
 const PANEL_PROGRESS_STORAGE_KEY = "golmelo-panel-progress-v1";
@@ -817,8 +835,10 @@ function usePanelSEO(title) {
 
 
 const navItems = [
-  { id: "products", label: "محصولات" },
-  { id: "courses", label: "دوره‌ها" },
+  { id: "products", label: "گل‌ها" },
+  { id: "custom-order", label: "سفارش اختصاصی" },
+  { id: "courses", label: "دوره‌های آموزشی" },
+  { id: "contact", label: "تماس با ما" },
 ];
 
 function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick }) {
@@ -886,7 +906,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
 
   return (
     <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)]">
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-md">
         {onLogoClick ? (
           <button
             type="button"
@@ -912,21 +932,21 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
           </Link>
         )}
 
-        <nav className="hidden items-center gap-1 rounded-full bg-white/[0.06] p-1 text-sm md:flex">
+        <nav className="hidden items-center gap-1 rounded-full bg-white/[0.06] p-1 text-sm lg:flex">
           {navItems.map((item) =>
             renderNavLink(
               item,
-              "rounded-full px-4 py-2 text-[#f7eee4]/88 transition hover:bg-white/14 hover:text-white",
+              "rounded-full px-3 py-2 text-[#f7eee4]/88 transition hover:bg-white/14 hover:text-white lg:px-4",
             ),
           )}
         </nav>
 
-        <div className="hidden md:block">{authAction}</div>
+        <div className="hidden lg:block">{authAction}</div>
 
         <button
           type="button"
           onClick={() => setIsMenuOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white backdrop-blur md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/14 text-white backdrop-blur lg:hidden"
           aria-label="باز کردن منو"
         >
           <Menu className="h-5 w-5" />
@@ -935,7 +955,7 @@ function SiteNavbar({ authStatus = "guest", user = null, onNavClick, onLogoClick
         <AnimatePresence>
           {isMenuOpen ? (
             <motion.div
-              className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[6px] md:hidden"
+              className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[6px] lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1031,7 +1051,7 @@ function ProductCard({ product, index, showOverlay = true }) {
       whileInView={{ y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group overflow-hidden rounded-[26px] border border-[#e5dbd0] bg-[#f7f0e8] text-right shadow-[0_12px_30px_rgba(83,63,47,0.12)]"
+      className="group overflow-hidden rounded-[18px] bg-[#f7f0e8] text-right"
     >
       <Link to={productHref} onClick={handleProductClick} className="relative block aspect-square overflow-hidden">
         <img
@@ -1274,16 +1294,28 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
   usePageSEO(DEFAULT_SEO);
   useJsonLd("golmelo-website-jsonld", {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: SITE_NAME,
-    alternateName: "گلملو",
-    url: SITE_URL,
-    inLanguage: "fa-IR",
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-      logo: `${SITE_URL}/logo.png`,
-    },
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: "گلملو",
+        alternateName: SITE_NAME,
+        url: SITE_URL,
+        logo: `${SITE_URL}/logo.png`,
+        description: DEFAULT_SEO.description,
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        name: SITE_NAME,
+        alternateName: "گلملو",
+        url: SITE_URL,
+        inLanguage: "fa-IR",
+        publisher: {
+          "@id": `${SITE_URL}/#organization`,
+        },
+      },
+    ],
   });
 
 
@@ -1519,6 +1551,10 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
   const activeHero = heroSlides.length
     ? heroSlides[activeHeroSlide % heroSlides.length]
     : null;
+  const customOrderPath = "/panel/orders/new?type=custom";
+  const customOrderHref = authStatus === "authenticated" && user
+    ? customOrderPath
+    : `/auth?mode=login&redirect=${encodeURIComponent(customOrderPath)}`;
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
@@ -1533,7 +1569,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 
       <section
         id="hero"
-        className="relative isolate scroll-mt-28 overflow-hidden bg-[#2f3b33] text-[#fbf5ee] md:scroll-mt-32"
+        className="relative isolate scroll-mt-28 overflow-hidden bg-[#263129] text-[#fbf5ee] md:scroll-mt-32"
       >
         <div className="pointer-events-none absolute inset-0">
           <AnimatePresence initial={false}>
@@ -1554,93 +1590,83 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             ) : null}
           </AnimatePresence>
         </div>
-        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(25,34,29,0.82)_0%,rgba(47,59,51,0.54)_34%,rgba(65,55,45,0.3)_64%,rgba(47,59,51,0.12)_100%)]" />
-        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(25,34,29,0.62)_0%,rgba(47,59,51,0.34)_38%,rgba(47,59,51,0.1)_68%,rgba(47,59,51,0)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(24,30,25,0.92)_0%,rgba(38,49,41,0.78)_38%,rgba(38,49,41,0.36)_68%,rgba(38,49,41,0.12)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(24,30,25,0.76)_0%,rgba(24,30,25,0.2)_52%,rgba(24,30,25,0.72)_100%)]" />
 
-        <div className="relative z-20 mx-auto grid min-h-[88vh] max-w-7xl items-center gap-10 px-6 pb-24 pt-16 md:grid-cols-[1.05fr_0.95fr] md:px-8 lg:px-12">
+        <div className="relative z-20 mx-auto grid min-h-[100svh] max-w-7xl items-end gap-10 px-6 pb-12 pt-32 md:px-8 md:pb-16 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-xl text-right"
+            className="max-w-5xl text-right"
           >
+            <p className="mb-5 text-sm font-bold tracking-[0.24em] text-[#e4d2c1]">GOLMELO ATELIER</p>
             <h1
-              className="mb-6 text-5xl leading-[1.1] md:text-7xl"
-              style={{ textShadow: "0 4px 24px rgba(0,0,0,0.62), 0 1px 2px rgba(0,0,0,0.72)" }}
+              className="max-w-3xl text-5xl leading-[1.08] text-white md:text-7xl"
+              style={{ textShadow: "0 4px 28px rgba(0,0,0,0.62), 0 1px 2px rgba(0,0,0,0.78)" }}
             >
-              گلملو؛ آموزش و گل‌های پارچه‌ای دست‌ساز
+              گل‌های پارچه‌ای دست‌ساز
+              <br />
+              برای لباس و اکسسوری
             </h1>
             <p
-              className="max-w-lg text-lg leading-9 text-[#f7eadf]/92 md:text-xl"
+              className="mt-6 max-w-2xl text-lg leading-9 text-[#f7eadf] md:text-xl"
               style={{ textShadow: "0 3px 18px rgba(0,0,0,0.58), 0 1px 2px rgba(0,0,0,0.68)" }}
             >
-              دنیایی از گل‌های پارچه‌ای دست‌ساز؛ برای لباس، کلاه،
-              سنجاق سینه و اکسسوری، همراه با مسیری آموزشی برای گل‌سازی
-              از پایه تا مدل‌های ظریف‌تر و حرفه‌ای‌تر.
+              گلملو با بیش از یک دهه تجربه، گل‌های پارچه‌ای دست‌ساز را برای لباس و اکسسوری طراحی می‌کند و هنر ساخت آن‌ها را به‌صورت آنلاین آموزش می‌دهد.
             </p>
-            <div className="mt-8 flex flex-wrap justify-start gap-4 md:mt-10">
-              <a
-                href="#products"
-                onClick={handleCtaClick("products")}
-                className="rounded-full bg-[#c08081] px-7 py-3.5 text-base text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
-              >
-                دیدن محصولات
-              </a>
-              <a
-                href="#courses"
-                onClick={handleCtaClick("courses")}
-                className="rounded-full bg-[#c08081] px-7 py-3.5 text-base text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
-              >
-                مشاهده دوره ها
-              </a>
+            <div className="mx-auto mt-8 grid w-full max-w-5xl grid-cols-3 gap-2 sm:gap-3">
+              {brandPaths.map((item) => (
+                <a
+                  key={item.title}
+                  href={`#${item.target}`}
+                  onClick={handleCtaClick(item.target)}
+                  className="group rounded-2xl bg-[#101812]/58 px-2 py-3 text-center text-white shadow-[0_18px_42px_rgba(12,18,15,0.22)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#101812]/72 sm:px-4 sm:py-4 md:text-right"
+                >
+                  <span className="block text-xs font-bold leading-6 sm:text-base">{item.title}</span>
+                  <span className="mt-1 hidden text-sm leading-7 text-[#f8ede5]/82 sm:block">{item.text}</span>
+                  <span className="mt-2 inline-flex items-center justify-center gap-1 text-xs font-bold text-[#f7eadf] sm:mt-3 sm:gap-2 sm:text-sm">
+                    مشاهده
+                    <ChevronLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-1 sm:h-4 sm:w-4" />
+                  </span>
+                </a>
+              ))}
             </div>
           </motion.div>
-
-          <div className="hidden md:block" />
         </div>
       </section>
 
       <main className="relative z-10 -mt-1">
-        <section id="inspiration" className="relative flex h-[360px] scroll-mt-24 items-center overflow-hidden md:h-[460px] md:scroll-mt-28 lg:h-[540px]">
-          <img
-            src={inspirationBackgroundImage}
-            alt="الهام گلملو از حرکت نرم گل‌های زنده"
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(55,32,21,0.34)_0%,rgba(55,32,21,0.16)_44%,rgba(55,32,21,0.38)_100%)]" />
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10 mx-auto max-w-3xl px-6 text-center text-white md:px-8 lg:px-12"
-          >
-            <h2 className="mb-5 text-4xl leading-tight text-white md:text-5xl" style={{ textShadow: "0 4px 22px rgba(52,31,20,0.42)" }}>
-              الهام‌گرفته از زیبایی زنده
-            </h2>
-            <p className="text-lg leading-9 text-white/92" style={{ textShadow: "0 3px 18px rgba(52,31,20,0.36)" }}>
-              هر گل نیروی آرام خود را دارد؛ لطافتی درونی، حرکتی نرم، و نظمی پنهان در دل طبیعت.
-              این مجموعه از همین زیبایی زنده الهام می‌گیرد و آن را به زبانی تازه و لمس‌پذیر بازمی‌گوید.
-            </p>
-          </motion.div>
+        <section id="products" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#a58a79]">READY TO ORDER</p>
+          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">گل‌های منتخب گلملو</h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
+            محصولاتی آماده ارسال که می‌توانند متناسب با لباس، رنگ و سلیقه شما شخصی‌سازی شوند.
+          </p>
+
+          <div className="mt-14 grid grid-cols-3 gap-3 sm:gap-5 lg:gap-6">
+            {products.slice(0, 3).map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} showOverlay={false} />
+            ))}
+          </div>
+          {products.length === 0 ? (
+            <div className="mt-10 text-center text-[#807269]">
+              هنوز محصولی برای سفارش ثبت نشده است.
+            </div>
+          ) : null}
+          {products.length > 0 ? (
+            <div className="mt-10">
+              <Link
+                to="/products"
+                className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+              >
+                مشاهده همه گل‌ها
+              </Link>
+            </div>
+          ) : null}
         </section>
 
-        <div
-          aria-hidden="true"
-          className="pointer-events-none relative z-30 -my-14 flex h-28 items-center justify-center overflow-visible px-4 md:-my-20 md:h-40 lg:-my-24 lg:h-48"
-        >
-          <img
-            src={petalsOverlayImage}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-[min(112vw,1180px)] max-w-none object-contain opacity-90"
-          />
-        </div>
-
-        <section id="craft" className="relative flex h-[380px] scroll-mt-24 items-center overflow-hidden md:h-[500px] md:scroll-mt-28 lg:h-[620px]">
+        <section id="custom-order" className="relative isolate flex min-h-[500px] scroll-mt-24 items-center overflow-hidden md:scroll-mt-28">
           <img
             src={customOrderBackgroundImage}
             alt="پارچه لطیف برای سفارش گل پارچه‌ای اختصاصی"
@@ -1648,96 +1674,112 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             decoding="async"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(250,244,235,0.9)_0%,rgba(250,244,235,0.72)_42%,rgba(250,244,235,0.34)_100%)]" />
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10 mx-auto max-w-3xl px-6 text-center md:px-8 lg:px-12"
-          >
-            <h2 className="mb-5 text-4xl leading-tight text-[#3f342d] md:text-5xl">
-              سفارش گل پارچه‌ای اختصاصی
-            </h2>
-            <p className="text-lg leading-9 text-[#58483f]">
-              از انتخاب بافت‌های لطیف تا برش دقیق، فرم‌دهی آرام و ترکیب لایه‌ها، هر قطعه
-              با صبر و توجه ساخته می‌شود. اگر برای لباس، کلاه، کیف، سنجاق سینه یا لباس
-              عروس به یک گل پارچه‌ای اختصاصی نیاز دارید، می‌توانید سفارش خود را بر اساس
-              رنگ، سبک، کاربرد و نوع استایل ثبت کنید.
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(250,244,235,0.94)_0%,rgba(250,244,235,0.78)_54%,rgba(250,244,235,0.42)_100%)]" />
+          <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 text-center md:px-8 lg:px-12">
+            <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#8d786d]">CUSTOM ORDER</p>
+            <h2 className="text-4xl leading-tight text-[#2f3b33] md:text-5xl">گلی متناسب با لباس شما</h2>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-9 text-[#58483f]">
+              رنگ، اندازه، جنس، نوع اتصال و ترکیب گل‌ها می‌تواند بر اساس لباس، موقعیت استفاده و بودجه شما تغییر کند. پیش از ثبت سفارش، گلملو برای رسیدن به انتخاب مناسب‌تر به شما مشاوره می‌دهد.
             </p>
-          </motion.div>
+            <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-bold text-[#59493f]">
+              {customOrderOptions.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+            <Link
+              to={customOrderHref}
+              className="mt-8 inline-flex h-12 items-center justify-center rounded-full bg-[#c08081] px-7 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
+            >
+              شروع سفارش اختصاصی
+            </Link>
+          </div>
         </section>
 
-        <section id="usage" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 md:scroll-mt-28 md:px-8 lg:px-12">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
-              کاربرد گل‌های پارچه‌ای در استایل و لباس
-            </h2>
-            <p className="text-lg leading-9 text-[#75655a]">
-              گل‌های پارچه‌ای فراتر از تزئین طراحی شده‌اند؛ می‌توانند روی لباس مجلسی،
-              لباس عروس، کلاه، کیف، سنجاق سینه یا اکسسوری مو قرار بگیرند و جزئیاتی
-              شخصی، ظریف و ماندگار به استایل اضافه کنند.
-            </p>
-          </div>
+        <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#a58a79]">ONLINE COURSE</p>
+          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">هنر ساخت گل را یاد بگیرید</h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
+            دوره‌های آنلاین گلملو، تجربه سال‌ها طراحی و ساخت گل‌های دست‌ساز را در قالب آموزش‌هایی روان، فشرده و مرحله‌به‌مرحله ارائه می‌کنند؛ از اولین گل تا خلق آثاری که می‌توانند فضای اطراف و استایل شما را زیباتر کنند.
+          </p>
 
-          <div className="mx-auto mt-12 grid max-w-6xl grid-cols-2 gap-x-5 gap-y-10 lg:grid-cols-4 lg:gap-x-8">
+          {courses.length > 0 ? (
+            <CourseSlider courses={courses} />
+          ) : (
+            <div className="mt-12 text-center text-[#807269]">
+              هنوز دوره‌ای منتشر نشده است.
+            </div>
+          )}
+        </section>
+
+        <section id="usage" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#a58a79]">REAL ORDERS</p>
+          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">از کارگاه گلملو تا لباس مشتریان</h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
+            تصاویر این مجموعه مربوط به گل‌هایی است که برای سفارش‌های واقعی ساخته شده‌اند و روی لباس مشتریان مورد استفاده قرار گرفته‌اند.
+          </p>
+
+          <div className="mx-auto mt-14 grid max-w-6xl grid-cols-2 gap-x-5 gap-y-10 lg:grid-cols-4 lg:gap-x-8">
             {applications.map((item) => (
               <AppCard key={item.title} item={item} />
             ))}
           </div>
         </section>
-
-        <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">
-              دوره های آموزش گل‌سازی پارچه‌ای
-            </h2>
-            <p className="text-lg leading-9 text-[#75655a]">
-              در دوره آموزش گل‌سازی پارچه‌ای ترم اول، هنرجو ساخت ۵ گل را به‌صورت ویدیویی
-              و مرحله‌به‌مرحله یاد می‌گیرد. مسیر دوره از گل‌های ساده‌تر شروع می‌شود و
-              به‌تدریج به مدل‌های پیچیده‌تر می‌رسد؛ از نسترن و داوودی تا لیلیوم، رز و رز حلزونی.
-            </p>
-          </div>
-
-          {courses.length > 0 ? (
-            <CourseSlider courses={courses} />
-          ) : (
-            <div className="mt-12 rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
-              هنوز دوره‌ای منتشر نشده است.
-            </div>
-          )}
-
-        </section>
-        <section id="products" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-24 md:scroll-mt-28 md:px-8 lg:px-12">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-5 text-4xl leading-tight text-[#51645a] md:text-5xl">محصولات قابل سفارش</h2>
-            <p className="text-lg leading-9 text-[#75655a]">
-              هر محصول می‌تواند بر اساس رنگ، کاربرد و جزئیات موردنیاز شما بررسی و سفارش‌گذاری شود.
-            </p>
-          </div>
-
-          <div className="mt-14 grid grid-cols-3 gap-6">
-            {products.slice(0, 3).map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} showOverlay={false} />
-            ))}
-          </div>
-          {products.length === 0 ? (
-            <div className="mt-10 rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
-              هنوز محصولی برای سفارش ثبت نشده است.
-            </div>
-          ) : null}
-          {products.length > 0 ? (
-            <div className="mt-10 flex justify-center">
-              <Link
-                to="/products"
-                className="inline-flex items-center justify-center rounded-full bg-[#c08081] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]"
-              >
-                مشاهده محصولات
-              </Link>
-            </div>
-          ) : null}
-        </section>
       </main>
+
+      <footer id="contact" className="scroll-mt-24 bg-[#2f3b33] px-6 py-20 text-center text-[#fbf5ee] md:scroll-mt-28 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-4xl">
+          <div>
+            <img src={logoImage} alt="نشان گلملو" className="mx-auto mb-8 h-10 w-auto object-contain brightness-125" />
+            <h2 className="text-4xl leading-tight text-white md:text-5xl">تماس با گلملو</h2>
+            <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#e4d2c1]">
+              اگر برای انتخاب گل، سفارش اختصاصی یا دوره آموزشی سؤال دارید، پیام بگذارید تا تیم گلملو برای راهنمایی با شما تماس بگیرد.
+            </p>
+          </div>
+          <form onSubmit={handleContactSubmit} className="mx-auto mt-10 grid max-w-2xl gap-4 text-right">
+            <label className="grid gap-2 text-sm font-bold text-[#f4e8dc]">
+              نام و نام خانوادگی
+              <input
+                value={contactForm.fullName}
+                onChange={handleContactChange("fullName")}
+                className="h-12 rounded-2xl border border-white/18 bg-white/10 px-4 text-right text-sm text-white outline-none transition placeholder:text-white/45 focus:border-white/45"
+                placeholder="نام شما"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-[#f4e8dc]">
+              شماره تماس
+              <input
+                value={contactForm.contact}
+                onChange={handleContactChange("contact")}
+                className="h-12 rounded-2xl border border-white/18 bg-white/10 px-4 text-right text-sm text-white outline-none transition placeholder:text-white/45 focus:border-white/45"
+                placeholder="09123456789"
+                inputMode="numeric"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-[#f4e8dc]">
+              پیام
+              <textarea
+                value={contactForm.message}
+                onChange={handleContactChange("message")}
+                className="min-h-32 rounded-2xl border border-white/18 bg-white/10 px-4 py-3 text-right text-sm leading-7 text-white outline-none transition placeholder:text-white/45 focus:border-white/45"
+                placeholder="درباره سفارش، دوره یا مشاوره موردنیازتان بنویسید."
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={isSendingContactRequest}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f7eadf] px-6 text-sm font-bold text-[#2f3b33] transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+            >
+              {isSendingContactRequest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isSendingContactRequest ? "در حال ارسال" : "ارسال پیام"}
+            </button>
+            {contactStatus.type !== "success" ? (
+              <p aria-live="polite" className={`min-h-6 text-sm ${contactStatus.type === "error" ? "text-[#ffb7b9]" : "text-[#e4d2c1]"}`}>
+                {contactStatus.message}
+              </p>
+            ) : null}
+          </form>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1899,6 +1941,25 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
     image: product?.coverImageUrl || DEFAULT_SEO.image,
     type: "product",
   });
+  useJsonLd(product ? "golmelo-product-jsonld" : "golmelo-product-jsonld-empty", product ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description || product.shortDescription,
+    image: product.coverImageUrl ? [product.coverImageUrl] : [DEFAULT_SEO.image],
+    url: `${SITE_URL}/products/${product.slug || id}`,
+    category: product.category || "گل پارچه‌ای دست‌ساز",
+    brand: {
+      "@type": "Brand",
+      name: "گلملو",
+    },
+    additionalProperty: [
+      product.usageLabel ? { "@type": "PropertyValue", name: "کاربرد", value: product.usageLabel } : null,
+      product.priceLabel ? { "@type": "PropertyValue", name: "قیمت", value: product.priceLabel } : null,
+      product.preparationTime ? { "@type": "PropertyValue", name: "زمان آماده‌سازی", value: normalizePreparationTimeLabel(product.preparationTime) } : null,
+      { "@type": "PropertyValue", name: "سفارشی‌سازی", value: product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت" },
+    ].filter(Boolean),
+  } : null);
 
   useEffect(() => {
     let cancelled = false;
