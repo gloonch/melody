@@ -23,6 +23,7 @@ services:
       - .prod.env
     environment:
       PROJECT_IMAGES_DIR: /seed/project_images
+      CLIENT_ORIGIN: http://client
     depends_on:
       db:
         condition: service_healthy
@@ -39,6 +40,7 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
         VITE_IMAGE_BASE_URL: ${VITE_IMAGE_BASE_URL:-}
+        VITE_GA4_MEASUREMENT_ID: ${VITE_GA4_MEASUREMENT_ID:-}
     container_name: melody-client-prod
     restart: unless-stopped
     depends_on:

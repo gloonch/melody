@@ -31,6 +31,12 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 			"service": "melody-api",
 		})
 	})
+	router.GET("/sitemap.xml", handler.Sitemap)
+	router.GET("/robots.txt", handler.Robots)
+	router.GET("/llms.txt", handler.LLMs)
+	router.GET("/llm.txt", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/llms.txt")
+	})
 
 	v1 := router.Group("/api/v1")
 	{
@@ -54,6 +60,8 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 			userProtected.GET("/me", handler.GetMe)
 			userProtected.PUT("/me", handler.UpdateMe)
 			userProtected.GET("/me/course-accesses", handler.ListMyCourseAccesses)
+			userProtected.GET("/me/course-signups", handler.ListMyCourseSignups)
+			userProtected.POST("/course-signups", handler.CreateCourseSignup)
 			userProtected.GET("/me/addresses", handler.ListAddresses)
 			userProtected.POST("/me/addresses", handler.CreateAddress)
 			userProtected.PATCH("/me/addresses/:id", handler.UpdateAddress)
@@ -71,7 +79,6 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 		}
 
 		v1.POST("/contact-requests", handler.CreateContactRequest)
-		v1.POST("/course-signups", handler.CreateCourseSignup)
 		v1.GET("/images", handler.ListProjectImages)
 		v1.GET("/images/:id/content", handler.GetProjectImageContent)
 		v1.GET("/hero-slides", handler.ListHeroSlides)
@@ -81,6 +88,7 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 		v1.GET("/courses", handler.ListCourses)
 		v1.GET("/courses/:id", handler.GetCourse)
 		v1.GET("/courses/:id/images/:imageId/content", handler.GetCourseImageContent)
+		v1.GET("/image-variants/:id/content", handler.GetImageVariantContent)
 
 		admin := v1.Group("/admin")
 		{
@@ -99,6 +107,12 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 				protected.GET("/hero-slides", handler.ListHeroSlides)
 				protected.POST("/hero-slides", handler.UploadHeroSlides)
 				protected.DELETE("/hero-slides/:id", handler.DeleteHeroSlide)
+				protected.GET("/products", handler.ListAdminProducts)
+				protected.POST("/products", handler.CreateAdminProduct)
+				protected.GET("/products/:id", handler.GetAdminProduct)
+				protected.PUT("/products/:id", handler.UpdateAdminProduct)
+				protected.PATCH("/products/:id/status", handler.UpdateAdminProductStatus)
+				protected.POST("/image-variants/rebuild", handler.RebuildImageVariants)
 				protected.GET("/orders", handler.ListAdminOrders)
 				protected.GET("/orders/:id", handler.GetAdminOrder)
 				protected.PATCH("/orders/:id/status", handler.UpdateAdminOrderStatus)
@@ -116,6 +130,8 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 			}
 		}
 	}
+
+	router.NoRoute(handler.SiteShell)
 
 	return router
 }

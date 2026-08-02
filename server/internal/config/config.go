@@ -20,6 +20,7 @@ type AppConfig struct {
 	Environment    string
 	Port           string
 	BaseURL        string
+	ClientOrigin   string
 	AllowedOrigins []string
 }
 
@@ -67,6 +68,7 @@ func Load() *Config {
 			Environment:    getEnv("ENVIRONMENT", getEnv("APP_ENV", "development")),
 			Port:           getEnv("PORT", "8080"),
 			BaseURL:        strings.TrimRight(getEnv("BASE_URL", "http://localhost:8080"), "/"),
+			ClientOrigin:   strings.TrimRight(getEnv("CLIENT_ORIGIN", "http://localhost:5173"), "/"),
 			AllowedOrigins: splitCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:5173")),
 		},
 		Database: DatabaseConfig{

@@ -7,6 +7,7 @@ import {
   Lock,
   LogOut,
   MessageSquareText,
+  PackageSearch,
   Plus,
   RefreshCw,
   Save,
@@ -73,6 +74,22 @@ function formatDate(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function latinDigits(value) {
+  return String(value || "")
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+}
+
+function tomanToRial(value) {
+  const toman = Number(latinDigits(value).replace(/[^0-9]/g, ""));
+  return Number.isFinite(toman) ? toman * 10 : 0;
+}
+
+function formatToman(rial) {
+  const value = Number(rial);
+  return value > 0 ? `${new Intl.NumberFormat("fa-IR").format(Math.round(value / 10))} تومان` : "بدون قیمت";
 }
 
 function LoginScreen({ onLogin }) {
@@ -291,8 +308,8 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
   return (
     <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-[#3f352f]">درخواست‌های خرید دوره</h2>
-        <p className="mt-1 text-sm text-[#807269]">شماره‌هایی که از صفحه دوره درخواست خرید یا هماهنگی ثبت کرده‌اند.</p>
+        <h2 className="text-lg font-semibold text-[#3f352f]">درخواست‌های دوره</h2>
+        <p className="mt-1 text-sm text-[#807269]">درخواست خرید، اطلاع از انتشار یا عضویت در فهرست انتظار هر دوره.</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -301,6 +318,7 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
             <tr className="bg-[#f4eee8] text-[#5f544d]">
               <th className="rounded-r-md border-y border-r border-[#e0d7cd] px-3 py-3 font-medium">شماره تلفن</th>
               <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">دوره</th>
+              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">نوع درخواست</th>
               <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">تاریخ ثبت</th>
               <th className="rounded-l-md border-y border-l border-[#e0d7cd] px-3 py-3 font-medium">عملیات</th>
             </tr>
@@ -308,7 +326,7 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
           <tbody>
             {signups.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-8 text-center text-[#807269]">
+                <td colSpan={5} className="px-3 py-8 text-center text-[#807269]">
                   هنوز درخواستی ثبت نشده است.
                 </td>
               </tr>
@@ -318,6 +336,9 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
                   <td className="border-b border-[#eee7df] px-3 py-3 font-medium text-[#3f352f]">{signup.phone}</td>
                   <td className="border-b border-[#eee7df] px-3 py-3 text-[#5f544d]">
                     {signup.courseTitle || signup.courseSlug || signup.courseId || "-"}
+                  </td>
+                  <td className="border-b border-[#eee7df] px-3 py-3 text-[#5f544d]">
+                    {signup.requestType === "notification" ? "اطلاع از انتشار" : signup.requestType === "waitlist" ? "فهرست انتظار" : "خرید دوره"}
                   </td>
                   <td className="whitespace-nowrap border-b border-[#eee7df] px-3 py-3 text-[#807269]">
                     {formatDate(signup.createdAt)}
@@ -459,6 +480,228 @@ function OrdersTable({ orders, onUpdateStatus, updatingId }) {
   );
 }
 
+const emptyProductForm = {
+  id: "",
+  slug: "",
+  title: "",
+  shortDescription: "",
+  description: "",
+  coverImageId: "",
+  category: "گل پارچه‌ای",
+  usageLabel: "",
+  materialsText: "",
+  colorsText: "",
+  isCustomizable: true,
+  priceLabel: "",
+  basePriceToman: "",
+  priceCurrency: "IRR",
+  availability: "in_stock",
+  preparationTime: "",
+  preparationDays: "1",
+  isFeatured: false,
+  featuredOrder: "0",
+  seoTitle: "",
+  seoDescription: "",
+  status: "draft",
+  sortOrder: "0",
+};
+
+const productStatusOptions = [
+  { value: "draft", label: "پیش‌نویس" },
+  { value: "active", label: "منتشرشده" },
+  { value: "archived", label: "آرشیو" },
+];
+
+const availabilityOptions = [
+  { value: "in_stock", label: "موجود و آماده سفارش" },
+  { value: "made_to_order", label: "ساخت پس از سفارش" },
+  { value: "out_of_stock", label: "ناموجود" },
+];
+
+function productToForm(product) {
+  if (!product) return { ...emptyProductForm };
+  return {
+    ...emptyProductForm,
+    ...product,
+    basePriceToman: product.basePriceRial > 0 ? String(Math.round(product.basePriceRial / 10)) : "",
+    preparationDays: String(product.preparationDays ?? 1),
+    featuredOrder: String(product.featuredOrder ?? 0),
+    sortOrder: String(product.sortOrder ?? 0),
+    materialsText: (product.materials || []).join("\n"),
+    colorsText: (product.colors || []).join("\n"),
+  };
+}
+
+function productFromForm(form) {
+  const list = (value) => value.split("\n").map((item) => item.trim()).filter(Boolean);
+  return {
+    id: form.id.trim(),
+    slug: form.slug.trim(),
+    title: form.title.trim(),
+    shortDescription: form.shortDescription.trim(),
+    description: form.description.trim(),
+    coverImageId: form.coverImageId,
+    category: form.category.trim(),
+    usageLabel: form.usageLabel.trim(),
+    materials: list(form.materialsText),
+    colors: list(form.colorsText),
+    isCustomizable: Boolean(form.isCustomizable),
+    priceLabel: form.priceLabel.trim(),
+    basePriceRial: tomanToRial(form.basePriceToman),
+    priceCurrency: "IRR",
+    availability: form.availability,
+    preparationTime: form.preparationTime.trim(),
+    preparationDays: Number(latinDigits(form.preparationDays)) || 0,
+    isFeatured: Boolean(form.isFeatured),
+    featuredOrder: Number(latinDigits(form.featuredOrder)) || 0,
+    seoTitle: form.seoTitle.trim(),
+    seoDescription: form.seoDescription.trim(),
+    status: form.status,
+    sortOrder: Number(latinDigits(form.sortOrder)) || 0,
+  };
+}
+
+function ProductManager({ products, projectImages, token, onReload, onStatus }) {
+  const [selectedId, setSelectedId] = useState("");
+  const [form, setForm] = useState(() => productToForm(null));
+  const [isOpen, setIsOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const selectedImage = projectImages.find((image) => image.id === form.coverImageId);
+  const featuredCount = products.filter((product) => product.isFeatured && product.status === "active").length;
+  const incompleteCount = products.filter((product) => (
+    Number(product.basePriceRial) <= 0 || !product.usageLabel || /^نمونه[‌-]?کار\s*\d+$/u.test(product.title || "")
+  )).length;
+
+  const update = (field) => (event) => {
+    const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleNew = () => {
+    const timestamp = Date.now();
+    setSelectedId("");
+    setForm({ ...emptyProductForm, id: `product-${timestamp}`, slug: `fabric-flower-${timestamp}` });
+    setIsOpen(true);
+  };
+
+  const handleEdit = (product) => {
+    setSelectedId(product.id);
+    setForm(productToForm(product));
+    setIsOpen(true);
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const path = selectedId ? `admin/products/${selectedId}` : "admin/products";
+      const data = await apiRequest(path, {
+        method: selectedId ? "PUT" : "POST",
+        token,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productFromForm(form)),
+      });
+      setSelectedId(data.product.id);
+      setForm(productToForm(data.product));
+      await onReload();
+      onStatus({ type: "idle", message: "" });
+    } catch (error) {
+      onStatus({ type: "error", message: error.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-[#3f352f]">مدیریت محصولات</h2>
+          <p className="mt-1 text-sm leading-6 text-[#807269]">قیمت در این فرم به تومان وارد و در دیتابیس به ریال ذخیره می‌شود. محصولات ناقص را پیش‌نویس نگه دارید.</p>
+          <p className="mt-1 text-xs text-[#9b696b]">محصولات منتخب صفحه اصلی: {featuredCount} از ۳</p>
+          {incompleteCount > 0 ? <p className="mt-1 text-xs font-medium text-[#b06d32]">{incompleteCount} محصول هنوز نام، کاربرد یا قیمت کامل ندارد.</p> : null}
+        </div>
+        <button type="button" onClick={handleNew} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white shadow-sm">
+          <Plus className="h-4 w-4" /> محصول جدید
+        </button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {products.map((product) => {
+          const isIncomplete = Number(product.basePriceRial) <= 0 || !product.usageLabel || /^نمونه[‌-]?کار\s*\d+$/u.test(product.title || "");
+          return (
+            <article key={product.id} className="flex items-center gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-3">
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-[#eee7df]">
+                {product.coverImageUrl ? <img src={product.coverImageUrl} alt="" className="h-full w-full object-cover" /> : null}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="truncate font-medium text-[#3f352f]">{product.title}</h3>
+                  {product.isFeatured ? <span className="rounded-full bg-[#edf2ec] px-2 py-1 text-xs text-[#51645a]">منتخب</span> : null}
+                  {isIncomplete ? <span className="rounded-full bg-[#fff3e8] px-2 py-1 text-xs text-[#a9632d]">نیازمند تکمیل</span> : null}
+                </div>
+                <p className="mt-1 text-xs text-[#807269]">{formatToman(product.basePriceRial)} · {productStatusOptions.find((item) => item.value === product.status)?.label}</p>
+              </div>
+              <button type="button" onClick={() => handleEdit(product)} className="h-9 rounded-full bg-[#a05f62] px-4 text-sm text-white">ویرایش</button>
+            </article>
+          );
+        })}
+      </div>
+
+      {isOpen ? (
+        <form onSubmit={handleSave} className="mt-6 grid gap-4 border-t border-[#eee7df] pt-6">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-[#3f352f]">{selectedId ? "ویرایش محصول" : "محصول جدید"}</h3>
+            <button type="button" onClick={() => setIsOpen(false)} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-sm text-[#807269]">بستن</button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            {[["id", "شناسه"], ["slug", "آدرس"], ["title", "نام محصول"], ["category", "دسته‌بندی"], ["usageLabel", "کاربرد"], ["basePriceToman", "قیمت پایه (تومان)"], ["preparationDays", "آماده‌سازی (روز کاری)"], ["featuredOrder", "ترتیب منتخب"], ["sortOrder", "ترتیب کاتالوگ"]].map(([field, label]) => (
+              <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
+                {label}
+                <input value={form[field]} onChange={update(field)} disabled={field === "id" && Boolean(selectedId)} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 outline-none focus:border-[#c08081] disabled:bg-[#f3f0ec]" />
+              </label>
+            ))}
+            <label className="grid gap-2 text-sm text-[#5f544d]">موجودی
+              <select value={form.availability} onChange={update("availability")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
+                {availabilityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm text-[#5f544d]">وضعیت انتشار
+              <select value={form.status} onChange={update("status")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
+                {productStatusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm text-[#5f544d]">تصویر محصول
+              <select value={form.coverImageId} onChange={update("coverImageId")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
+                <option value="">انتخاب تصویر</option>
+                {projectImages.map((image) => <option key={image.id} value={image.id}>{image.alt} · {image.filename}</option>)}
+              </select>
+            </label>
+          </div>
+
+          {selectedImage ? <img src={selectedImage.url} alt={selectedImage.alt} className="h-28 w-28 rounded-md object-cover" /> : null}
+
+          {[["shortDescription", "توضیح کوتاه", 2], ["description", "توضیحات کامل و یکتا", 5], ["materialsText", "متریال‌ها، هر مورد در یک خط", 3], ["colorsText", "رنگ‌ها، هر مورد در یک خط", 3], ["seoTitle", "عنوان SEO اختیاری (حداکثر ۷۰ کاراکتر)", 2], ["seoDescription", "توضیح SEO اختیاری (حداکثر ۱۸۰ کاراکتر)", 3]].map(([field, label, rows]) => (
+            <label key={field} className="grid gap-2 text-sm text-[#5f544d]">{label}
+              <textarea value={form[field]} onChange={update(field)} rows={rows} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 outline-none focus:border-[#c08081]" />
+            </label>
+          ))}
+
+          <div className="flex flex-wrap gap-5 text-sm text-[#5f544d]">
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isCustomizable} onChange={update("isCustomizable")} /> قابل شخصی‌سازی</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isFeatured} onChange={update("isFeatured")} /> نمایش در سه محصول منتخب</label>
+          </div>
+
+          <button type="submit" disabled={busy} className="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} ذخیره محصول
+          </button>
+        </form>
+      ) : null}
+    </section>
+  );
+}
+
 const emptyCourseForm = {
   id: "",
   slug: "",
@@ -472,10 +715,15 @@ const emptyCourseForm = {
   description: "",
   status: "recording",
   priceLabel: "",
+  basePriceToman: "",
+  priceCurrency: "IRR",
+  accessDuration: "",
+  supportType: "",
   imageId: "",
   sortOrder: 0,
   outcomes: [""],
   audience: [""],
+  prerequisites: [""],
   lessons: [],
 };
 
@@ -512,10 +760,15 @@ function courseToForm(course) {
     description: course.description || "",
     status: course.status === "published" ? "in_progress" : course.status || "recording",
     priceLabel: course.priceLabel || "",
+    basePriceToman: course.basePriceRial > 0 ? String(Math.round(course.basePriceRial / 10)) : "",
+    priceCurrency: course.priceCurrency || "IRR",
+    accessDuration: course.accessDuration || "",
+    supportType: course.supportType || "",
     imageId: course.imageId || "",
     sortOrder: course.sortOrder || 0,
     outcomes: course.outcomes && course.outcomes.length > 0 ? course.outcomes : [""],
     audience: course.audience && course.audience.length > 0 ? course.audience : [""],
+    prerequisites: course.prerequisites && course.prerequisites.length > 0 ? course.prerequisites : [""],
     lessons: (course.lessons && course.lessons.length > 0 ? course.lessons : [emptyLesson()]).map((lesson, index) => ({
       id: lesson.id || String(index + 1).padStart(2, "0"),
       chapterId: lesson.chapterId || `chapter-${String(index + 1).padStart(2, "0")}`,
@@ -549,10 +802,15 @@ function courseFromForm(form) {
     description: form.description.trim(),
     status: form.status,
     priceLabel: form.priceLabel.trim(),
+    basePriceRial: tomanToRial(form.basePriceToman),
+    priceCurrency: "IRR",
+    accessDuration: form.accessDuration.trim(),
+    supportType: form.supportType.trim(),
     imageId: form.imageId,
     sortOrder: Number(form.sortOrder) || 0,
     outcomes: compactTextList(form.outcomes),
     audience: compactTextList(form.audience),
+    prerequisites: compactTextList(form.prerequisites),
     lessons: form.lessons
       .map((lesson, index) => ({
         id: lesson.id.trim() || String(index + 1).padStart(2, "0"),
@@ -780,6 +1038,7 @@ function CourseManager({ courses, token, onReload, onStatus }) {
       slug: `course-${timestamp}`,
       outcomes: [""],
       audience: [""],
+      prerequisites: [""],
       lessons: [emptyLesson()],
     });
     setIsFormOpen(true);
@@ -907,7 +1166,7 @@ function CourseManager({ courses, token, onReload, onStatus }) {
               </div>
               <p className="mt-1 text-sm text-[#807269]">
                 {course.slug} · {course.lessons?.length || 0} قسمت
-                {course.priceLabel ? ` · ${course.priceLabel}` : ""}
+                {` · ${formatToman(course.basePriceRial)}`}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -943,7 +1202,9 @@ function CourseManager({ courses, token, onReload, onStatus }) {
               ["level", "سطح"],
               ["format", "فرمت"],
               ["duration", "مدت"],
-              ["priceLabel", "قیمت"],
+              ["basePriceToman", "قیمت (تومان)"],
+              ["accessDuration", "مدت دسترسی"],
+              ["supportType", "نوع پشتیبانی"],
               ["sortOrder", "ترتیب"],
             ].map(([field, label]) => (
               <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
@@ -997,6 +1258,7 @@ function CourseManager({ courses, token, onReload, onStatus }) {
             {[
               ["outcomes", "آنچه در این دوره یاد می‌گیرید"],
               ["audience", "مناسب چه کسانی است؟"],
+              ["prerequisites", "پیش‌نیازها"],
             ].map(([field, title]) => (
               <div key={field} className="grid gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -1205,6 +1467,7 @@ function Dashboard({ token, onLogout }) {
   const [contactRequests, setContactRequests] = useState([]);
   const [courseSignups, setCourseSignups] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [projectImages, setProjectImages] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
@@ -1212,16 +1475,18 @@ function Dashboard({ token, onLogout }) {
   const [uploading, setUploading] = useState("");
   const [deleting, setDeleting] = useState("");
   const [updatingOrderId, setUpdatingOrderId] = useState("");
+  const [optimizingImages, setOptimizingImages] = useState(false);
 
   const headers = useMemo(() => ({ token }), [token]);
 
   const loadData = async () => {
     setStatus({ type: "loading", message: "" });
     try {
-      const [contactsData, courseData, coursesData, ordersData, projectData, heroData] = await Promise.all([
+      const [contactsData, courseData, coursesData, productsData, ordersData, projectData, heroData] = await Promise.all([
         apiRequest("admin/contact-requests", headers),
         apiRequest("admin/course-signups", headers),
         apiRequest("admin/courses", headers),
+        apiRequest("admin/products", headers),
         apiRequest("admin/orders", headers),
         apiRequest("admin/project-images", headers),
         apiRequest("admin/hero-slides", headers),
@@ -1230,6 +1495,7 @@ function Dashboard({ token, onLogout }) {
       setContactRequests(contactsData.contactRequests || []);
       setCourseSignups(courseData.courseSignups || []);
       setCourses(coursesData.courses || []);
+      setProducts(productsData.products || []);
       setOrders(ordersData.orders || []);
       setProjectImages(projectData.images || []);
       setHeroSlides(heroData.images || []);
@@ -1314,6 +1580,19 @@ function Dashboard({ token, onLogout }) {
     }
   };
 
+  const rebuildImageVariants = async () => {
+    setOptimizingImages(true);
+    try {
+      const data = await apiRequest("admin/image-variants/rebuild", { method: "POST", token });
+      await loadData();
+      setStatus({ type: "success", message: `${data.optimizedImages || 0} تصویر بهینه شد.` });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    } finally {
+      setOptimizingImages(false);
+    }
+  };
+
   return (
     <main dir="rtl" className="min-h-screen bg-[#f6f3ef]">
       <header className="sticky top-0 z-20 border-b border-[#e0d7cd] bg-white/90 backdrop-blur">
@@ -1328,6 +1607,15 @@ function Dashboard({ token, onLogout }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={rebuildImageVariants}
+              disabled={optimizingImages}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d9cfc5] bg-white px-3 text-sm text-[#51645a] disabled:opacity-60"
+            >
+              {optimizingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+              بهینه‌سازی تصاویر
+            </button>
             <button
               type="button"
               onClick={loadData}
@@ -1352,17 +1640,23 @@ function Dashboard({ token, onLogout }) {
         {status.type === "error" ? (
           <div className="rounded-lg border border-[#efb8ba] bg-[#fff6f6] px-4 py-3 text-sm text-[#b85d60]">{status.message}</div>
         ) : null}
+        {status.type === "success" ? (
+          <div className="rounded-lg border border-[#bfd7c5] bg-[#f4faf5] px-4 py-3 text-sm text-[#4f7659]">{status.message}</div>
+        ) : null}
 
-        <section className="grid gap-4 md:grid-cols-6">
+        <section className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
           <StatBox label="پیام ثبت‌شده" value={contactRequests.length} icon={MessageSquareText} />
-          <StatBox label="درخواست خرید دوره" value={courseSignups.length} icon={Send} />
+          <StatBox label="درخواست دوره" value={courseSignups.length} icon={Send} />
           <StatBox label="دوره آموزشی" value={courses.length} icon={BookOpen} />
+          <StatBox label="محصول" value={products.length} icon={PackageSearch} />
           <StatBox label="سفارش مشتری" value={orders.length} icon={Save} />
-          <StatBox label="نمونه‌کار" value={projectImages.length} icon={ImagePlus} />
+          <StatBox label="تصویر محصول" value={projectImages.length} icon={ImagePlus} />
           <StatBox label="اسلاید بخش اول" value={heroSlides.length} icon={LayoutDashboard} />
         </section>
 
         <OrdersTable orders={orders} onUpdateStatus={updateOrderStatus} updatingId={updatingOrderId} />
+
+        <ProductManager products={products} projectImages={projectImages} token={token} onReload={loadData} onStatus={setStatus} />
 
         <CourseManager courses={courses} token={token} onReload={loadData} onStatus={setStatus} />
 
@@ -1379,10 +1673,10 @@ function Dashboard({ token, onLogout }) {
         />
 
         <ImageManager
-          title="نمونه‌کارها"
-          description="تصاویر این بخش در گالری نمونه‌کارهای سایت نمایش داده می‌شوند."
+          title="تصاویر محصولات"
+          description="تصاویر کاتالوگ را اینجا بارگذاری کنید و سپس در فرم هر محصول انتخاب کنید."
           images={projectImages}
-          uploadLabel="افزودن نمونه‌کار"
+          uploadLabel="افزودن تصویر محصول"
           busy={uploading === "project"}
           onUpload={(files) => uploadImages("admin/project-images", files, "project")}
           onDelete={(id) => deleteImage("admin/project-images", id)}

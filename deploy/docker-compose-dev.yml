@@ -46,6 +46,7 @@ services:
     env_file: .dev.env
     environment:
       PROJECT_IMAGES_DIR: /seed/project_images
+      CLIENT_ORIGIN: http://client:5173
     depends_on:
       db:
         condition: service_healthy

@@ -52,12 +52,13 @@ export function PanelSwitch({ checked, onChange, label }) {
   );
 }
 
-export function PasswordInput({ value, onChange, placeholder, visible, onToggleVisibility }) {
+export function PasswordInput({ value, onChange, placeholder, visible, onToggleVisibility, ...props }) {
   const VisibilityIcon = visible ? EyeOff : Eye;
 
   return (
     <div className="relative">
       <PanelInput
+        {...props}
         value={value}
         onChange={onChange}
         type={visible ? "text" : "password"}

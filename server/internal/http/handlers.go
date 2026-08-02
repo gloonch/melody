@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -28,13 +29,17 @@ import (
 )
 
 type Handler struct {
-	db        *database.PostgresDB
-	cfg       *config.Config
-	courses   *repository.CourseRepository
-	products  *repository.ProductRepository
-	orders    *repository.OrderRepository
-	addresses *repository.AddressRepository
-	users     *repository.UserRepository
+	db          *database.PostgresDB
+	cfg         *config.Config
+	courses     *repository.CourseRepository
+	products    *repository.ProductRepository
+	variants    *repository.ImageVariantRepository
+	orders      *repository.OrderRepository
+	addresses   *repository.AddressRepository
+	users       *repository.UserRepository
+	siteShellMu sync.RWMutex
+	siteShell   []byte
+	siteShellAt time.Time
 }
 
 const (
@@ -46,16 +51,13 @@ const (
 )
 
 type createContactRequestBody struct {
-	FullName string `json:"fullName" binding:"required,max=120"`
+	FullName string `json:"fullName" binding:"max=120"`
 	Contact  string `json:"contact" binding:"required,max=32"`
 	Message  string `json:"message" binding:"required"`
 }
 
 type createCourseSignupBody struct {
-	Phone       string `json:"phone" binding:"required,max=32"`
-	CourseID    string `json:"courseId" binding:"max=120"`
-	CourseSlug  string `json:"courseSlug" binding:"max=180"`
-	CourseTitle string `json:"courseTitle" binding:"max=240"`
+	CourseID string `json:"courseId" binding:"max=120"`
 }
 
 type adminLoginBody struct {
@@ -101,6 +103,10 @@ type updateOrderStatusBody struct {
 	AdminNote string `json:"adminNote" binding:"max=1200"`
 }
 
+type updateProductStatusBody struct {
+	Status string `json:"status" binding:"required,max=40"`
+}
+
 type addressBody struct {
 	Title         string   `json:"title" binding:"required,max=120"`
 	FullAddress   string   `json:"fullAddress" binding:"required,max=1200"`
@@ -126,10 +132,12 @@ type contactRequestResponse struct {
 
 type courseSignupResponse struct {
 	ID          string    `json:"id"`
+	UserID      string    `json:"userId"`
 	Phone       string    `json:"phone"`
 	CourseID    string    `json:"courseId"`
 	CourseSlug  string    `json:"courseSlug"`
 	CourseTitle string    `json:"courseTitle"`
+	RequestType string    `json:"requestType"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -138,19 +146,21 @@ type courseAccessBody struct {
 }
 
 type projectImageResponse struct {
-	ID          string `json:"id"`
-	Alt         string `json:"alt"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"contentType"`
-	URL         string `json:"url"`
-	SortOrder   int    `json:"sortOrder"`
+	ID          string               `json:"id"`
+	Alt         string               `json:"alt"`
+	Filename    string               `json:"filename"`
+	ContentType string               `json:"contentType"`
+	URL         string               `json:"url"`
+	SortOrder   int                  `json:"sortOrder"`
+	Sources     []models.ImageSource `json:"sources,omitempty"`
 }
 
 type uploadImageResult struct {
-	ID          string `json:"id"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"contentType"`
-	URL         string `json:"url"`
+	ID          string               `json:"id"`
+	Filename    string               `json:"filename"`
+	ContentType string               `json:"contentType"`
+	URL         string               `json:"url"`
+	Sources     []models.ImageSource `json:"sources,omitempty"`
 }
 
 type courseWithImagesResponse struct {
@@ -164,6 +174,7 @@ func NewHandler(db *database.PostgresDB, cfg *config.Config) *Handler {
 		cfg:       cfg,
 		courses:   repository.NewCourseRepository(db.Pool()),
 		products:  repository.NewProductRepository(db.Pool()),
+		variants:  repository.NewImageVariantRepository(db.Pool()),
 		orders:    repository.NewOrderRepository(db.Pool()),
 		addresses: repository.NewAddressRepository(db.Pool()),
 		users:     repository.NewUserRepository(db.Pool()),
@@ -667,8 +678,8 @@ func (h *Handler) CreateContactRequest(c *gin.Context) {
 	body.FullName = strings.TrimSpace(body.FullName)
 	body.Contact = normalizeDigits(strings.TrimSpace(body.Contact))
 	body.Message = strings.TrimSpace(body.Message)
-	if body.FullName == "" || body.Contact == "" || body.Message == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات فرم کامل نیست."})
+	if body.Contact == "" || body.Message == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "شماره تماس و پیام الزامی است."})
 		return
 	}
 	if !isDigitsOnly(body.Contact) {
@@ -772,55 +783,118 @@ func (h *Handler) DeleteContactRequest(c *gin.Context) {
 }
 
 func (h *Handler) CreateCourseSignup(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "برای ثبت درخواست دوره وارد حساب شوید."})
+		return
+	}
+
 	var body createCourseSignupBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "شماره تلفن الزامی است."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "انتخاب دوره الزامی است."})
 		return
 	}
-
-	body.Phone = normalizeDigits(strings.TrimSpace(body.Phone))
-	if !isDigitsOnly(body.Phone) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "شماره تلفن باید فقط شامل عدد باشد."})
+	if strings.TrimSpace(body.CourseID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "انتخاب دوره الزامی است."})
 		return
-	}
-
-	now := time.Now().UTC()
-	signup := models.CourseSignup{
-		ID:          generateID(),
-		Phone:       body.Phone,
-		CourseID:    strings.TrimSpace(body.CourseID),
-		CourseSlug:  strings.TrimSpace(body.CourseSlug),
-		CourseTitle: strings.TrimSpace(body.CourseTitle),
-		CreatedAt:   now,
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	_, err := h.db.Pool().Exec(
+	user, err := h.users.GetByID(ctx, userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "حساب کاربری پیدا نشد."})
+		return
+	}
+	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(body.CourseID), false)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "دوره پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت دوره انجام نشد."})
+		return
+	}
+
+	requestType, canRequest := courseRequestType(course.Status)
+	if !canRequest {
+		c.JSON(http.StatusConflict, gin.H{"error": "ثبت درخواست برای وضعیت فعلی این دوره فعال نیست."})
+		return
+	}
+	now := time.Now().UTC()
+	signup := models.CourseSignup{
+		ID:          generateID(),
+		UserID:      user.ID,
+		Phone:       user.Phone,
+		CourseID:    course.ID,
+		CourseSlug:  course.Slug,
+		CourseTitle: course.Title,
+		RequestType: requestType,
+		CreatedAt:   now,
+	}
+
+	err = h.db.Pool().QueryRow(
 		ctx,
-		`INSERT INTO course_signups (id, phone, course_id, course_slug, course_title, created_at)
-		 VALUES ($1, $2, $3, $4, $5, $6)`,
+		`INSERT INTO course_signups (id, user_id, phone, course_id, course_slug, course_title, request_type, created_at)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+		 ON CONFLICT (user_id, course_id, request_type) WHERE user_id <> ''
+		 DO UPDATE SET phone=EXCLUDED.phone, course_slug=EXCLUDED.course_slug, course_title=EXCLUDED.course_title
+		 RETURNING id, created_at`,
 		signup.ID,
+		signup.UserID,
 		signup.Phone,
 		signup.CourseID,
 		signup.CourseSlug,
 		signup.CourseTitle,
+		signup.RequestType,
 		signup.CreatedAt,
-	)
+	).Scan(&signup.ID, &signup.CreatedAt)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ثبت شماره انجام نشد."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ثبت درخواست دوره انجام نشد."})
 		return
 	}
 
 	c.JSON(http.StatusCreated, courseSignupResponse{
 		ID:          signup.ID,
+		UserID:      signup.UserID,
 		Phone:       signup.Phone,
 		CourseID:    signup.CourseID,
 		CourseSlug:  signup.CourseSlug,
 		CourseTitle: signup.CourseTitle,
+		RequestType: signup.RequestType,
 		CreatedAt:   signup.CreatedAt,
 	})
+}
+
+func (h *Handler) ListMyCourseSignups(c *gin.Context) {
+	userID, ok := currentUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "نشست کاربری معتبر نیست."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	rows, err := h.db.Pool().Query(ctx,
+		`SELECT id, user_id, phone, course_id, course_slug, course_title, request_type, created_at
+		 FROM course_signups WHERE user_id=$1 ORDER BY created_at DESC`, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت درخواست‌های دوره انجام نشد."})
+		return
+	}
+	defer rows.Close()
+
+	requests := make([]courseSignupResponse, 0)
+	for rows.Next() {
+		var signup courseSignupResponse
+		if err := rows.Scan(&signup.ID, &signup.UserID, &signup.Phone, &signup.CourseID, &signup.CourseSlug, &signup.CourseTitle, &signup.RequestType, &signup.CreatedAt); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن درخواست‌های دوره انجام نشد."})
+			return
+		}
+		requests = append(requests, signup)
+	}
+	c.JSON(http.StatusOK, gin.H{"courseSignups": requests})
 }
 
 func (h *Handler) ListCourseSignups(c *gin.Context) {
@@ -829,7 +903,7 @@ func (h *Handler) ListCourseSignups(c *gin.Context) {
 
 	rows, err := h.db.Pool().Query(
 		ctx,
-		`SELECT id, phone, course_id, course_slug, course_title, created_at FROM course_signups ORDER BY created_at DESC`,
+		`SELECT id, user_id, phone, course_id, course_slug, course_title, request_type, created_at FROM course_signups ORDER BY created_at DESC`,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت ثبت‌نام‌های دوره انجام نشد."})
@@ -840,7 +914,7 @@ func (h *Handler) ListCourseSignups(c *gin.Context) {
 	signups := make([]courseSignupResponse, 0)
 	for rows.Next() {
 		var signup courseSignupResponse
-		if err := rows.Scan(&signup.ID, &signup.Phone, &signup.CourseID, &signup.CourseSlug, &signup.CourseTitle, &signup.CreatedAt); err != nil {
+		if err := rows.Scan(&signup.ID, &signup.UserID, &signup.Phone, &signup.CourseID, &signup.CourseSlug, &signup.CourseTitle, &signup.RequestType, &signup.CreatedAt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن ثبت‌نام‌های دوره انجام نشد."})
 			return
 		}
@@ -1051,7 +1125,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات انجام نشد."})
 		return
 	}
-	h.attachProductImageURLs(products)
+	h.attachProductImages(ctx, products)
 
 	c.JSON(http.StatusOK, gin.H{"products": products})
 }
@@ -1069,9 +1143,101 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
 		return
 	}
-	h.attachProductImageURL(&product)
+	h.attachProductImage(ctx, &product)
 
 	c.JSON(http.StatusOK, gin.H{"product": product})
+}
+
+func (h *Handler) ListAdminProducts(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	products, err := h.products.ListProducts(ctx, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات انجام نشد."})
+		return
+	}
+	h.attachProductImages(ctx, products)
+	c.JSON(http.StatusOK, gin.H{"products": products})
+}
+
+func (h *Handler) GetAdminProduct(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	product, err := h.products.GetProduct(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
+		return
+	}
+	h.attachProductImage(ctx, &product)
+	c.JSON(http.StatusOK, gin.H{"product": product})
+}
+
+func (h *Handler) CreateAdminProduct(c *gin.Context) {
+	var product models.Product
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات محصول معتبر نیست."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	created, err := h.products.CreateProduct(ctx, product)
+	if err != nil {
+		h.productWriteError(c, err)
+		return
+	}
+	h.attachProductImage(ctx, &created)
+	c.JSON(http.StatusCreated, gin.H{"product": created})
+}
+
+func (h *Handler) UpdateAdminProduct(c *gin.Context) {
+	var product models.Product
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات محصول معتبر نیست."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	updated, err := h.products.UpdateProduct(ctx, strings.TrimSpace(c.Param("id")), product)
+	if err != nil {
+		h.productWriteError(c, err)
+		return
+	}
+	h.attachProductImage(ctx, &updated)
+	c.JSON(http.StatusOK, gin.H{"product": updated})
+}
+
+func (h *Handler) UpdateAdminProductStatus(c *gin.Context) {
+	var body updateProductStatusBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "وضعیت محصول معتبر نیست."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	updated, err := h.products.UpdateStatus(ctx, strings.TrimSpace(c.Param("id")), body.Status)
+	if err != nil {
+		h.productWriteError(c, err)
+		return
+	}
+	h.attachProductImage(ctx, &updated)
+	c.JSON(http.StatusOK, gin.H{"product": updated})
+}
+
+func (h *Handler) productWriteError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, repository.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+	case errors.Is(err, repository.ErrFeaturedLimit):
+		c.JSON(http.StatusConflict, gin.H{"error": "حداکثر سه محصول می‌توانند در صفحه اصلی منتخب باشند."})
+	case isUniqueViolation(err):
+		c.JSON(http.StatusConflict, gin.H{"error": "شناسه یا آدرس محصول تکراری است."})
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 }
 
 func (h *Handler) ListOrders(c *gin.Context) {
@@ -1280,7 +1446,7 @@ func (h *Handler) UploadOrderReferenceImages(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Minute)
 	defer cancel()
 
 	order, err := h.orders.GetOrderByUser(ctx, userID, strings.TrimSpace(c.Param("id")))
@@ -1452,6 +1618,10 @@ func (h *Handler) CreateAdminCourse(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات دوره معتبر نیست."})
 		return
 	}
+	if err := repository.ValidateCourseInput(course); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -1473,6 +1643,10 @@ func (h *Handler) UpdateAdminCourse(c *gin.Context) {
 	var course models.Course
 	if err := c.ShouldBindJSON(&course); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات دوره معتبر نیست."})
+		return
+	}
+	if err := repository.ValidateCourseInput(course); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -1548,7 +1722,7 @@ func (h *Handler) UploadCourseImages(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Minute)
 	defer cancel()
 
 	course, err := h.courses.GetCourse(ctx, strings.TrimSpace(c.Param("id")), true)
@@ -1594,6 +1768,12 @@ func (h *Handler) UploadCourseImages(c *gin.Context) {
 			return
 		}
 		image.URL = h.courseImageURL(course.ID, image.ID)
+		variants, err := h.variants.Replace(ctx, "course_images", image.ID, image.ContentType, image.Data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "تصویر ذخیره شد اما ساخت نسخه‌های بهینه انجام نشد."})
+			return
+		}
+		image.Sources = h.variantSources(variants)
 		uploaded = append(uploaded, image)
 	}
 
@@ -1614,7 +1794,12 @@ func (h *Handler) DeleteCourseImage(c *gin.Context) {
 		return
 	}
 
-	err = h.courses.DeleteImage(ctx, course.ID, strings.TrimSpace(c.Param("imageId")))
+	imageID := strings.TrimSpace(c.Param("imageId"))
+	if err := h.variants.DeleteForSource(ctx, "course_images", imageID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف نسخه‌های تصویر دوره انجام نشد."})
+		return
+	}
+	err = h.courses.DeleteImage(ctx, course.ID, imageID)
 	if errors.Is(err, repository.ErrNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر پیدا نشد."})
 		return
@@ -1686,7 +1871,7 @@ func (h *Handler) ListProjectImages(c *gin.Context) {
 }
 
 func (h *Handler) UploadProjectImages(c *gin.Context) {
-	h.uploadImages(c, projectImagesTable, "نمونه‌کار", h.projectImageURL)
+	h.uploadImages(c, projectImagesTable, "تصویر محصول", h.projectImageURL)
 }
 
 func (h *Handler) DeleteProjectImage(c *gin.Context) {
@@ -1730,6 +1915,7 @@ func (h *Handler) listImages(c *gin.Context, table string, urlForID func(string)
 			return
 		}
 		image.URL = urlForID(image.ID)
+		image.Sources = h.imageSources(ctx, table, image.ID)
 		images = append(images, image)
 	}
 	if err := rows.Err(); err != nil {
@@ -1800,7 +1986,7 @@ func (h *Handler) uploadImages(c *gin.Context, table string, altPrefix string, u
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Minute)
 	defer cancel()
 
 	startOrder, err := nextSortOrder(ctx, h.db.Pool(), table)
@@ -1811,6 +1997,7 @@ func (h *Handler) uploadImages(c *gin.Context, table string, altPrefix string, u
 
 	now := time.Now().UTC()
 	uploaded := make([]uploadImageResult, 0, len(files))
+	uploadedDocuments := make([]models.ImageDocument, 0, len(files))
 
 	tx, err := h.db.Pool().Begin(ctx)
 	if err != nil {
@@ -1852,11 +2039,21 @@ func (h *Handler) uploadImages(c *gin.Context, table string, altPrefix string, u
 			ContentType: image.ContentType,
 			URL:         urlForID(image.ID),
 		})
+		uploadedDocuments = append(uploadedDocuments, image)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصاویر انجام نشد."})
 		return
+	}
+
+	for index, image := range uploadedDocuments {
+		variants, err := h.variants.Replace(ctx, table, image.ID, image.ContentType, image.Data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "تصویر ذخیره شد اما ساخت نسخه‌های بهینه انجام نشد."})
+			return
+		}
+		uploaded[index].Sources = h.variantSources(variants)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"images": uploaded})
@@ -1877,6 +2074,10 @@ func (h *Handler) deleteImage(c *gin.Context, table string) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
+	if err := h.variants.DeleteForSource(ctx, table, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف نسخه‌های تصویر انجام نشد."})
+		return
+	}
 
 	result, err := h.db.Pool().Exec(ctx, query, id)
 	if err != nil {
@@ -1903,17 +2104,99 @@ func (h *Handler) courseImageURL(courseID string, imageID string) string {
 	return fmt.Sprintf("%s/api/v1/courses/%s/images/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), courseID, imageID)
 }
 
-func (h *Handler) attachProductImageURLs(products []models.Product) {
+func (h *Handler) imageVariantURL(id string) string {
+	return fmt.Sprintf("%s/api/v1/image-variants/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), id)
+}
+
+func (h *Handler) imageSources(ctx context.Context, sourceTable, sourceID string) []models.ImageSource {
+	variants, err := h.variants.List(ctx, sourceTable, sourceID)
+	if err != nil {
+		return nil
+	}
+	return h.variantSources(variants)
+}
+
+func (h *Handler) variantSources(variants []models.ImageVariant) []models.ImageSource {
+	sources := make([]models.ImageSource, 0, len(variants))
+	for _, variant := range variants {
+		sources = append(sources, models.ImageSource{URL: h.imageVariantURL(variant.ID), Width: variant.Width, Type: variant.ContentType})
+	}
+	return sources
+}
+
+func (h *Handler) GetImageVariantContent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	variant, err := h.variants.Get(ctx, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "نسخه تصویر پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت نسخه تصویر انجام نشد."})
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Data(http.StatusOK, variant.ContentType, variant.Data)
+}
+
+func (h *Handler) RebuildImageVariants(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
+	defer cancel()
+	tables := []string{projectImagesTable, heroSlidesTable, "course_images"}
+	count := 0
+	for _, table := range tables {
+		rows, err := h.db.Pool().Query(ctx, fmt.Sprintf("SELECT id, content_type, data FROM %s ORDER BY created_at ASC", table))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصاویر فعلی انجام نشد."})
+			return
+		}
+		for rows.Next() {
+			var id, contentType string
+			var data []byte
+			if err := rows.Scan(&id, &contentType, &data); err != nil {
+				rows.Close()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصویر فعلی انجام نشد."})
+				return
+			}
+			if _, err := h.variants.Replace(ctx, table, id, contentType, data); err != nil {
+				rows.Close()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("بهینه‌سازی تصویر %s انجام نشد.", id)})
+				return
+			}
+			count++
+		}
+		rows.Close()
+	}
+	c.JSON(http.StatusOK, gin.H{"optimizedImages": count})
+}
+
+func (h *Handler) attachProductImages(ctx context.Context, products []models.Product) {
+	imageIDs := make([]string, 0, len(products))
+	for _, product := range products {
+		if product.CoverImageID != "" {
+			imageIDs = append(imageIDs, product.CoverImageID)
+		}
+	}
+	variantsByImage, err := h.variants.ListForSources(ctx, projectImagesTable, imageIDs)
+	if err != nil {
+		variantsByImage = map[string][]models.ImageVariant{}
+	}
 	for index := range products {
-		h.attachProductImageURL(&products[index])
+		if products[index].CoverImageID == "" {
+			continue
+		}
+		products[index].CoverImageURL = h.projectImageURL(products[index].CoverImageID)
+		products[index].CoverImageSources = h.variantSources(variantsByImage[products[index].CoverImageID])
 	}
 }
 
-func (h *Handler) attachProductImageURL(product *models.Product) {
+func (h *Handler) attachProductImage(ctx context.Context, product *models.Product) {
 	if product.CoverImageID == "" {
 		return
 	}
 	product.CoverImageURL = h.projectImageURL(product.CoverImageID)
+	product.CoverImageSources = h.imageSources(ctx, projectImagesTable, product.CoverImageID)
 }
 
 func productSnapshot(product models.Product) models.ProductSnapshot {
@@ -1924,6 +2207,8 @@ func productSnapshot(product models.Product) models.ProductSnapshot {
 		ShortDescription: product.ShortDescription,
 		CoverImageURL:    product.CoverImageURL,
 		PriceLabel:       product.PriceLabel,
+		BasePriceRial:    product.BasePriceRial,
+		PriceCurrency:    product.PriceCurrency,
 		PreparationTime:  product.PreparationTime,
 	}
 }
@@ -1997,7 +2282,7 @@ func (h *Handler) orderFromBody(ctx context.Context, userID string, body createO
 			}
 			return models.Order{}, fmt.Errorf("دریافت محصول انجام نشد.")
 		}
-		h.attachProductImageURL(&product)
+		h.attachProductImage(ctx, &product)
 		order.ProductID = product.ID
 		order.ProductSnapshot = productSnapshot(product)
 	}
@@ -2072,18 +2357,20 @@ func (h *Handler) courseImagesWithURLs(ctx context.Context, courseID string) ([]
 	}
 	for index := range images {
 		images[index].URL = h.courseImageURL(courseID, images[index].ID)
+		images[index].Sources = h.imageSources(ctx, "course_images", images[index].ID)
 	}
 	return images, nil
 }
 
 func (h *Handler) attachLessonImageURLs(course *models.Course, images []models.CourseImage) {
-	byID := make(map[string]string, len(images))
+	byID := make(map[string]models.CourseImage, len(images))
 	for _, image := range images {
-		byID[image.ID] = image.URL
+		byID[image.ID] = image
 	}
 	for index := range course.Lessons {
-		if url := byID[course.Lessons[index].ImageID]; url != "" {
-			course.Lessons[index].ImageURL = url
+		if image, ok := byID[course.Lessons[index].ImageID]; ok {
+			course.Lessons[index].ImageURL = image.URL
+			course.Lessons[index].ImageSources = image.Sources
 		}
 	}
 }
@@ -2092,6 +2379,7 @@ func (h *Handler) attachCourseImageURL(course *models.Course, images []models.Co
 	for _, image := range images {
 		if image.ID == course.ImageID {
 			course.ImageURL = image.URL
+			course.ImageSources = image.Sources
 			return
 		}
 	}
@@ -2254,6 +2542,19 @@ func normalizeDigits(value string) string {
 			return r
 		}
 	}, value)
+}
+
+func courseRequestType(status string) (string, bool) {
+	switch strings.TrimSpace(status) {
+	case "recording", "in_production":
+		return "notification", true
+	case "for_sale":
+		return "purchase", true
+	case "sold_out":
+		return "waitlist", true
+	default:
+		return "", false
+	}
 }
 
 func normalizePhone(value string) (string, error) {

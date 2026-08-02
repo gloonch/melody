@@ -22,6 +22,10 @@ type CourseRepository struct {
 	pool *pgxpool.Pool
 }
 
+const courseColumns = `id, slug, title, subtitle, term, level, format, duration, summary, description,
+	status, price_label, base_price_rial, price_currency, access_duration, support_type, prerequisites,
+	image_id, sort_order, outcomes, audience, lessons, created_at, updated_at`
+
 func NewCourseRepository(pool *pgxpool.Pool) *CourseRepository {
 	return &CourseRepository{pool: pool}
 }
@@ -32,8 +36,9 @@ func (r *CourseRepository) SeedDefaultCourse(ctx context.Context) error {
 		ctx,
 		`INSERT INTO courses (
 			id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+			status, price_label, base_price_rial, price_currency, access_duration, support_type, prerequisites,
+			image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
 		ON CONFLICT (slug) DO NOTHING`,
 		course.ID,
 		course.Slug,
@@ -47,6 +52,11 @@ func (r *CourseRepository) SeedDefaultCourse(ctx context.Context) error {
 		course.Description,
 		course.Status,
 		course.PriceLabel,
+		course.BasePriceRial,
+		course.PriceCurrency,
+		course.AccessDuration,
+		course.SupportType,
+		mustJSON(course.Prerequisites),
 		course.ImageID,
 		course.SortOrder,
 		mustJSON(course.Outcomes),
@@ -61,8 +71,7 @@ func (r *CourseRepository) SeedDefaultCourse(ctx context.Context) error {
 func (r *CourseRepository) ListCourses(ctx context.Context, includeDrafts bool) ([]models.Course, error) {
 	rows, err := r.pool.Query(
 		ctx,
-		`SELECT id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+		`SELECT `+courseColumns+`
 		 FROM courses
 		 WHERE ($1 OR status NOT IN ('draft', 'archived'))
 		 ORDER BY sort_order ASC, slug ASC`,
@@ -90,8 +99,7 @@ func (r *CourseRepository) ListCourses(ctx context.Context, includeDrafts bool) 
 func (r *CourseRepository) GetCourse(ctx context.Context, idOrSlug string, includeDrafts bool) (models.Course, error) {
 	row := r.pool.QueryRow(
 		ctx,
-		`SELECT id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+		`SELECT `+courseColumns+`
 		 FROM courses
 		 WHERE (id = $1 OR slug = $1) AND ($2 OR status NOT IN ('draft', 'archived'))
 		 LIMIT 1`,
@@ -107,6 +115,9 @@ func (r *CourseRepository) GetCourse(ctx context.Context, idOrSlug string, inclu
 
 func (r *CourseRepository) CreateCourse(ctx context.Context, course models.Course) (models.Course, error) {
 	normalizeCourse(&course)
+	if err := validateCourse(course); err != nil {
+		return models.Course{}, err
+	}
 	if course.ID == "" {
 		course.ID = generateID()
 	}
@@ -118,8 +129,9 @@ func (r *CourseRepository) CreateCourse(ctx context.Context, course models.Cours
 		ctx,
 		`INSERT INTO courses (
 			id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+			status, price_label, base_price_rial, price_currency, access_duration, support_type, prerequisites,
+			image_id, sort_order, outcomes, audience, lessons, created_at, updated_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
 		course.ID,
 		course.Slug,
 		course.Title,
@@ -132,6 +144,11 @@ func (r *CourseRepository) CreateCourse(ctx context.Context, course models.Cours
 		course.Description,
 		course.Status,
 		course.PriceLabel,
+		course.BasePriceRial,
+		course.PriceCurrency,
+		course.AccessDuration,
+		course.SupportType,
+		mustJSON(course.Prerequisites),
 		course.ImageID,
 		course.SortOrder,
 		mustJSON(course.Outcomes),
@@ -145,6 +162,9 @@ func (r *CourseRepository) CreateCourse(ctx context.Context, course models.Cours
 
 func (r *CourseRepository) UpdateCourse(ctx context.Context, id string, course models.Course) (models.Course, error) {
 	normalizeCourse(&course)
+	if err := validateCourse(course); err != nil {
+		return models.Course{}, err
+	}
 	course.ID = id
 	course.UpdatedAt = time.Now().UTC()
 
@@ -162,15 +182,19 @@ func (r *CourseRepository) UpdateCourse(ctx context.Context, id string, course m
 			description = $10,
 			status = $11,
 			price_label = $12,
-			image_id = $13,
-			sort_order = $14,
-			outcomes = $15,
-			audience = $16,
-			lessons = $17,
-			updated_at = $18
+			base_price_rial = $13,
+			price_currency = $14,
+			access_duration = $15,
+			support_type = $16,
+			prerequisites = $17,
+			image_id = $18,
+			sort_order = $19,
+			outcomes = $20,
+			audience = $21,
+			lessons = $22,
+			updated_at = $23
 		 WHERE id = $1
-		 RETURNING id, slug, title, subtitle, term, level, format, duration, summary, description,
-			status, price_label, image_id, sort_order, outcomes, audience, lessons, created_at, updated_at`,
+		 RETURNING `+courseColumns,
 		course.ID,
 		course.Slug,
 		course.Title,
@@ -183,6 +207,11 @@ func (r *CourseRepository) UpdateCourse(ctx context.Context, id string, course m
 		course.Description,
 		course.Status,
 		course.PriceLabel,
+		course.BasePriceRial,
+		course.PriceCurrency,
+		course.AccessDuration,
+		course.SupportType,
+		mustJSON(course.Prerequisites),
 		course.ImageID,
 		course.SortOrder,
 		mustJSON(course.Outcomes),
@@ -404,6 +433,7 @@ func scanCourse(scanner interface {
 	Scan(dest ...any) error
 }) (models.Course, error) {
 	var course models.Course
+	var prerequisitesJSON []byte
 	var outcomesJSON []byte
 	var audienceJSON []byte
 	var lessonsJSON []byte
@@ -421,6 +451,11 @@ func scanCourse(scanner interface {
 		&course.Description,
 		&course.Status,
 		&course.PriceLabel,
+		&course.BasePriceRial,
+		&course.PriceCurrency,
+		&course.AccessDuration,
+		&course.SupportType,
+		&prerequisitesJSON,
 		&course.ImageID,
 		&course.SortOrder,
 		&outcomesJSON,
@@ -430,6 +465,9 @@ func scanCourse(scanner interface {
 		&course.UpdatedAt,
 	)
 	if err != nil {
+		return models.Course{}, err
+	}
+	if err := json.Unmarshal(prerequisitesJSON, &course.Prerequisites); err != nil {
 		return models.Course{}, err
 	}
 	if err := json.Unmarshal(outcomesJSON, &course.Outcomes); err != nil {
@@ -458,6 +496,9 @@ func normalizeCourse(course *models.Course) {
 	course.Description = strings.TrimSpace(course.Description)
 	course.Status = strings.TrimSpace(course.Status)
 	course.PriceLabel = strings.TrimSpace(course.PriceLabel)
+	course.PriceCurrency = strings.ToUpper(strings.TrimSpace(course.PriceCurrency))
+	course.AccessDuration = strings.TrimSpace(course.AccessDuration)
+	course.SupportType = strings.TrimSpace(course.SupportType)
 	course.ImageID = strings.TrimSpace(course.ImageID)
 	for index := range course.Lessons {
 		course.Lessons[index].ID = strings.TrimSpace(course.Lessons[index].ID)
@@ -485,11 +526,38 @@ func normalizeCourse(course *models.Course) {
 	if course.Status == "" {
 		course.Status = "recording"
 	}
+	if course.PriceCurrency == "" {
+		course.PriceCurrency = "IRR"
+	}
+	if course.Prerequisites == nil {
+		course.Prerequisites = []string{}
+	}
+}
+
+func validateCourse(course models.Course) error {
+	if course.Title == "" || course.Slug == "" {
+		return errors.New("نام و آدرس دوره الزامی است")
+	}
+	if course.BasePriceRial < 0 {
+		return errors.New("قیمت دوره نمی‌تواند منفی باشد")
+	}
+	if course.PriceCurrency != "IRR" {
+		return errors.New("واحد قیمت دوره باید ریال باشد")
+	}
 	switch course.Status {
 	case "recording", "for_sale", "sold_out", "in_progress", "in_production", "completed", "draft", "archived":
 	default:
-		course.Status = "recording"
+		return errors.New("وضعیت دوره معتبر نیست")
 	}
+	if course.Status == "for_sale" && course.BasePriceRial <= 0 {
+		return errors.New("برای فروش دوره، قیمت واقعی را وارد کنید")
+	}
+	return nil
+}
+
+func ValidateCourseInput(course models.Course) error {
+	normalizeCourse(&course)
+	return validateCourse(course)
 }
 
 func slugLike(value string) string {
@@ -520,19 +588,23 @@ func generateID() string {
 func DefaultCourse() models.Course {
 	now := time.Now().UTC()
 	return models.Course{
-		ID:          "01",
-		Slug:        "01",
-		Title:       "دوره مقدماتی گل‌سازی پارچه‌ای",
-		Subtitle:    "یادگیری ۵ گل پارچه‌ای به‌صورت ویدیویی، از مدل‌های ساده‌تر تا فرم‌های پیچیده‌تر.",
-		Term:        "ترم ۰۱",
-		Level:       "مقدماتی",
-		Format:      "ویدیویی",
-		Duration:    "از آسان تا سخت",
-		Summary:     "یادگیری ۵ گل پارچه‌ای به‌صورت ویدیویی، با مسیری که از مدل‌های ساده‌تر شروع می‌شود و قدم‌به‌قدم به ساخت فرم‌های پیچیده‌تر می‌رسد.",
-		Description: "در ترم اول، هنرجو ساخت ۵ گل پارچه‌ای را به‌صورت ویدیویی و مرحله‌به‌مرحله یاد می‌گیرد؛ مسیری آرام و منظم که از مدل‌های ساده‌تر آغاز می‌شود و به فرم‌های پیچیده‌تر و حرفه‌ای‌تر می‌رسد.",
-		Status:      "in_progress",
-		PriceLabel:  "پس از بررسی اعلام می‌شود",
-		SortOrder:   1,
+		ID:             "01",
+		Slug:           "01",
+		Title:          "دوره مقدماتی گل‌سازی پارچه‌ای",
+		Subtitle:       "یادگیری ۵ گل پارچه‌ای به‌صورت ویدیویی، از مدل‌های ساده‌تر تا فرم‌های پیچیده‌تر.",
+		Term:           "ترم ۰۱",
+		Level:          "مقدماتی",
+		Format:         "ویدیویی",
+		Duration:       "از آسان تا سخت",
+		Summary:        "یادگیری ۵ گل پارچه‌ای به‌صورت ویدیویی، با مسیری که از مدل‌های ساده‌تر شروع می‌شود و قدم‌به‌قدم به ساخت فرم‌های پیچیده‌تر می‌رسد.",
+		Description:    "در ترم اول، هنرجو ساخت ۵ گل پارچه‌ای را به‌صورت ویدیویی و مرحله‌به‌مرحله یاد می‌گیرد؛ مسیری آرام و منظم که از مدل‌های ساده‌تر آغاز می‌شود و به فرم‌های پیچیده‌تر و حرفه‌ای‌تر می‌رسد.",
+		Status:         "recording",
+		PriceLabel:     "پس از بررسی اعلام می‌شود",
+		PriceCurrency:  "IRR",
+		AccessDuration: "در پنل دوره اعلام می‌شود",
+		SupportType:    "پشتیبانی دوره در پنل اعلام می‌شود",
+		Prerequisites:  []string{"علاقه‌مندی به گل‌سازی پارچه‌ای"},
+		SortOrder:      1,
 		Outcomes: []string{
 			"آشنایی با ۵ مدل گل پارچه‌ای",
 			"یادگیری از سطح آسان تا سخت",

@@ -1,5 +1,7 @@
 .git
+.env
 tmp
 bin
-.env
+vendor
+*.test
 .DS_Store

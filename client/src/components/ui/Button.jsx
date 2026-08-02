@@ -7,7 +7,7 @@ const buttonBase =
 
 const buttonVariants = {
   primary:
-    "bg-[#c08081] text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] hover:bg-[#ad7274]",
+    "bg-[#a05f62] text-white shadow-[0_14px_32px_rgba(160,95,98,0.25)] hover:bg-[#8f5356]",
   dark: "bg-[#2f3b33] text-white hover:bg-[#51645a]",
   light:
     "bg-[#f7eadf] text-[#2f3b33] shadow-[0_18px_40px_rgba(24,30,25,0.26)] hover:bg-white",

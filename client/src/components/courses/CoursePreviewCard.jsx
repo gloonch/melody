@@ -20,12 +20,14 @@ export function CoursePreviewCard({ course, statusLabels = {} }) {
         <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
           <CourseVisual
             imageUrl={course.imageUrl}
+            imageSources={course.imageSources}
+            sizes="100vw"
             title={course.title}
             className="h-full w-full object-cover object-center"
           />
         </div>
         <div className="absolute inset-0 hidden md:block">
-          <CourseVisual imageUrl={course.imageUrl} title={course.title} />
+          <CourseVisual imageUrl={course.imageUrl} imageSources={course.imageSources} sizes="(min-width: 1024px) 980px, 86vw" title={course.title} />
         </div>
         <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
         <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />

@@ -2,8 +2,10 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { trackEvent } from "../../lib/analytics";
+import { ResponsiveImage } from "../ui/ResponsiveImage";
 
-export function ProductCard({ product, index, showOverlay = true }) {
+export function ProductCard({ product, index, showOverlay = true, sizes = "(min-width: 768px) 33vw, 50vw" }) {
   const productPath = product.slug || product.id;
   const productHref = `/products/${productPath}`;
   const location = useLocation();
@@ -22,6 +24,11 @@ export function ProductCard({ product, index, showOverlay = true }) {
     }
 
     event.preventDefault();
+    trackEvent("product_selected", {
+      product_id: product.id,
+      content_type: "product",
+      source: location.pathname === "/" ? "landing" : "catalog",
+    });
     navigate(productHref, {
       state: {
         from: {
@@ -42,10 +49,13 @@ export function ProductCard({ product, index, showOverlay = true }) {
       transition={{ duration: 0.45, delay: index * 0.04 }}
       className="group overflow-hidden rounded-[18px] bg-[#f7f0e8] text-right"
     >
+      {!showOverlay ? <h3 className="sr-only">{product.title}</h3> : null}
       <Link to={productHref} onClick={handleProductClick} className="relative block aspect-square overflow-hidden">
-        <img
+        <ResponsiveImage
           src={product.coverImageUrl}
+          sources={product.coverImageSources}
           alt={product.title}
+          sizes={sizes}
           loading="lazy"
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"

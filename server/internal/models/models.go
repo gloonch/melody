@@ -14,11 +14,19 @@ type ContactRequest struct {
 
 type CourseSignup struct {
 	ID          string    `db:"id"`
+	UserID      string    `db:"user_id"`
 	Phone       string    `db:"phone"`
 	CourseID    string    `db:"course_id"`
 	CourseSlug  string    `db:"course_slug"`
 	CourseTitle string    `db:"course_title"`
+	RequestType string    `db:"request_type"`
 	CreatedAt   time.Time `db:"created_at"`
+}
+
+type ImageSource struct {
+	URL   string `json:"url"`
+	Width int    `json:"width"`
+	Type  string `json:"type"`
 }
 
 type User struct {
@@ -49,24 +57,33 @@ type RefreshToken struct {
 }
 
 type Product struct {
-	ID               string    `json:"id" db:"id"`
-	Slug             string    `json:"slug" db:"slug"`
-	Title            string    `json:"title" db:"title"`
-	ShortDescription string    `json:"shortDescription" db:"short_description"`
-	Description      string    `json:"description" db:"description"`
-	CoverImageID     string    `json:"coverImageId" db:"cover_image_id"`
-	CoverImageURL    string    `json:"coverImageUrl,omitempty"`
-	Category         string    `json:"category" db:"category"`
-	UsageLabel       string    `json:"usageLabel" db:"usage_label"`
-	Materials        []string  `json:"materials" db:"materials"`
-	Colors           []string  `json:"colors" db:"colors"`
-	IsCustomizable   bool      `json:"isCustomizable" db:"is_customizable"`
-	PriceLabel       string    `json:"priceLabel" db:"price_label"`
-	PreparationTime  string    `json:"preparationTime" db:"preparation_time"`
-	Status           string    `json:"status" db:"status"`
-	SortOrder        int       `json:"sortOrder" db:"sort_order"`
-	CreatedAt        time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt        time.Time `json:"updatedAt" db:"updated_at"`
+	ID                string        `json:"id" db:"id"`
+	Slug              string        `json:"slug" db:"slug"`
+	Title             string        `json:"title" db:"title"`
+	ShortDescription  string        `json:"shortDescription" db:"short_description"`
+	Description       string        `json:"description" db:"description"`
+	CoverImageID      string        `json:"coverImageId" db:"cover_image_id"`
+	CoverImageURL     string        `json:"coverImageUrl,omitempty"`
+	CoverImageSources []ImageSource `json:"coverImageSources,omitempty"`
+	Category          string        `json:"category" db:"category"`
+	UsageLabel        string        `json:"usageLabel" db:"usage_label"`
+	Materials         []string      `json:"materials" db:"materials"`
+	Colors            []string      `json:"colors" db:"colors"`
+	IsCustomizable    bool          `json:"isCustomizable" db:"is_customizable"`
+	PriceLabel        string        `json:"priceLabel" db:"price_label"`
+	BasePriceRial     int64         `json:"basePriceRial" db:"base_price_rial"`
+	PriceCurrency     string        `json:"priceCurrency" db:"price_currency"`
+	Availability      string        `json:"availability" db:"availability"`
+	PreparationTime   string        `json:"preparationTime" db:"preparation_time"`
+	PreparationDays   int           `json:"preparationDays" db:"preparation_days"`
+	IsFeatured        bool          `json:"isFeatured" db:"is_featured"`
+	FeaturedOrder     int           `json:"featuredOrder" db:"featured_order"`
+	SEOTitle          string        `json:"seoTitle" db:"seo_title"`
+	SEODescription    string        `json:"seoDescription" db:"seo_description"`
+	Status            string        `json:"status" db:"status"`
+	SortOrder         int           `json:"sortOrder" db:"sort_order"`
+	CreatedAt         time.Time     `json:"createdAt" db:"created_at"`
+	UpdatedAt         time.Time     `json:"updatedAt" db:"updated_at"`
 }
 
 type ProductSnapshot struct {
@@ -76,6 +93,8 @@ type ProductSnapshot struct {
 	ShortDescription string `json:"shortDescription"`
 	CoverImageURL    string `json:"coverImageUrl,omitempty"`
 	PriceLabel       string `json:"priceLabel"`
+	BasePriceRial    int64  `json:"basePriceRial"`
+	PriceCurrency    string `json:"priceCurrency"`
 	PreparationTime  string `json:"preparationTime"`
 }
 
@@ -149,42 +168,49 @@ type Order struct {
 }
 
 type CourseLesson struct {
-	ID           string   `json:"id"`
-	ChapterID    string   `json:"chapterId,omitempty"`
-	ChapterTitle string   `json:"chapterTitle,omitempty"`
-	Title        string   `json:"title"`
-	Level        string   `json:"level"`
-	Type         string   `json:"type"`
-	Duration     string   `json:"duration"`
-	Summary      string   `json:"summary"`
-	Body         string   `json:"body,omitempty"`
-	VideoURL     string   `json:"videoUrl,omitempty"`
-	Materials    []string `json:"materials"`
-	ImageID      string   `json:"imageId,omitempty"`
-	ImageURL     string   `json:"imageUrl,omitempty"`
+	ID           string        `json:"id"`
+	ChapterID    string        `json:"chapterId,omitempty"`
+	ChapterTitle string        `json:"chapterTitle,omitempty"`
+	Title        string        `json:"title"`
+	Level        string        `json:"level"`
+	Type         string        `json:"type"`
+	Duration     string        `json:"duration"`
+	Summary      string        `json:"summary"`
+	Body         string        `json:"body,omitempty"`
+	VideoURL     string        `json:"videoUrl,omitempty"`
+	Materials    []string      `json:"materials"`
+	ImageID      string        `json:"imageId,omitempty"`
+	ImageURL     string        `json:"imageUrl,omitempty"`
+	ImageSources []ImageSource `json:"imageSources,omitempty"`
 }
 
 type Course struct {
-	ID          string         `json:"id" db:"id"`
-	Slug        string         `json:"slug" db:"slug"`
-	Title       string         `json:"title" db:"title"`
-	Subtitle    string         `json:"subtitle" db:"subtitle"`
-	Term        string         `json:"term" db:"term"`
-	Level       string         `json:"level" db:"level"`
-	Format      string         `json:"format" db:"format"`
-	Duration    string         `json:"duration" db:"duration"`
-	Summary     string         `json:"summary" db:"summary"`
-	Description string         `json:"description" db:"description"`
-	Status      string         `json:"status" db:"status"`
-	PriceLabel  string         `json:"priceLabel" db:"price_label"`
-	ImageID     string         `json:"imageId,omitempty" db:"image_id"`
-	ImageURL    string         `json:"imageUrl,omitempty"`
-	SortOrder   int            `json:"sortOrder" db:"sort_order"`
-	Outcomes    []string       `json:"outcomes" db:"outcomes"`
-	Audience    []string       `json:"audience" db:"audience"`
-	Lessons     []CourseLesson `json:"lessons" db:"lessons"`
-	CreatedAt   time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt   time.Time      `json:"updatedAt" db:"updated_at"`
+	ID             string         `json:"id" db:"id"`
+	Slug           string         `json:"slug" db:"slug"`
+	Title          string         `json:"title" db:"title"`
+	Subtitle       string         `json:"subtitle" db:"subtitle"`
+	Term           string         `json:"term" db:"term"`
+	Level          string         `json:"level" db:"level"`
+	Format         string         `json:"format" db:"format"`
+	Duration       string         `json:"duration" db:"duration"`
+	Summary        string         `json:"summary" db:"summary"`
+	Description    string         `json:"description" db:"description"`
+	Status         string         `json:"status" db:"status"`
+	PriceLabel     string         `json:"priceLabel" db:"price_label"`
+	BasePriceRial  int64          `json:"basePriceRial" db:"base_price_rial"`
+	PriceCurrency  string         `json:"priceCurrency" db:"price_currency"`
+	AccessDuration string         `json:"accessDuration" db:"access_duration"`
+	SupportType    string         `json:"supportType" db:"support_type"`
+	Prerequisites  []string       `json:"prerequisites" db:"prerequisites"`
+	ImageID        string         `json:"imageId,omitempty" db:"image_id"`
+	ImageURL       string         `json:"imageUrl,omitempty"`
+	ImageSources   []ImageSource  `json:"imageSources,omitempty"`
+	SortOrder      int            `json:"sortOrder" db:"sort_order"`
+	Outcomes       []string       `json:"outcomes" db:"outcomes"`
+	Audience       []string       `json:"audience" db:"audience"`
+	Lessons        []CourseLesson `json:"lessons" db:"lessons"`
+	CreatedAt      time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updatedAt" db:"updated_at"`
 }
 
 type CourseAccess struct {
@@ -197,13 +223,25 @@ type CourseAccess struct {
 }
 
 type CourseImage struct {
+	ID          string        `json:"id" db:"id"`
+	CourseID    string        `json:"courseId" db:"course_id"`
+	Filename    string        `json:"filename" db:"filename"`
+	Alt         string        `json:"alt" db:"alt"`
+	ContentType string        `json:"contentType" db:"content_type"`
+	Data        []byte        `json:"-" db:"data"`
+	SortOrder   int           `json:"sortOrder" db:"sort_order"`
+	CreatedAt   time.Time     `json:"createdAt" db:"created_at"`
+	URL         string        `json:"url,omitempty"`
+	Sources     []ImageSource `json:"sources,omitempty"`
+}
+
+type ImageVariant struct {
 	ID          string    `json:"id" db:"id"`
-	CourseID    string    `json:"courseId" db:"course_id"`
-	Filename    string    `json:"filename" db:"filename"`
-	Alt         string    `json:"alt" db:"alt"`
+	SourceTable string    `json:"sourceTable" db:"source_table"`
+	SourceID    string    `json:"sourceId" db:"source_id"`
+	Width       int       `json:"width" db:"width"`
 	ContentType string    `json:"contentType" db:"content_type"`
 	Data        []byte    `json:"-" db:"data"`
-	SortOrder   int       `json:"sortOrder" db:"sort_order"`
 	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
 	URL         string    `json:"url,omitempty"`
 }

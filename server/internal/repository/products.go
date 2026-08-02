@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"melody-server/internal/models"
 
@@ -16,9 +17,21 @@ import (
 )
 
 const (
-	ProductStatusActive = "active"
-	ProductStatusDraft  = "draft"
+	ProductStatusActive   = "active"
+	ProductStatusDraft    = "draft"
+	ProductStatusArchived = "archived"
+
+	ProductAvailabilityInStock     = "in_stock"
+	ProductAvailabilityMadeToOrder = "made_to_order"
+	ProductAvailabilityOutOfStock  = "out_of_stock"
 )
+
+var ErrFeaturedLimit = errors.New("at most three products can be featured")
+
+const productColumns = `id, slug, title, short_description, description, cover_image_id, category, usage_label,
+	materials, colors, is_customizable, price_label, base_price_rial, price_currency, availability,
+	preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
+	status, sort_order, created_at, updated_at`
 
 type ProductRepository struct {
 	pool *pgxpool.Pool
@@ -64,24 +77,25 @@ func (r *ProductRepository) SeedFromProjectImages(ctx context.Context) error {
 	for _, image := range images {
 		title := strings.TrimSpace(image.Alt)
 		if title == "" {
-			title = fmt.Sprintf("گل پارچه‌ای سفارشی %d", image.SortOrder+1)
+			title = fmt.Sprintf("گل پارچه‌ای %d", image.SortOrder+1)
 		}
 
 		product := models.Product{
 			ID:               "product-" + image.ID,
 			Slug:             fmt.Sprintf("fabric-flower-%02d", image.SortOrder+1),
 			Title:            title,
-			ShortDescription: "گل پارچه‌ای دست‌ساز قابل سفارش برای لباس، کلاه و اکسسوری.",
-			Description:      "این محصول به‌صورت سفارشی و بر اساس کاربرد، رنگ و جزئیات موردنیاز شما بررسی و آماده‌سازی می‌شود.",
+			ShortDescription: "اطلاعات این گل پارچه‌ای در پنل مدیریت تکمیل می‌شود.",
+			Description:      "برای انتشار محصول، نام، توضیحات، کاربرد، قیمت پایه و وضعیت موجودی را تکمیل کنید.",
 			CoverImageID:     image.ID,
-			Category:         "گل پارچه‌ای سفارشی",
-			UsageLabel:       "لباس، کلاه، سنجاق سینه و اکسسوری",
-			Materials:        []string{"پارچه", "نخ", "سیم گل‌سازی", "جزئیات تزئینی"},
-			Colors:           []string{"سفارشی"},
+			Category:         "گل پارچه‌ای",
+			UsageLabel:       "",
+			Materials:        []string{},
+			Colors:           []string{},
 			IsCustomizable:   true,
-			PriceLabel:       "پس از بررسی اعلام می‌شود",
-			PreparationTime:  "زمان آماده‌سازی پس از بررسی اعلام می‌شود",
-			Status:           ProductStatusActive,
+			PriceCurrency:    "IRR",
+			Availability:     ProductAvailabilityInStock,
+			PreparationDays:  1,
+			Status:           ProductStatusDraft,
 			SortOrder:        image.SortOrder,
 		}
 		if _, err := r.CreateProduct(ctx, product); err != nil && !isUniqueViolationCode(err) {
@@ -95,11 +109,10 @@ func (r *ProductRepository) SeedFromProjectImages(ctx context.Context) error {
 func (r *ProductRepository) ListProducts(ctx context.Context, includeDrafts bool) ([]models.Product, error) {
 	rows, err := r.pool.Query(
 		ctx,
-		`SELECT id, slug, title, short_description, description, cover_image_id, category, usage_label,
-			materials, colors, is_customizable, price_label, preparation_time, status, sort_order, created_at, updated_at
+		`SELECT `+productColumns+`
 		 FROM products
 		 WHERE ($1 OR status = 'active')
-		 ORDER BY sort_order ASC, created_at ASC`,
+		 ORDER BY is_featured DESC, featured_order ASC, sort_order ASC, created_at ASC`,
 		includeDrafts,
 	)
 	if err != nil {
@@ -124,8 +137,7 @@ func (r *ProductRepository) ListProducts(ctx context.Context, includeDrafts bool
 func (r *ProductRepository) GetProduct(ctx context.Context, idOrSlug string, includeDrafts bool) (models.Product, error) {
 	row := r.pool.QueryRow(
 		ctx,
-		`SELECT id, slug, title, short_description, description, cover_image_id, category, usage_label,
-			materials, colors, is_customizable, price_label, preparation_time, status, sort_order, created_at, updated_at
+		`SELECT `+productColumns+`
 		 FROM products
 		 WHERE (id = $1 OR slug = $1) AND ($2 OR status = 'active')
 		 LIMIT 1`,
@@ -144,62 +156,181 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, product models.Pr
 	if product.ID == "" {
 		product.ID = generateID()
 	}
+	if err := ValidateProduct(product); err != nil {
+		return models.Product{}, err
+	}
+
 	now := time.Now().UTC()
 	product.CreatedAt = now
 	product.UpdatedAt = now
 
-	_, err := r.pool.Exec(
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return models.Product{}, err
+	}
+	defer tx.Rollback(ctx)
+	if err := ensureFeaturedSlot(ctx, tx, product.ID, product.IsFeatured); err != nil {
+		return models.Product{}, err
+	}
+
+	_, err = tx.Exec(
 		ctx,
 		`INSERT INTO products (
 			id, slug, title, short_description, description, cover_image_id, category, usage_label,
-			materials, colors, is_customizable, price_label, preparation_time, status, sort_order, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
-		product.ID,
-		product.Slug,
-		product.Title,
-		product.ShortDescription,
-		product.Description,
-		product.CoverImageID,
-		product.Category,
-		product.UsageLabel,
-		mustJSON(product.Materials),
-		mustJSON(product.Colors),
-		product.IsCustomizable,
-		product.PriceLabel,
-		product.PreparationTime,
-		product.Status,
-		product.SortOrder,
-		product.CreatedAt,
-		product.UpdatedAt,
+			materials, colors, is_customizable, price_label, base_price_rial, price_currency, availability,
+			preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
+			status, sort_order, created_at, updated_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
+		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
+		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.Materials),
+		mustJSON(product.Colors), product.IsCustomizable, product.PriceLabel, product.BasePriceRial,
+		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
+		product.IsFeatured, product.FeaturedOrder, product.SEOTitle, product.SEODescription,
+		product.Status, product.SortOrder, product.CreatedAt, product.UpdatedAt,
 	)
-	return product, err
+	if err != nil {
+		return models.Product{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return models.Product{}, err
+	}
+	return product, nil
 }
 
-func scanProduct(scanner interface {
-	Scan(dest ...any) error
-}) (models.Product, error) {
+func (r *ProductRepository) UpdateProduct(ctx context.Context, id string, product models.Product) (models.Product, error) {
+	normalizeProduct(&product)
+	product.ID = strings.TrimSpace(id)
+	if err := ValidateProduct(product); err != nil {
+		return models.Product{}, err
+	}
+	product.UpdatedAt = time.Now().UTC()
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return models.Product{}, err
+	}
+	defer tx.Rollback(ctx)
+	if err := ensureFeaturedSlot(ctx, tx, product.ID, product.IsFeatured); err != nil {
+		return models.Product{}, err
+	}
+
+	row := tx.QueryRow(
+		ctx,
+		`UPDATE products SET
+			slug=$2, title=$3, short_description=$4, description=$5, cover_image_id=$6,
+			category=$7, usage_label=$8, materials=$9, colors=$10, is_customizable=$11,
+			price_label=$12, base_price_rial=$13, price_currency=$14, availability=$15,
+			preparation_time=$16, preparation_days=$17, is_featured=$18, featured_order=$19,
+			seo_title=$20, seo_description=$21, status=$22, sort_order=$23, updated_at=$24
+		 WHERE id=$1
+		 RETURNING `+productColumns,
+		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
+		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.Materials),
+		mustJSON(product.Colors), product.IsCustomizable, product.PriceLabel, product.BasePriceRial,
+		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
+		product.IsFeatured, product.FeaturedOrder, product.SEOTitle, product.SEODescription,
+		product.Status, product.SortOrder, product.UpdatedAt,
+	)
+	updated, err := scanProduct(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Product{}, ErrNotFound
+	}
+	if err != nil {
+		return models.Product{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return models.Product{}, err
+	}
+	return updated, nil
+}
+
+func (r *ProductRepository) UpdateStatus(ctx context.Context, id, status string) (models.Product, error) {
+	product, err := r.GetProduct(ctx, id, true)
+	if err != nil {
+		return models.Product{}, err
+	}
+	product.Status = strings.TrimSpace(status)
+	if product.Status != ProductStatusActive {
+		product.IsFeatured = false
+	}
+	return r.UpdateProduct(ctx, id, product)
+}
+
+func ValidateProduct(product models.Product) error {
+	if product.Slug == "" {
+		return errors.New("آدرس محصول الزامی است")
+	}
+	if product.Title == "" {
+		return errors.New("نام محصول الزامی است")
+	}
+	if product.BasePriceRial < 0 {
+		return errors.New("قیمت پایه نمی‌تواند منفی باشد")
+	}
+	if product.PreparationDays < 0 {
+		return errors.New("زمان آماده‌سازی نمی‌تواند منفی باشد")
+	}
+	if product.PriceCurrency != "IRR" {
+		return errors.New("واحد قیمت محصول باید ریال باشد")
+	}
+	switch product.Availability {
+	case ProductAvailabilityInStock, ProductAvailabilityMadeToOrder, ProductAvailabilityOutOfStock:
+	default:
+		return errors.New("وضعیت موجودی محصول معتبر نیست")
+	}
+	switch product.Status {
+	case ProductStatusActive, ProductStatusDraft, ProductStatusArchived:
+	default:
+		return errors.New("وضعیت انتشار محصول معتبر نیست")
+	}
+	if utf8.RuneCountInString(product.SEOTitle) > 70 {
+		return errors.New("عنوان SEO نباید بیشتر از ۷۰ کاراکتر باشد")
+	}
+	if utf8.RuneCountInString(product.SEODescription) > 180 {
+		return errors.New("توضیح SEO نباید بیشتر از ۱۸۰ کاراکتر باشد")
+	}
+	if product.Status == ProductStatusActive {
+		if product.CoverImageID == "" || product.Description == "" || product.UsageLabel == "" {
+			return errors.New("برای انتشار محصول، تصویر، توضیحات و کاربرد الزامی است")
+		}
+		if product.BasePriceRial <= 0 {
+			return errors.New("برای انتشار محصول، قیمت پایه واقعی را وارد کنید")
+		}
+	}
+	if product.IsFeatured && product.Status != ProductStatusActive {
+		return errors.New("فقط محصول منتشرشده می‌تواند منتخب باشد")
+	}
+	return nil
+}
+
+func ensureFeaturedSlot(ctx context.Context, tx pgx.Tx, productID string, featured bool) error {
+	if !featured {
+		return nil
+	}
+	if _, err := tx.Exec(ctx, `LOCK TABLE products IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		return err
+	}
+	var count int
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*) FROM products WHERE is_featured = TRUE AND id <> $1`, productID).Scan(&count); err != nil {
+		return err
+	}
+	if count >= 3 {
+		return ErrFeaturedLimit
+	}
+	return nil
+}
+
+func scanProduct(scanner interface{ Scan(dest ...any) error }) (models.Product, error) {
 	var product models.Product
 	var materialsJSON []byte
 	var colorsJSON []byte
 
 	err := scanner.Scan(
-		&product.ID,
-		&product.Slug,
-		&product.Title,
-		&product.ShortDescription,
-		&product.Description,
-		&product.CoverImageID,
-		&product.Category,
-		&product.UsageLabel,
-		&materialsJSON,
-		&colorsJSON,
-		&product.IsCustomizable,
-		&product.PriceLabel,
-		&product.PreparationTime,
-		&product.Status,
-		&product.SortOrder,
-		&product.CreatedAt,
-		&product.UpdatedAt,
+		&product.ID, &product.Slug, &product.Title, &product.ShortDescription, &product.Description,
+		&product.CoverImageID, &product.Category, &product.UsageLabel, &materialsJSON, &colorsJSON,
+		&product.IsCustomizable, &product.PriceLabel, &product.BasePriceRial, &product.PriceCurrency,
+		&product.Availability, &product.PreparationTime, &product.PreparationDays, &product.IsFeatured,
+		&product.FeaturedOrder, &product.SEOTitle, &product.SEODescription, &product.Status,
+		&product.SortOrder, &product.CreatedAt, &product.UpdatedAt,
 	)
 	if err != nil {
 		return models.Product{}, err
@@ -215,7 +346,7 @@ func scanProduct(scanner interface {
 
 func normalizeProduct(product *models.Product) {
 	product.ID = strings.TrimSpace(product.ID)
-	product.Slug = strings.TrimSpace(product.Slug)
+	product.Slug = strings.Trim(strings.TrimSpace(product.Slug), "/")
 	product.Title = strings.TrimSpace(product.Title)
 	product.ShortDescription = strings.TrimSpace(product.ShortDescription)
 	product.Description = strings.TrimSpace(product.Description)
@@ -223,17 +354,18 @@ func normalizeProduct(product *models.Product) {
 	product.Category = strings.TrimSpace(product.Category)
 	product.UsageLabel = strings.TrimSpace(product.UsageLabel)
 	product.PriceLabel = strings.TrimSpace(product.PriceLabel)
+	product.PriceCurrency = strings.ToUpper(strings.TrimSpace(product.PriceCurrency))
+	product.Availability = strings.TrimSpace(product.Availability)
 	product.PreparationTime = strings.TrimSpace(product.PreparationTime)
+	product.SEOTitle = strings.TrimSpace(product.SEOTitle)
+	product.SEODescription = strings.TrimSpace(product.SEODescription)
 	product.Status = strings.TrimSpace(product.Status)
 
 	if product.Slug == "" {
 		product.Slug = product.ID
 	}
-	if product.Title == "" {
-		product.Title = "گل پارچه‌ای سفارشی"
-	}
 	if product.ShortDescription == "" {
-		product.ShortDescription = "گل پارچه‌ای دست‌ساز قابل سفارش."
+		product.ShortDescription = product.Description
 	}
 	if product.Description == "" {
 		product.Description = product.ShortDescription
@@ -241,19 +373,14 @@ func normalizeProduct(product *models.Product) {
 	if product.Category == "" {
 		product.Category = "گل پارچه‌ای"
 	}
-	if product.PriceLabel == "" {
-		product.PriceLabel = "پس از بررسی اعلام می‌شود"
+	if product.PriceCurrency == "" {
+		product.PriceCurrency = "IRR"
 	}
-	if product.PreparationTime == "" {
-		product.PreparationTime = "پس از بررسی اعلام می‌شود"
+	if product.Availability == "" {
+		product.Availability = ProductAvailabilityInStock
 	}
 	if product.Status == "" {
-		product.Status = ProductStatusActive
-	}
-	switch product.Status {
-	case ProductStatusActive, ProductStatusDraft:
-	default:
-		product.Status = ProductStatusActive
+		product.Status = ProductStatusDraft
 	}
 	if product.Materials == nil {
 		product.Materials = []string{}

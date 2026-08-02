@@ -69,18 +69,23 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 		`CREATE INDEX IF NOT EXISTS idx_contact_requests_contact ON contact_requests (contact)`,
 		`CREATE TABLE IF NOT EXISTS course_signups (
 			id TEXT PRIMARY KEY,
+			user_id TEXT NOT NULL DEFAULT '',
 			phone TEXT NOT NULL,
 			course_id TEXT NOT NULL DEFAULT '',
 			course_slug TEXT NOT NULL DEFAULT '',
 			course_title TEXT NOT NULL DEFAULT '',
+			request_type TEXT NOT NULL DEFAULT 'purchase',
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
+		`ALTER TABLE course_signups ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE course_signups ADD COLUMN IF NOT EXISTS course_id TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE course_signups ADD COLUMN IF NOT EXISTS course_slug TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE course_signups ADD COLUMN IF NOT EXISTS course_title TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE course_signups ADD COLUMN IF NOT EXISTS request_type TEXT NOT NULL DEFAULT 'purchase'`,
 		`CREATE INDEX IF NOT EXISTS idx_course_signups_created_at ON course_signups (created_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_course_signups_phone ON course_signups (phone)`,
 		`CREATE INDEX IF NOT EXISTS idx_course_signups_course_id ON course_signups (course_id)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_course_signups_user_course_type ON course_signups (user_id, course_id, request_type) WHERE user_id <> ''`,
 		`CREATE TABLE IF NOT EXISTS users (
 			id TEXT PRIMARY KEY,
 			email TEXT UNIQUE,
@@ -168,13 +173,42 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			colors JSONB NOT NULL DEFAULT '[]'::jsonb,
 			is_customizable BOOLEAN NOT NULL DEFAULT TRUE,
 			price_label TEXT NOT NULL DEFAULT '',
+			base_price_rial BIGINT NOT NULL DEFAULT 0,
+			price_currency TEXT NOT NULL DEFAULT 'IRR',
+			availability TEXT NOT NULL DEFAULT 'in_stock',
 			preparation_time TEXT NOT NULL DEFAULT '',
+			preparation_days INTEGER NOT NULL DEFAULT 1,
+			is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+			featured_order INTEGER NOT NULL DEFAULT 0,
+			seo_title TEXT NOT NULL DEFAULT '',
+			seo_description TEXT NOT NULL DEFAULT '',
 			status TEXT NOT NULL DEFAULT 'active',
 			sort_order INTEGER NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS base_price_rial BIGINT NOT NULL DEFAULT 0`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS price_currency TEXT NOT NULL DEFAULT 'IRR'`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS availability TEXT NOT NULL DEFAULT 'in_stock'`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS preparation_days INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS featured_order INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_title TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_description TEXT NOT NULL DEFAULT ''`,
+		`WITH initial_featured AS (
+			SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order ASC, created_at ASC) AS position
+			FROM products
+			WHERE status = 'active'
+			ORDER BY sort_order ASC, created_at ASC
+			LIMIT 3
+		)
+		UPDATE products p
+		SET is_featured = TRUE, featured_order = initial_featured.position
+		FROM initial_featured
+		WHERE p.id = initial_featured.id
+		  AND NOT EXISTS (SELECT 1 FROM products WHERE is_featured = TRUE)`,
 		`CREATE INDEX IF NOT EXISTS idx_products_status_sort_order ON products (status, sort_order, slug)`,
+		`CREATE INDEX IF NOT EXISTS idx_products_featured ON products (is_featured, featured_order) WHERE status = 'active'`,
 		`CREATE INDEX IF NOT EXISTS idx_products_cover_image_id ON products (cover_image_id)`,
 		`CREATE TABLE IF NOT EXISTS orders (
 			id TEXT PRIMARY KEY,
@@ -235,6 +269,11 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			description TEXT NOT NULL DEFAULT '',
 			status TEXT NOT NULL DEFAULT 'draft',
 			price_label TEXT NOT NULL DEFAULT '',
+			base_price_rial BIGINT NOT NULL DEFAULT 0,
+			price_currency TEXT NOT NULL DEFAULT 'IRR',
+			access_duration TEXT NOT NULL DEFAULT '',
+			support_type TEXT NOT NULL DEFAULT '',
+			prerequisites JSONB NOT NULL DEFAULT '[]'::jsonb,
 			image_id TEXT NOT NULL DEFAULT '',
 			sort_order INTEGER NOT NULL DEFAULT 0,
 			outcomes JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -244,9 +283,16 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
 		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS price_label TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS base_price_rial BIGINT NOT NULL DEFAULT 0`,
+		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS price_currency TEXT NOT NULL DEFAULT 'IRR'`,
+		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS access_duration TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS support_type TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS prerequisites JSONB NOT NULL DEFAULT '[]'::jsonb`,
 		`ALTER TABLE courses ADD COLUMN IF NOT EXISTS image_id TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE courses DROP COLUMN IF EXISTS stats`,
-		`UPDATE courses SET status = 'in_progress' WHERE status = 'published'`,
+		`UPDATE courses
+		 SET status = CASE WHEN base_price_rial > 0 THEN 'for_sale' ELSE 'recording' END
+		 WHERE status = 'published'`,
 		`CREATE INDEX IF NOT EXISTS idx_courses_status_sort_order ON courses (status, sort_order, slug)`,
 		`CREATE TABLE IF NOT EXISTS course_accesses (
 			id TEXT PRIMARY KEY,
@@ -269,6 +315,17 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			UNIQUE (course_id, filename)
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_course_images_course_sort_order ON course_images (course_id, sort_order, filename)`,
+		`CREATE TABLE IF NOT EXISTS image_variants (
+			id TEXT PRIMARY KEY,
+			source_table TEXT NOT NULL,
+			source_id TEXT NOT NULL,
+			width INTEGER NOT NULL,
+			content_type TEXT NOT NULL DEFAULT 'image/webp',
+			data BYTEA NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE (source_table, source_id, width)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_image_variants_source ON image_variants (source_table, source_id, width)`,
 	}
 
 	for _, query := range statements {

@@ -1,9 +1,10 @@
 import React from "react";
+import { ResponsiveImage } from "../ui/ResponsiveImage";
 
-export function CourseVisual({ imageUrl, title, className = "h-full w-full object-cover object-right" }) {
+export function CourseVisual({ imageUrl, imageSources = [], title, sizes = "100vw", className = "h-full w-full object-cover object-right" }) {
   if (imageUrl) {
     return (
-      <img src={imageUrl} alt={title} loading="lazy" decoding="async" className={className} />
+      <ResponsiveImage src={imageUrl} sources={imageSources} sizes={sizes} alt={title} loading="lazy" decoding="async" className={className} />
     );
   }
 
