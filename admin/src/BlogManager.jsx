@@ -201,6 +201,42 @@ export function BlogManager({ token, onStatus }) {
     }
   };
 
+  const persistCoverImage = async (image, { manageBusy = true } = {}) => {
+    const alt = String(image.alt || form.title || "").trim();
+    if (!alt) {
+      onStatus({ type: "error", message: "برای تصویر شاخص alt بنویسید." });
+      return false;
+    }
+    if (manageBusy) setBusy("cover");
+    try {
+      const imageData = await apiRequest(`admin/blogs/${form.id}/images/${image.id}`, {
+        token,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alt, caption: image.caption || "" }),
+      });
+      setImages((current) => current.map((item) => item.id === image.id ? imageData.image : item));
+
+      const nextForm = { ...form, coverImageId: image.id, coverImageAlt: alt };
+      const postData = await apiRequest(`admin/blogs/${form.id}`, {
+        token,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextForm),
+      });
+      setForm({ ...emptyPost(), ...normalizePostForEditor(postData.post) });
+      setDirty(false);
+      await loadLists();
+      onStatus({ type: "success", message: "تصویر شاخص ذخیره شد و روی سایت قابل نمایش است." });
+      return true;
+    } catch (error) {
+      onStatus({ type: "error", message: error.message });
+      return false;
+    } finally {
+      if (manageBusy) setBusy("");
+    }
+  };
+
   const uploadImages = async (files) => {
     if (!form.id) {
       onStatus({ type: "error", message: "ابتدا مقاله را ذخیره کنید، سپس تصویر اضافه کنید." });
@@ -210,9 +246,15 @@ export function BlogManager({ token, onStatus }) {
     try {
       const body = new FormData();
       Array.from(files).forEach((file) => body.append("images", file));
-      await apiRequest(`admin/blogs/${form.id}/images`, { token, method: "POST", body });
+      const uploadedData = await apiRequest(`admin/blogs/${form.id}/images`, { token, method: "POST", body });
       const data = await apiRequest(`admin/blogs/${form.id}/images`, { token });
       setImages(data.images || []);
+      const firstUploaded = uploadedData.images?.[0];
+      if (!form.coverImageId && firstUploaded) {
+        await persistCoverImage({ ...firstUploaded, alt: form.title || firstUploaded.alt }, { manageBusy: false });
+      } else {
+        onStatus({ type: "success", message: "تصویر آپلود شد." });
+      }
     } catch (error) {
       onStatus({ type: "error", message: error.message });
     } finally {
@@ -246,11 +288,11 @@ export function BlogManager({ token, onStatus }) {
           {busy === "load" ? <div className="grid min-h-80 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-[#c08081]" /></div> : (
             <>
               {activeTab === "content" ? <ContentFields form={form} update={update} categories={categories} posts={posts} preview={preview} onPreview={previewPost} busy={busy} /> : null}
-              {activeTab === "media" ? <MediaFields form={form} update={update} images={images} setImages={setImages} token={token} onUpload={uploadImages} busy={busy} onStatus={onStatus} /> : null}
+              {activeTab === "media" ? <MediaFields form={form} update={update} images={images} setImages={setImages} token={token} onUpload={uploadImages} onSetCover={persistCoverImage} busy={busy} onStatus={onStatus} /> : null}
               {activeTab === "seo" ? <SEOFields form={form} update={update} warnings={seoWarnings} /> : null}
               {activeTab === "publication" ? <PublicationFields form={form} categories={categories} setCategories={setCategories} token={token} scheduleDate={scheduleDate} setScheduleDate={setScheduleDate} onPublication={publication} busy={busy} onStatus={onStatus} /> : null}
               <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[#eee7df] pt-5">
-                <button type="button" onClick={savePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">{busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}ذخیره پیش‌نویس</button>
+                <button type="button" onClick={savePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">{busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{form.status === "published" ? "ذخیره تغییرات" : "ذخیره پیش‌نویس"}</button>
                 {form.id && form.status === "draft" && !form.publishedAt ? <button type="button" onClick={removePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#e4c6c8] px-4 text-sm text-[#b85d60]"><Trash2 className="h-4 w-4" />حذف</button> : null}
                 {dirty ? <span className="text-xs text-[#a05f62]">تغییرات ذخیره نشده‌اند.</span> : <span className="inline-flex items-center gap-1 text-xs text-[#5d8066]"><CheckCircle2 className="h-4 w-4" />ذخیره‌شده</span>}
               </div>
@@ -277,7 +319,7 @@ function ContentFields({ form, update, categories, posts, preview, onPreview, bu
   </div>;
 }
 
-function MediaFields({ form, update, images, setImages, token, onUpload, busy, onStatus }) {
+function MediaFields({ form, update, images, setImages, token, onUpload, onSetCover, busy, onStatus }) {
   const inputRef = useRef(null);
   const saveImage = async (image) => {
     try {
@@ -289,8 +331,8 @@ function MediaFields({ form, update, images, setImages, token, onUpload, busy, o
     if (!window.confirm("تصویر حذف شود؟")) return;
     try { await apiRequest(`admin/blogs/${form.id}/images/${imageId}`, { token, method: "DELETE" }); setImages((current) => current.filter((item) => item.id !== imageId)); } catch (error) { onStatus({ type: "error", message: error.message }); }
   };
-  return <div><div className="flex flex-wrap items-center gap-3"><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className={fieldClass} /><button type="button" onClick={() => onUpload(inputRef.current?.files || [])} disabled={busy === "upload"} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white">{busy === "upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}آپلود</button></div><p className="mt-2 text-xs text-[#807269]">JPG، PNG یا WebP؛ حداکثر ۸MB و ۶۰۰۰×۶۰۰۰. انتشار بدون تصویر شاخص و alt آن ممکن نیست.</p>
-    <div className="mt-5 grid gap-4 md:grid-cols-2">{images.map((image) => <article key={image.id} className="rounded-md border border-[#e5ddd5] p-3"><img src={image.url} alt={image.alt} className="aspect-[4/3] w-full rounded-md object-cover" /><div className="mt-3 grid gap-2"><input className={fieldClass} value={image.alt} onChange={(e) => setImages((current) => current.map((item) => item.id === image.id ? { ...item, alt: e.target.value } : item))} placeholder="alt تصویر" /><input className={fieldClass} value={image.caption || ""} onChange={(e) => setImages((current) => current.map((item) => item.id === image.id ? { ...item, caption: e.target.value } : item))} placeholder="caption" /><div className="flex flex-wrap gap-2"><button type="button" onClick={() => saveImage(image)} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-xs">ذخیره تصویر</button><button type="button" onClick={() => { update("coverImageId", image.id); update("coverImageAlt", image.alt); }} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-xs">تصویر شاخص</button><button type="button" onClick={() => { update("ogImageId", image.id); update("ogImageAlt", image.alt); }} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-xs">تصویر OG</button><button type="button" onClick={() => copyImageHTML(image)} className="grid h-9 w-9 place-items-center rounded-md border border-[#d9cfc5]" title="کپی HTML"><Clipboard className="h-4 w-4" /></button><button type="button" onClick={() => remove(image.id)} className="grid h-9 w-9 place-items-center text-[#b85d60]" aria-label="حذف"><Trash2 className="h-4 w-4" /></button></div>{form.coverImageId === image.id ? <span className="text-xs text-[#5d8066]">تصویر شاخص انتخاب شده</span> : null}</div></article>)}</div>
+  return <div><div className="flex flex-wrap items-center gap-3"><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className={fieldClass} /><button type="button" onClick={() => onUpload(inputRef.current?.files || [])} disabled={busy === "upload"} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white">{busy === "upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}آپلود</button></div><p className="mt-2 text-xs text-[#807269]">JPG، PNG یا WebP؛ حداکثر ۸MB و ۶۰۰۰×۶۰۰۰. اگر مقاله تصویر شاخص نداشته باشد، اولین تصویر آپلودشده خودکار انتخاب و ذخیره می‌شود.</p>
+    <div className="mt-5 grid gap-4 md:grid-cols-2">{images.map((image) => <article key={image.id} className="rounded-md border border-[#e5ddd5] p-3"><img src={image.url} alt={image.alt} className="aspect-[4/3] w-full rounded-md object-cover" /><div className="mt-3 grid gap-2"><input className={fieldClass} value={image.alt} onChange={(e) => setImages((current) => current.map((item) => item.id === image.id ? { ...item, alt: e.target.value } : item))} placeholder="alt تصویر" /><input className={fieldClass} value={image.caption || ""} onChange={(e) => setImages((current) => current.map((item) => item.id === image.id ? { ...item, caption: e.target.value } : item))} placeholder="caption" /><div className="flex flex-wrap gap-2"><button type="button" onClick={() => saveImage(image)} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-xs">ذخیره alt و caption</button><button type="button" onClick={() => onSetCover(image)} disabled={Boolean(busy)} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-xs disabled:opacity-50">{form.coverImageId === image.id ? "ذخیره تغییرات تصویر شاخص" : "انتخاب به‌عنوان تصویر شاخص"}</button><button type="button" onClick={() => { update("ogImageId", image.id); update("ogImageAlt", image.alt); }} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-xs">تصویر OG</button><button type="button" onClick={() => copyImageHTML(image)} className="grid h-9 w-9 place-items-center rounded-md border border-[#d9cfc5]" title="کپی HTML"><Clipboard className="h-4 w-4" /></button><button type="button" onClick={() => remove(image.id)} className="grid h-9 w-9 place-items-center text-[#b85d60]" aria-label="حذف"><Trash2 className="h-4 w-4" /></button></div>{form.coverImageId === image.id ? <span className="text-xs text-[#5d8066]">تصویر شاخص روی سایت ذخیره شده است.</span> : null}</div></article>)}</div>
   </div>;
 }
 
