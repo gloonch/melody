@@ -836,6 +836,7 @@ const navItems = [
   { id: "custom-order", label: "سفارش اختصاصی" },
   { id: "courses", label: "دوره‌های آموزشی" },
   { id: "blogs", label: "مقالات", path: "/blogs" },
+  { id: "fabric-flower-guide", label: "راهنمای انتخاب گل", path: "/guides/choose-fabric-flower" },
   { id: "contact", label: "تماس با ما" },
 ];
 

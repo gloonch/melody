@@ -154,7 +154,7 @@ export function BlogsPage({ authStatus, user, navItems }) {
   if (state === "not-found") return <Navigate to="/not-found" replace />;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#fffdfb] text-[#342c28]">
+    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayName(user)} />
       <main className="pt-32">
         <section className="mx-auto max-w-6xl px-4 pb-20 md:px-8">
@@ -210,7 +210,7 @@ export function BlogDetailPage({ authStatus, user, navItems }) {
   if (state === "not-found") return <Navigate to="/not-found" replace />;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#fffdfb] text-[#342c28]">
+    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayName(user)} />
       {state === "loading" ? <main className="pt-36"><PageState icon={<Loader2 className="h-5 w-5 animate-spin" />} text="در حال دریافت مقاله..." /></main> : null}
       {state === "error" ? <main className="pt-36"><PageState text="دریافت مقاله انجام نشد. صفحه را دوباره بارگذاری کنید." /></main> : null}

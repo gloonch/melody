@@ -157,7 +157,7 @@ func (h *Handler) BlogFeed(c *gin.Context) {
 
 func renderBlogList(list models.BlogList) string {
 	var builder strings.Builder
-	builder.WriteString(`<main dir="rtl" class="min-h-screen bg-[#fffdfb] pt-28 text-[#342c28]"><section class="mx-auto max-w-6xl px-4 pb-20 md:px-8"><header class="mb-10 text-center"><h1 class="text-3xl font-semibold md:text-5xl">مقالات گلملو</h1><p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#6f625b] md:text-base">راهنماها و تجربه‌های گلملو برای انتخاب، سفارش و ساخت گل‌های پارچه‌ای دست‌ساز.</p></header>`)
+	builder.WriteString(`<main dir="rtl" class="min-h-screen bg-[#f5f1eb] pt-28 text-[#493d37]"><section class="mx-auto max-w-6xl px-4 pb-20 md:px-8"><header class="mb-10 text-center"><h1 class="text-3xl font-semibold md:text-5xl">مقالات گلملو</h1><p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#6f625b] md:text-base">راهنماها و تجربه‌های گلملو برای انتخاب، سفارش و ساخت گل‌های پارچه‌ای دست‌ساز.</p></header>`)
 	if len(list.Posts) == 0 {
 		builder.WriteString(`<p class="py-16 text-center text-[#6f625b]">هنوز مقاله‌ای منتشر نشده است.</p>`)
 	} else {
@@ -185,7 +185,7 @@ func renderBlogCard(post models.BlogPostSummary) string {
 
 func renderBlogPost(post models.BlogPost) string {
 	var builder strings.Builder
-	builder.WriteString(`<main dir="rtl" class="min-h-screen bg-[#fffdfb] pt-28 text-[#342c28]"><article class="mx-auto max-w-4xl px-4 pb-20 md:px-8"><nav aria-label="مسیر صفحه" class="mb-7 text-sm text-[#807269]"><a href="/">گلملو</a><span class="px-2">/</span><a href="/blogs">مقالات</a></nav><header class="text-center"><h1 class="text-3xl font-semibold leading-tight md:text-5xl">` + html.EscapeString(post.Title) + `</h1><p class="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#6f625b]">` + html.EscapeString(post.Excerpt) + `</p><p class="mt-4 text-xs text-[#8a7770]">` + html.EscapeString(post.AuthorName) + ` · ` + html.EscapeString(formatPersianDate(effectiveBlogDate(post.PublishedAt, post.ScheduledFor))) + ` · ` + persianDigits(strconv.Itoa(post.ReadingTimeMinutes)) + ` دقیقه مطالعه</p>`)
+	builder.WriteString(`<main dir="rtl" class="min-h-screen bg-[#f5f1eb] pt-28 text-[#493d37]"><article class="mx-auto max-w-4xl px-4 pb-20 md:px-8"><nav aria-label="مسیر صفحه" class="mb-7 text-sm text-[#807269]"><a href="/">گلملو</a><span class="px-2">/</span><a href="/blogs">مقالات</a></nav><header class="text-center"><h1 class="text-3xl font-semibold leading-tight md:text-5xl">` + html.EscapeString(post.Title) + `</h1><p class="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#6f625b]">` + html.EscapeString(post.Excerpt) + `</p><p class="mt-4 text-xs text-[#8a7770]">` + html.EscapeString(post.AuthorName) + ` · ` + html.EscapeString(formatPersianDate(effectiveBlogDate(post.PublishedAt, post.ScheduledFor))) + ` · ` + persianDigits(strconv.Itoa(post.ReadingTimeMinutes)) + ` دقیقه مطالعه</p>`)
 	if post.ReviewerName != "" {
 		builder.WriteString(`<p class="mt-2 text-xs text-[#8a7770]">بازبینی: ` + html.EscapeString(post.ReviewerName) + `</p>`)
 	}
@@ -249,7 +249,7 @@ func renderBlogPagination(list models.BlogList) string {
 }
 
 func renderBlogStatus(title, message string) string {
-	return `<main dir="rtl" class="grid min-h-screen place-items-center bg-[#fffdfb] px-4 text-center text-[#342c28]"><div><h1 class="text-3xl font-semibold">` + html.EscapeString(title) + `</h1><p class="mt-4 text-[#6f625b]">` + html.EscapeString(message) + `</p><a href="/blogs" class="mt-7 inline-flex h-11 items-center bg-[#a05f62] px-6 text-sm text-white">بازگشت به مقالات</a></div></main>`
+	return `<main dir="rtl" class="grid min-h-screen place-items-center bg-[#f5f1eb] px-4 text-center text-[#493d37]"><div><h1 class="text-3xl font-semibold">` + html.EscapeString(title) + `</h1><p class="mt-4 text-[#6f625b]">` + html.EscapeString(message) + `</p><a href="/blogs" class="mt-7 inline-flex h-11 items-center bg-[#a05f62] px-6 text-sm text-white">بازگشت به مقالات</a></div></main>`
 }
 
 func renderSSRBlogImage(src string, sources []models.ImageSource, alt, sizes, width, height string, lazy bool, className string) string {
