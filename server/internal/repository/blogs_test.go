@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -34,5 +35,33 @@ func TestEffectivePublicationBoundary(t *testing.T) {
 	}
 	if !isEffectivePublished(models.BlogPost{Status: "published", PublishedAt: &due}, now) {
 		t.Fatal("published post must be visible")
+	}
+}
+
+func TestValidateBlogForPublicationAllowsMissingCover(t *testing.T) {
+	called := false
+	err := validateBlogForPublication(models.BlogPost{Excerpt: "خلاصه", BodyHTML: "<p>متن</p>"}, func() (bool, error) {
+		called = true
+		return false, nil
+	})
+	if err != nil {
+		t.Fatalf("expected coverless article to be publishable: %v", err)
+	}
+	if called {
+		t.Fatal("cover ownership must not be queried when no cover is selected")
+	}
+}
+
+func TestValidateBlogForPublicationRejectsIncompleteCover(t *testing.T) {
+	post := models.BlogPost{Excerpt: "خلاصه", BodyHTML: "<p>متن</p>", CoverImageID: "image-1"}
+	if err := validateBlogForPublication(post, func() (bool, error) { return true, nil }); !errors.Is(err, ErrInvalidPublish) {
+		t.Fatalf("expected incomplete cover to be rejected, got %v", err)
+	}
+}
+
+func TestValidateBlogForPublicationRejectsAnotherPostsCover(t *testing.T) {
+	post := models.BlogPost{Excerpt: "خلاصه", BodyHTML: "<p>متن</p>", CoverImageID: "image-1", CoverImageAlt: "گل پارچه‌ای"}
+	if err := validateBlogForPublication(post, func() (bool, error) { return false, nil }); !errors.Is(err, ErrInvalidPublish) {
+		t.Fatalf("expected another post's cover to be rejected, got %v", err)
 	}
 }

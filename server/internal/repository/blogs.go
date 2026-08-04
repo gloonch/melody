@@ -448,11 +448,27 @@ func (r *BlogRepository) relatedPosts(ctx context.Context, post models.BlogPost)
 }
 
 func (r *BlogRepository) validateForPublication(ctx context.Context, post models.BlogPost) error {
-	if strings.TrimSpace(post.Excerpt) == "" || strings.TrimSpace(post.BodyHTML) == "" || strings.TrimSpace(post.CoverImageID) == "" || strings.TrimSpace(post.CoverImageAlt) == "" {
-		return fmt.Errorf("%w: excerpt, body, cover image, and cover alt are required", ErrInvalidPublish)
+	return validateBlogForPublication(post, func() (bool, error) {
+		var exists bool
+		err := r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM blog_images WHERE id=$1 AND blog_id=$2)`, post.CoverImageID, post.ID).Scan(&exists)
+		return exists, err
+	})
+}
+
+func validateBlogForPublication(post models.BlogPost, coverBelongsToPost func() (bool, error)) error {
+	if strings.TrimSpace(post.Excerpt) == "" || strings.TrimSpace(post.BodyHTML) == "" {
+		return fmt.Errorf("%w: excerpt and body are required", ErrInvalidPublish)
 	}
-	var exists bool
-	if err := r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM blog_images WHERE id=$1 AND blog_id=$2)`, post.CoverImageID, post.ID).Scan(&exists); err != nil {
+	coverID := strings.TrimSpace(post.CoverImageID)
+	coverAlt := strings.TrimSpace(post.CoverImageAlt)
+	if coverID == "" && coverAlt == "" {
+		return nil
+	}
+	if coverID == "" || coverAlt == "" {
+		return fmt.Errorf("%w: cover image and cover alt must be set together", ErrInvalidPublish)
+	}
+	exists, err := coverBelongsToPost()
+	if err != nil {
 		return err
 	}
 	if !exists {

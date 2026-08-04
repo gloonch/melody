@@ -322,7 +322,8 @@ function qualityWarnings(form, preview) {
   if (!form.focusKeyword) warnings.push("کلیدواژه اصلی تعیین نشده است.");
   if (!form.seoTitle || [...form.seoTitle].length > 60) warnings.push("عنوان SEO بهتر است بین ۳۰ تا ۶۰ کاراکتر باشد.");
   if (!form.seoDescription || [...form.seoDescription].length < 110 || [...form.seoDescription].length > 160) warnings.push("توضیح SEO بهتر است بین ۱۱۰ تا ۱۶۰ کاراکتر باشد.");
-  if (!form.coverImageId || !form.coverImageAlt) warnings.push("تصویر شاخص و alt آن الزامی است.");
+  if (!form.coverImageId) warnings.push("برای SEO و اشتراک‌گذاری بهتر، تصویر شاخص پیشنهاد می‌شود.");
+  if (form.coverImageId && !form.coverImageAlt) warnings.push("برای تصویر شاخص انتخاب‌شده، alt بنویسید.");
   if (form.focusKeyword && !`${form.title} ${form.excerpt} ${form.bodyHtmlSource}`.includes(form.focusKeyword)) warnings.push("کلیدواژه اصلی در عنوان، خلاصه یا متن دیده نمی‌شود.");
   if (!form.bodyHtmlSource.includes("href=\"/")) warnings.push("لینک داخلی در متن دیده نشد.");
   return [...warnings, ...(preview?.warnings || [])].filter((value, index, all) => all.indexOf(value) === index);

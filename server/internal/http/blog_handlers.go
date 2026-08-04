@@ -497,7 +497,7 @@ func (h *Handler) writeBlogMutationError(c *gin.Context, err error) {
 	case errors.Is(err, repository.ErrInvalidBlog):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "عنوان، slug یا اطلاعات مقاله معتبر نیست."})
 	case errors.Is(err, repository.ErrInvalidPublish):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "برای انتشار، متن، خلاصه، تصویر شاخص و alt معتبر لازم است و زمان‌بندی باید در آینده باشد."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "برای انتشار، متن و خلاصه معتبر لازم است؛ در صورت انتخاب تصویر شاخص، alt آن نیز باید تکمیل شود و زمان‌بندی باید در آینده باشد."})
 	case errors.As(err, &pgErr) && pgErr.Code == "23505":
 		c.JSON(http.StatusConflict, gin.H{"error": "slug یا نام واردشده قبلاً استفاده شده است."})
 	default:
