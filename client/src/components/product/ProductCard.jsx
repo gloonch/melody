@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { trackEvent } from "../../lib/analytics";
@@ -42,12 +41,8 @@ export function ProductCard({ product, index, showOverlay = true, sizes = "(min-
   };
 
   return (
-    <motion.article
-      initial={{ y: 14 }}
-      whileInView={{ y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group overflow-hidden rounded-[18px] bg-[#f7f0e8] text-right"
+    <article
+      className="group overflow-hidden rounded-[18px] bg-[#f7f0e8] text-right transition-transform duration-500 hover:-translate-y-1"
     >
       {!showOverlay ? <h3 className="sr-only">{product.title}</h3> : null}
       <Link to={productHref} onClick={handleProductClick} className="relative block aspect-square overflow-hidden">
@@ -73,6 +68,6 @@ export function ProductCard({ product, index, showOverlay = true, sizes = "(min-
           </>
         ) : null}
       </Link>
-    </motion.article>
+    </article>
   );
 }

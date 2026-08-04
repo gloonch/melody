@@ -13,10 +13,22 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
+  migrate:
     build:
       context: ../server
       target: prod
+    image: melody-backend:prod
+    container_name: melody-migrate-prod
+    restart: "no"
+    command: ["/app/migrate"]
+    env_file:
+      - .prod.env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    image: melody-backend:prod
     container_name: melody-backend-prod
     restart: unless-stopped
     env_file:
@@ -25,8 +37,8 @@ services:
       PROJECT_IMAGES_DIR: /seed/project_images
       CLIENT_ORIGIN: http://client
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     expose:
       - "8080"
     volumes:

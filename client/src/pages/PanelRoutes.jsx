@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import logoImage from "../assets/Logo.png";
+import logoImage from "../assets/Logo.webp";
 import { PanelField, PanelInput, PanelSection, PanelSwitch, PasswordInput } from "../components/panel/PanelForm";
 import { Button, ButtonLink, buttonClassName } from "../components/ui/Button";
 import { trackEvent } from "../lib/analytics";
@@ -98,7 +98,7 @@ function PanelSidebar({ user, onNavigate, onLogout, isLoggingOut }) {
     <div className="flex h-full flex-col bg-white px-7 py-8 text-[#35445b]">
       <Link to="/" className="mb-12 inline-flex items-center gap-3 text-right" onClick={onNavigate} aria-label="بازگشت به گلملو">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#51645a] shadow-[0_14px_30px_rgba(81,100,90,0.22)]">
-          <img src={logoImage} alt="نشان گلملو" className="h-8 w-8 object-contain" />
+          <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-8 w-8 object-contain" />
         </span>
         <span>
           <span className="block text-lg font-black text-[#26364c]">Golmelo</span>
@@ -225,7 +225,7 @@ function PanelLayout({ user, onLogout, isLoggingOut, children }) {
             </button>
             <Link to="/" className="inline-flex items-center gap-2 lg:hidden" aria-label="بازگشت به گلملو">
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#51645a] shadow-[0_12px_26px_rgba(81,100,90,0.2)]">
-                <img src={logoImage} alt="نشان گلملو" className="h-7 w-7 object-contain" />
+                <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-7 w-7 object-contain" />
               </span>
               <span className="text-sm font-black text-[#26364c]">Golmelo</span>
             </Link>

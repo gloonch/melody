@@ -20,3 +20,42 @@ input,
 textarea {
   font: inherit;
 }
+
+.admin-blog-preview {
+  color: #4f433d;
+  line-height: 2;
+}
+
+.admin-blog-preview h2,
+.admin-blog-preview h3,
+.admin-blog-preview h4 {
+  margin: 1.5rem 0 0.75rem;
+  color: #342c28;
+  font-weight: 700;
+}
+
+.admin-blog-preview p,
+.admin-blog-preview ul,
+.admin-blog-preview ol,
+.admin-blog-preview figure,
+.admin-blog-preview table {
+  margin: 1rem 0;
+}
+
+.admin-blog-preview img {
+  max-width: 100%;
+  height: auto;
+}
+
+.admin-blog-preview table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.admin-blog-preview td,
+.admin-blog-preview th {
+  border: 1px solid #e0d7cd;
+  padding: 0.5rem;
+}

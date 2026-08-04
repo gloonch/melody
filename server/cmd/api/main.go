@@ -24,6 +24,9 @@ func main() {
 	}
 
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("configuration failed: %v", err)
+	}
 
 	db, err := database.NewPostgresDB(cfg.Database)
 	if err != nil {

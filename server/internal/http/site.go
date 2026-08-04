@@ -20,6 +20,7 @@ import (
 )
 
 const seoHeadMarker = "<!-- __SEO_HEAD__ -->"
+const siteRootMarker = `<div id="root"></div>`
 
 type siteMetadata struct {
 	Title          string
@@ -58,6 +59,14 @@ func (h *Handler) SiteShell(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 	metadata, status := h.metadataForPath(ctx, path)
+	bodyHTML, bootstrapJSON, redirect, blogMeta, blogStatus, isBlog := h.blogSitePage(ctx, path)
+	if isBlog {
+		if redirect != "" {
+			c.Redirect(http.StatusMovedPermanently, redirect)
+			return
+		}
+		metadata, status = blogMeta, blogStatus
+	}
 	if status == http.StatusNotFound {
 		metadata.Robots = "noindex, nofollow"
 	}
@@ -79,12 +88,20 @@ func (h *Handler) SiteShell(c *gin.Context) {
 	if page == string(shell) {
 		page = strings.Replace(page, "</head>", head+"\n</head>", 1)
 	}
+	if bodyHTML != "" {
+		replacement := `<div id="root">` + bodyHTML + `</div>`
+		if bootstrapJSON != "" {
+			replacement += `<script id="golmelo-blog-bootstrap" type="application/json">` + bootstrapJSON + `</script>`
+		}
+		page = strings.Replace(page, siteRootMarker, replacement, 1)
+	}
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Data(status, "text/html; charset=utf-8", []byte(page))
 }
 
 func (h *Handler) Sitemap(c *gin.Context) {
+	c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate")
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 	baseURL := strings.TrimRight(h.cfg.App.BaseURL, "/")
@@ -95,6 +112,7 @@ func (h *Handler) Sitemap(c *gin.Context) {
 		{Loc: baseURL + "/courses"},
 		{Loc: baseURL + "/guides/choose-fabric-flower"},
 		{Loc: baseURL + "/guides/fabric-flower-making-beginners"},
+		{Loc: baseURL + "/blogs"},
 	}
 
 	products, err := h.products.ListProducts(ctx, false)
@@ -113,6 +131,19 @@ func (h *Handler) Sitemap(c *gin.Context) {
 	for _, course := range courses {
 		urls = append(urls, sitemapURL{Loc: baseURL + "/courses/" + url.PathEscape(course.Slug), LastMod: course.UpdatedAt.Format("2006-01-02")})
 	}
+	for page := 1; ; page++ {
+		blogs, err := h.blogs.ListPublic(ctx, page, 50)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ساخت sitemap مقالات انجام نشد."})
+			return
+		}
+		for _, post := range blogs.Posts {
+			urls = append(urls, sitemapURL{Loc: baseURL + "/blogs/" + url.PathEscape(post.Slug), LastMod: post.UpdatedAt.Format("2006-01-02")})
+		}
+		if page >= blogs.TotalPages {
+			break
+		}
+	}
 
 	document := sitemapDocument{Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9", URLs: urls}
 	data, err := xml.MarshalIndent(document, "", "  ")
@@ -125,12 +156,14 @@ func (h *Handler) Sitemap(c *gin.Context) {
 }
 
 func (h *Handler) Robots(c *gin.Context) {
+	c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate")
 	baseURL := strings.TrimRight(h.cfg.App.BaseURL, "/")
 	content := "User-agent: *\nAllow: /\nDisallow: /auth\nDisallow: /login\nDisallow: /panel\nDisallow: /admin\nDisallow: /api/v1/admin/\n\nSitemap: " + baseURL + "/sitemap.xml\n"
 	c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(content))
 }
 
 func (h *Handler) LLMs(c *gin.Context) {
+	c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate")
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 	baseURL := strings.TrimRight(h.cfg.App.BaseURL, "/")
@@ -145,6 +178,7 @@ func (h *Handler) LLMs(c *gin.Context) {
 	builder.WriteString("- [گل‌های آماده](" + baseURL + "/products): کاتالوگ محصولات قابل سفارش\n")
 	builder.WriteString("- [سفارش اختصاصی](" + baseURL + "/custom-order): راهنمای انتخاب و ثبت سفارش شخصی‌سازی‌شده\n")
 	builder.WriteString("- [دوره‌های آنلاین](" + baseURL + "/courses): آموزش گل‌سازی پارچه‌ای\n")
+	builder.WriteString("- [مقالات گلملو](" + baseURL + "/blogs): راهنماهای فارسی انتخاب، سفارش و ساخت گل پارچه‌ای\n")
 	builder.WriteString("- [API محصولات](" + baseURL + "/api/v1/products): داده ساختاریافته کاتالوگ عمومی\n")
 	builder.WriteString("- [API دوره‌ها](" + baseURL + "/api/v1/courses): داده ساختاریافته دوره‌های عمومی\n\n")
 	if len(products) > 0 {
@@ -158,6 +192,13 @@ func (h *Handler) LLMs(c *gin.Context) {
 		builder.WriteString("## دوره‌ها\n\n")
 		for _, course := range courses {
 			builder.WriteString(fmt.Sprintf("- [%s](%s/courses/%s): %s\n", course.Title, baseURL, url.PathEscape(course.Slug), course.Summary))
+		}
+	}
+	blogs, _ := h.blogs.ListPublic(ctx, 1, 50)
+	if len(blogs.Posts) > 0 {
+		builder.WriteString("\n## مقالات فارسی\n\n")
+		for _, post := range blogs.Posts {
+			builder.WriteString(fmt.Sprintf("- [%s](%s/blogs/%s): %s\n", post.Title, baseURL, url.PathEscape(post.Slug), post.Excerpt))
 		}
 	}
 	c.Data(http.StatusOK, "text/markdown; charset=utf-8", []byte(builder.String()))
@@ -367,6 +408,10 @@ func jsonLDScriptID(item any) string {
 		return "golmelo-website-jsonld"
 	}
 	switch value["@type"] {
+	case "Blog":
+		return "golmelo-blog-jsonld"
+	case "BlogPosting":
+		return "golmelo-blog-posting-jsonld"
 	case "Product":
 		return "golmelo-product-jsonld"
 	case "Course":

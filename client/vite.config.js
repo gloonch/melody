@@ -5,6 +5,9 @@ const proxyTarget = process.env.VITE_DEV_PROXY_TARGET;
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    assetsInlineLimit: 1024,
+  },
   server: proxyTarget ? {
     proxy: {
       "/api": {

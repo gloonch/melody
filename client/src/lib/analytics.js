@@ -11,6 +11,7 @@ const ALLOWED_PARAMETERS = new Set([
   "product_id",
   "request_type",
   "source",
+  "blog_id",
 ]);
 
 let initialized = false;

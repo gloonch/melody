@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { CourseVisual } from "./CourseVisual";
 
@@ -12,10 +11,8 @@ export function CoursePreviewCard({ course, statusLabels = {} }) {
       className="block"
       aria-label={`مشاهده جزئیات دوره ${course.title}`}
     >
-      <motion.article
-        whileHover={{ y: -6 }}
-        transition={{ duration: 0.3 }}
-        className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[390px]"
+      <article
+        className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] transition-transform duration-300 hover:-translate-y-1.5 md:min-h-[390px]"
       >
         <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
           <CourseVisual
@@ -37,15 +34,15 @@ export function CoursePreviewCard({ course, statusLabels = {} }) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
                 {course.term ? (
-                  <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{course.term}</span>
+                  <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em] text-[#6f5c52]">{course.term}</span>
                 ) : null}
                 {course.level ? (
-                  <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{course.level}</span>
+                  <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#536451]">{course.level}</span>
                 ) : null}
                 {course.format ? (
-                  <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{course.format}</span>
+                  <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#6f5b51]">{course.format}</span>
                 ) : null}
-                <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#b06d6f]">
+                <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#8f4f52]">
                   {statusLabels[course.status] || course.status}
                 </span>
               </div>
@@ -55,7 +52,7 @@ export function CoursePreviewCard({ course, statusLabels = {} }) {
             <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
           </div>
         </div>
-      </motion.article>
+      </article>
     </Link>
   );
 }

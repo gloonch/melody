@@ -58,6 +58,10 @@ func (p *PostgresDB) Pool() *pgxpool.Pool {
 
 func (p *PostgresDB) createSchema(ctx context.Context) error {
 	statements := []string{
+		`CREATE TABLE IF NOT EXISTS schema_migrations (
+			version TEXT PRIMARY KEY,
+			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
 		`CREATE TABLE IF NOT EXISTS contact_requests (
 			id TEXT PRIMARY KEY,
 			full_name TEXT NOT NULL,
@@ -315,17 +319,99 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			UNIQUE (course_id, filename)
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_course_images_course_sort_order ON course_images (course_id, sort_order, filename)`,
+		`CREATE TABLE IF NOT EXISTS blog_categories (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			slug TEXT NOT NULL UNIQUE,
+			description TEXT NOT NULL DEFAULT '',
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			is_active BOOLEAN NOT NULL DEFAULT TRUE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_categories_active_order ON blog_categories (is_active, sort_order, name)`,
+		`CREATE TABLE IF NOT EXISTS blog_posts (
+			id TEXT PRIMARY KEY,
+			title TEXT NOT NULL,
+			slug TEXT NOT NULL UNIQUE,
+			excerpt TEXT NOT NULL DEFAULT '',
+			body_html TEXT NOT NULL DEFAULT '',
+			body_html_source TEXT NOT NULL DEFAULT '',
+			category_id TEXT REFERENCES blog_categories(id) ON DELETE SET NULL,
+			tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+			cover_image_id TEXT NOT NULL DEFAULT '',
+			cover_image_alt TEXT NOT NULL DEFAULT '',
+			og_image_id TEXT NOT NULL DEFAULT '',
+			og_image_alt TEXT NOT NULL DEFAULT '',
+			focus_keyword TEXT NOT NULL DEFAULT '',
+			secondary_keywords JSONB NOT NULL DEFAULT '[]'::jsonb,
+			seo_title TEXT NOT NULL DEFAULT '',
+			seo_description TEXT NOT NULL DEFAULT '',
+			author_name TEXT NOT NULL DEFAULT 'تیم محتوای گلملو',
+			reviewer_name TEXT NOT NULL DEFAULT '',
+			faq_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+			related_post_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+			cta_label TEXT NOT NULL DEFAULT '',
+			cta_text TEXT NOT NULL DEFAULT '',
+			cta_url TEXT NOT NULL DEFAULT '',
+			status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','scheduled','published','archived')),
+			scheduled_for TIMESTAMPTZ,
+			published_at TIMESTAMPTZ,
+			reading_time_minutes INTEGER NOT NULL DEFAULT 1,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS body_html_source TEXT NOT NULL DEFAULT ''`,
+		`UPDATE blog_posts SET body_html_source=body_html WHERE body_html_source='' AND body_html<>''`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts (status)`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_posts_scheduled_for ON blog_posts (scheduled_for) WHERE status='scheduled'`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_posts_publication ON blog_posts (status, scheduled_for, published_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_posts_effective_published ON blog_posts (published_at DESC) WHERE status='published'`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts (category_id, published_at DESC)`,
+		`CREATE TABLE IF NOT EXISTS blog_images (
+			id TEXT PRIMARY KEY,
+			blog_id TEXT NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+			filename TEXT NOT NULL,
+			alt TEXT NOT NULL DEFAULT '',
+			caption TEXT NOT NULL DEFAULT '',
+			content_type TEXT NOT NULL,
+			data BYTEA NOT NULL,
+			width INTEGER NOT NULL DEFAULT 0,
+			height INTEGER NOT NULL DEFAULT 0,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE (blog_id, filename)
+		)`,
+		`ALTER TABLE blog_images ADD COLUMN IF NOT EXISTS width INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE blog_images ADD COLUMN IF NOT EXISTS height INTEGER NOT NULL DEFAULT 0`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_images_blog_order ON blog_images (blog_id, sort_order, filename)`,
+		`INSERT INTO blog_categories (id,name,slug,description,sort_order,is_active)
+		 VALUES ('blog-category-selection-guide','راهنمای انتخاب گل پارچه‌ای','fabric-flower-selection-guide','راهنمای انتخاب مدل، رنگ و اندازه گل پارچه‌ای برای لباس و اکسسوری',10,TRUE)
+		 ON CONFLICT DO NOTHING`,
+		`CREATE TABLE IF NOT EXISTS blog_slug_history (
+			slug TEXT PRIMARY KEY,
+			blog_id TEXT NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_slug_history_post ON blog_slug_history (blog_id, created_at DESC)`,
 		`CREATE TABLE IF NOT EXISTS image_variants (
 			id TEXT PRIMARY KEY,
 			source_table TEXT NOT NULL,
 			source_id TEXT NOT NULL,
 			width INTEGER NOT NULL,
+			height INTEGER NOT NULL DEFAULT 0,
+			variant_key TEXT NOT NULL DEFAULT 'responsive',
 			content_type TEXT NOT NULL DEFAULT 'image/webp',
 			data BYTEA NOT NULL,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			UNIQUE (source_table, source_id, width)
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
+		`ALTER TABLE image_variants ADD COLUMN IF NOT EXISTS height INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE image_variants ADD COLUMN IF NOT EXISTS variant_key TEXT NOT NULL DEFAULT 'responsive'`,
+		`ALTER TABLE image_variants DROP CONSTRAINT IF EXISTS image_variants_source_table_source_id_width_key`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_image_variants_unique_source ON image_variants (source_table, source_id, variant_key, width)`,
 		`CREATE INDEX IF NOT EXISTS idx_image_variants_source ON image_variants (source_table, source_id, width)`,
+		`INSERT INTO schema_migrations (version) VALUES ('20260804_blog_readiness_v1') ON CONFLICT (version) DO NOTHING`,
 	}
 
 	for _, query := range statements {
@@ -334,5 +420,44 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 		}
 	}
 
+	return p.VerifyBlogSchema(ctx)
+}
+
+func (p *PostgresDB) VerifyBlogSchema(ctx context.Context) error {
+	objects := []string{
+		"blog_posts",
+		"blog_categories",
+		"blog_images",
+		"blog_slug_history",
+		"idx_blog_posts_status",
+		"idx_blog_posts_scheduled_for",
+		"idx_blog_posts_publication",
+		"idx_blog_posts_effective_published",
+	}
+	for _, object := range objects {
+		var relation *string
+		if err := p.pool.QueryRow(ctx, `SELECT to_regclass($1)`, object).Scan(&relation); err != nil {
+			return fmt.Errorf("verify blog schema %s: %w", object, err)
+		}
+		if relation == nil {
+			return fmt.Errorf("verify blog schema: missing %s", object)
+		}
+	}
+	columns := []struct{ table, column string }{
+		{"blog_posts", "body_html_source"},
+		{"blog_images", "width"},
+		{"blog_images", "height"},
+		{"image_variants", "variant_key"},
+		{"image_variants", "height"},
+	}
+	for _, item := range columns {
+		var exists bool
+		if err := p.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name=$1 AND column_name=$2)`, item.table, item.column).Scan(&exists); err != nil {
+			return fmt.Errorf("verify blog schema %s.%s: %w", item.table, item.column, err)
+		}
+		if !exists {
+			return fmt.Errorf("verify blog schema: missing %s.%s", item.table, item.column)
+		}
+	}
 	return nil
 }

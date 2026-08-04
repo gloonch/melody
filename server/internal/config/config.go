@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	_ "time/tzdata"
 )
 
 type Config struct {
@@ -99,6 +100,29 @@ func Load() *Config {
 			CookieSecure:       getEnvAsBool("COOKIE_SECURE", false),
 		},
 	}
+}
+
+func (c *Config) Validate() error {
+	if c == nil {
+		return fmt.Errorf("config is required")
+	}
+	if strings.EqualFold(c.App.Environment, "production") {
+		baseURL, err := url.Parse(c.App.BaseURL)
+		if err != nil || baseURL.Scheme != "https" || baseURL.Hostname() != "golmelo.com" || baseURL.Path != "" {
+			return fmt.Errorf("production BASE_URL must be https://golmelo.com")
+		}
+		secrets := map[string]string{
+			"ADMIN_PASSWORD": c.Admin.Password,
+			"ADMIN_TOKEN":    c.Admin.Token,
+			"JWT_SECRET":     c.Auth.JWTSecret,
+		}
+		for name, value := range secrets {
+			if len(strings.TrimSpace(value)) < 16 || strings.Contains(strings.ToLower(value), "change_me") {
+				return fmt.Errorf("production %s must be replaced with a strong value", name)
+			}
+		}
+	}
+	return nil
 }
 
 func postgresURL(databaseName, host, port, username, password, sslmode string) string {

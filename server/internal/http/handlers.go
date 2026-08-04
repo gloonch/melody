@@ -18,6 +18,7 @@ import (
 
 	"melody-server/internal/config"
 	"melody-server/internal/database"
+	"melody-server/internal/media"
 	"melody-server/internal/models"
 	"melody-server/internal/repository"
 
@@ -37,6 +38,7 @@ type Handler struct {
 	orders      *repository.OrderRepository
 	addresses   *repository.AddressRepository
 	users       *repository.UserRepository
+	blogs       *repository.BlogRepository
 	siteShellMu sync.RWMutex
 	siteShell   []byte
 	siteShellAt time.Time
@@ -48,6 +50,7 @@ const (
 
 	projectImagesTable = "project_images"
 	heroSlidesTable    = "hero_slides"
+	blogImagesTable    = "blog_images"
 )
 
 type createContactRequestBody struct {
@@ -178,6 +181,7 @@ func NewHandler(db *database.PostgresDB, cfg *config.Config) *Handler {
 		orders:    repository.NewOrderRepository(db.Pool()),
 		addresses: repository.NewAddressRepository(db.Pool()),
 		users:     repository.NewUserRepository(db.Pool()),
+		blogs:     repository.NewBlogRepository(db.Pool()),
 	}
 }
 
@@ -2143,7 +2147,7 @@ func (h *Handler) GetImageVariantContent(c *gin.Context) {
 func (h *Handler) RebuildImageVariants(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
 	defer cancel()
-	tables := []string{projectImagesTable, heroSlidesTable, "course_images"}
+	tables := []string{projectImagesTable, heroSlidesTable, "course_images", blogImagesTable}
 	count := 0
 	for _, table := range tables {
 		rows, err := h.db.Pool().Query(ctx, fmt.Sprintf("SELECT id, content_type, data FROM %s ORDER BY created_at ASC", table))
@@ -2159,7 +2163,24 @@ func (h *Handler) RebuildImageVariants(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "خواندن تصویر فعلی انجام نشد."})
 				return
 			}
-			if _, err := h.variants.Replace(ctx, table, id, contentType, data); err != nil {
+			if table == blogImagesTable {
+				validated, validateErr := media.ValidateBlogImage(data)
+				if validateErr != nil {
+					rows.Close()
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("اعتبارسنجی تصویر %s انجام نشد.", id)})
+					return
+				}
+				if _, err := h.db.Pool().Exec(ctx, `UPDATE blog_images SET data=$2,content_type=$3,width=$4,height=$5,updated_at=NOW() WHERE id=$1`, id, validated.Data, validated.ContentType, validated.Width, validated.Height); err != nil {
+					rows.Close()
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("به‌روزرسانی تصویر %s انجام نشد.", id)})
+					return
+				}
+				if _, err := h.variants.ReplaceBlog(ctx, table, id, validated.Data); err != nil {
+					rows.Close()
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("بهینه‌سازی تصویر %s انجام نشد.", id)})
+					return
+				}
+			} else if _, err := h.variants.Replace(ctx, table, id, contentType, data); err != nil {
 				rows.Close()
 				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("بهینه‌سازی تصویر %s انجام نشد.", id)})
 				return

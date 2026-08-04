@@ -1,5 +1,4 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   BookOpen,
   CheckCircle2,
@@ -10,7 +9,7 @@ import {
   User,
 } from "lucide-react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import logoImage from "./assets/Logo.png";
+import logoImage from "./assets/Logo.webp";
 import flowerImage1 from "./assets/section-two/1.jpeg";
 import flowerImage2 from "./assets/section-two/2.jpg";
 import flowerImage3 from "./assets/section-two/3.jpg";
@@ -24,11 +23,12 @@ import styleImage2 from "./assets/section-four/2.png";
 import styleImage3 from "./assets/section-four/3.png";
 import styleImage4 from "./assets/section-four/4.png";
 import customOrderBackgroundFallback from "./assets/section-inspiration/custom-order-fabric-background.png";
+import customOrderBackgroundMobile from "./assets/section-inspiration/custom-order-fabric-background-480.webp";
 import customOrderBackgroundImage from "./assets/section-inspiration/custom-order-fabric-background.webp";
-import usageBlazerImage from "./assets/section-usage/blazer-flower.png";
-import usageDressImage from "./assets/section-usage/dress-flower.png";
-import usageHatImage from "./assets/section-usage/hat-flower.png";
-import usageHairImage from "./assets/section-usage/hair-flower.png";
+import usageBlazerImage from "./assets/section-usage/blazer-flower.webp";
+import usageDressImage from "./assets/section-usage/dress-flower.webp";
+import usageHatImage from "./assets/section-usage/hat-flower.webp";
+import usageHairImage from "./assets/section-usage/hair-flower.webp";
 import { CourseSlider } from "./components/courses/CourseSlider";
 import { CourseVisual } from "./components/courses/CourseVisual";
 import { AppCard } from "./components/landing/AppCard";
@@ -42,6 +42,8 @@ import { initAnalytics, trackEvent, trackPageView } from "./lib/analytics";
 
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const PanelRoutes = lazy(() => import("./pages/PanelRoutes"));
+const BlogsPage = lazy(() => import("./pages/BlogPages").then((module) => ({ default: module.BlogsPage })));
+const BlogDetailPage = lazy(() => import("./pages/BlogPages").then((module) => ({ default: module.BlogDetailPage })));
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1").replace(/\/+$/, "");
 const USER_SESSION_CACHE_KEY = "sh_me";
@@ -833,6 +835,7 @@ const navItems = [
   { id: "products", label: "گل‌ها" },
   { id: "custom-order", label: "سفارش اختصاصی" },
   { id: "courses", label: "دوره‌های آموزشی" },
+  { id: "blogs", label: "مقالات", path: "/blogs" },
   { id: "contact", label: "تماس با ما" },
 ];
 
@@ -1001,6 +1004,11 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
     const preload = () => {
       const image = new Image();
       image.decoding = "async";
+      const srcSet = responsiveSrcSet(nextSlide.sources);
+      if (srcSet) {
+        image.srcset = srcSet;
+        image.sizes = "100vw";
+      }
       image.src = nextSlide.image;
     };
     const idleId = "requestIdleCallback" in window
@@ -1155,36 +1163,25 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
         className="relative isolate scroll-mt-28 overflow-hidden bg-[#263129] text-[#fbf5ee] md:scroll-mt-32"
       >
         <div className="pointer-events-none absolute inset-0">
-          <AnimatePresence initial={false}>
-            {activeHero ? (
-              <motion.img
-                key={activeHero.id}
-                src={activeHero.image}
-                srcSet={responsiveSrcSet(activeHero.sources)}
-                sizes="100vw"
-                alt={activeHero.alt}
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.55, ease: [0.45, 0, 0.2, 1] }}
-                className="absolute inset-0 h-full w-full object-cover object-center"
-              />
-            ) : null}
-          </AnimatePresence>
+          {activeHero ? (
+            <img
+              key={activeHero.id}
+              src={activeHero.image}
+              srcSet={responsiveSrcSet(activeHero.sources)}
+              sizes="100vw"
+              alt={activeHero.alt}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="hero-slide-image absolute inset-0 h-full w-full object-cover object-center"
+            />
+          ) : null}
         </div>
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(24,30,25,0.92)_0%,rgba(38,49,41,0.78)_38%,rgba(38,49,41,0.36)_68%,rgba(38,49,41,0.12)_100%)]" />
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(24,30,25,0.76)_0%,rgba(24,30,25,0.2)_52%,rgba(24,30,25,0.72)_100%)]" />
 
         <div className="relative z-20 mx-auto grid min-h-[100svh] max-w-7xl items-end gap-10 px-6 pb-12 pt-32 md:px-8 md:pb-16 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-5xl text-right"
-          >
+          <div className="max-w-5xl text-right">
             <p className="mb-5 text-sm font-bold tracking-[0.24em] text-[#e4d2c1]">GOLMELO ATELIER</p>
             <h1
               className="max-w-3xl text-5xl leading-[1.08] text-white md:text-7xl"
@@ -1217,7 +1214,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
                 </a>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -1254,6 +1251,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 
         <section id="custom-order" className="relative isolate flex min-h-[500px] scroll-mt-24 items-center overflow-hidden md:scroll-mt-28">
           <picture>
+            <source media="(max-width: 640px)" srcSet={customOrderBackgroundMobile} type="image/webp" />
             <source srcSet={customOrderBackgroundImage} type="image/webp" />
             <img
               src={customOrderBackgroundFallback}
@@ -1322,7 +1320,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
       <footer id="contact" className="scroll-mt-24 bg-[#2f3b33] px-6 py-20 text-center text-[#fbf5ee] md:scroll-mt-28 md:px-8 lg:px-12">
         <div className="mx-auto max-w-4xl">
           <div>
-            <img src={logoImage} alt="نشان گلملو" className="mx-auto mb-8 h-10 w-auto object-contain brightness-125" />
+            <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="mx-auto mb-8 h-10 w-auto object-contain brightness-125" />
             <h2 className="text-4xl leading-tight text-white md:text-5xl">تماس با گلملو</h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#e4d2c1]">
               اگر برای انتخاب گل، سفارش اختصاصی یا دوره آموزشی سؤال دارید، پیام بگذارید تا تیم گلملو برای راهنمایی با شما تماس بگیرد.
@@ -2121,11 +2119,7 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
 
 function LessonCard({ lesson }) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.5 }}
+    <article
       className="relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[420px]"
     >
       <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
@@ -2147,12 +2141,12 @@ function LessonCard({ lesson }) {
         <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-[#a49084]">
-              <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em]">{lesson.id}</span>
+              <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em] text-[#6f5c52]">{lesson.id}</span>
               {lesson.level ? (
-                <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#6d7e6b]">{lesson.level}</span>
+                <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#536451]">{lesson.level}</span>
               ) : null}
               {lesson.type ? (
-                <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#8d786d]">{lesson.type}</span>
+                <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#6f5b51]">{lesson.type}</span>
               ) : null}
               {lesson.duration ? (
                 <span className="rounded-full bg-[#f8f3ed] px-3 py-1 text-xs text-[#8b7a70]">{lesson.duration}</span>
@@ -2170,7 +2164,7 @@ function LessonCard({ lesson }) {
           </div>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
 
@@ -2518,6 +2512,9 @@ function AppRoutes() {
       <Route path="/custom-order" element={<CustomOrderGuidePage authStatus={authStatus} user={user} />} />
       <Route path="/courses" element={<CoursesPage authStatus={authStatus} user={user} />} />
       <Route path="/courses/:id" element={<CourseDetailPage authStatus={authStatus} user={user} />} />
+      <Route path="/blogs" element={<Suspense fallback={<PublicPageLoader />}><BlogsPage authStatus={authStatus} user={user} navItems={navItems} /></Suspense>} />
+      <Route path="/blogs/page/:page" element={<Suspense fallback={<PublicPageLoader />}><BlogsPage authStatus={authStatus} user={user} navItems={navItems} /></Suspense>} />
+      <Route path="/blogs/:slug" element={<Suspense fallback={<PublicPageLoader />}><BlogDetailPage authStatus={authStatus} user={user} navItems={navItems} /></Suspense>} />
       <Route path="/guides/choose-fabric-flower" element={<ChooseFabricFlowerGuidePage authStatus={authStatus} user={user} />} />
       <Route path="/guides/fabric-flower-making-beginners" element={<BeginnerGuidePage authStatus={authStatus} user={user} />} />
       <Route path="/privacy" element={<PrivacyPage authStatus={authStatus} user={user} />} />
@@ -2549,6 +2546,10 @@ function AppRoutes() {
       </Routes>
     </>
   );
+}
+
+function PublicPageLoader() {
+  return <div dir="rtl" className="grid min-h-screen place-items-center bg-[#fffdfb] text-[#807269]">در حال بارگذاری...</div>;
 }
 
 export default function App() {

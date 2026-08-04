@@ -240,6 +240,8 @@ type ImageVariant struct {
 	SourceTable string    `json:"sourceTable" db:"source_table"`
 	SourceID    string    `json:"sourceId" db:"source_id"`
 	Width       int       `json:"width" db:"width"`
+	Height      int       `json:"height" db:"height"`
+	VariantKey  string    `json:"variantKey" db:"variant_key"`
 	ContentType string    `json:"contentType" db:"content_type"`
 	Data        []byte    `json:"-" db:"data"`
 	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
@@ -254,6 +256,112 @@ type ImageDocument struct {
 	Data        []byte    `db:"data"`
 	SortOrder   int       `db:"sort_order"`
 	CreatedAt   time.Time `db:"created_at"`
+}
+
+type BlogFAQItem struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+}
+
+type BlogTOCItem struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Level int    `json:"level"`
+}
+
+type BlogCategory struct {
+	ID          string    `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name"`
+	Slug        string    `json:"slug" db:"slug"`
+	Description string    `json:"description" db:"description"`
+	SortOrder   int       `json:"sortOrder" db:"sort_order"`
+	IsActive    bool      `json:"isActive" db:"is_active"`
+	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time `json:"updatedAt" db:"updated_at"`
+}
+
+type BlogImage struct {
+	ID          string        `json:"id" db:"id"`
+	BlogID      string        `json:"blogId" db:"blog_id"`
+	Filename    string        `json:"filename" db:"filename"`
+	Alt         string        `json:"alt" db:"alt"`
+	Caption     string        `json:"caption" db:"caption"`
+	ContentType string        `json:"contentType" db:"content_type"`
+	Data        []byte        `json:"-" db:"data"`
+	Width       int           `json:"width" db:"width"`
+	Height      int           `json:"height" db:"height"`
+	SortOrder   int           `json:"sortOrder" db:"sort_order"`
+	CreatedAt   time.Time     `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time     `json:"updatedAt" db:"updated_at"`
+	URL         string        `json:"url,omitempty"`
+	Sources     []ImageSource `json:"sources,omitempty"`
+	OGURL       string        `json:"ogUrl,omitempty"`
+}
+
+type BlogPostSummary struct {
+	ID                 string        `json:"id"`
+	Title              string        `json:"title"`
+	Slug               string        `json:"slug"`
+	Excerpt            string        `json:"excerpt"`
+	CategoryID         string        `json:"categoryId,omitempty"`
+	CategoryName       string        `json:"categoryName,omitempty"`
+	CoverImageID       string        `json:"coverImageId,omitempty"`
+	CoverImageURL      string        `json:"coverImageUrl,omitempty"`
+	CoverImageSources  []ImageSource `json:"coverImageSources,omitempty"`
+	CoverImageAlt      string        `json:"coverImageAlt,omitempty"`
+	AuthorName         string        `json:"authorName"`
+	ReadingTimeMinutes int           `json:"readingTimeMinutes"`
+	PublishedAt        *time.Time    `json:"publishedAt,omitempty"`
+	UpdatedAt          time.Time     `json:"updatedAt"`
+	Status             string        `json:"status,omitempty"`
+	ScheduledFor       *time.Time    `json:"scheduledFor,omitempty"`
+}
+
+type BlogPost struct {
+	ID                 string            `json:"id" db:"id"`
+	Title              string            `json:"title" db:"title"`
+	Slug               string            `json:"slug" db:"slug"`
+	Excerpt            string            `json:"excerpt" db:"excerpt"`
+	BodyHTML           string            `json:"bodyHtml" db:"body_html"`
+	BodyHTMLSource     string            `json:"bodyHtmlSource,omitempty" db:"body_html_source"`
+	TableOfContents    []BlogTOCItem     `json:"tableOfContents"`
+	CategoryID         string            `json:"categoryId" db:"category_id"`
+	CategoryName       string            `json:"categoryName,omitempty"`
+	Tags               []string          `json:"tags" db:"tags"`
+	CoverImageID       string            `json:"coverImageId" db:"cover_image_id"`
+	CoverImageURL      string            `json:"coverImageUrl,omitempty"`
+	CoverImageSources  []ImageSource     `json:"coverImageSources,omitempty"`
+	CoverImageAlt      string            `json:"coverImageAlt" db:"cover_image_alt"`
+	OGImageID          string            `json:"ogImageId" db:"og_image_id"`
+	OGImageURL         string            `json:"ogImageUrl,omitempty"`
+	OGImageAlt         string            `json:"ogImageAlt" db:"og_image_alt"`
+	FocusKeyword       string            `json:"focusKeyword" db:"focus_keyword"`
+	SecondaryKeywords  []string          `json:"secondaryKeywords" db:"secondary_keywords"`
+	SEOTitle           string            `json:"seoTitle" db:"seo_title"`
+	SEODescription     string            `json:"seoDescription" db:"seo_description"`
+	AuthorName         string            `json:"authorName" db:"author_name"`
+	ReviewerName       string            `json:"reviewerName" db:"reviewer_name"`
+	FAQItems           []BlogFAQItem     `json:"faqItems" db:"faq_items"`
+	RelatedPostIDs     []string          `json:"relatedPostIds" db:"related_post_ids"`
+	RelatedPosts       []BlogPostSummary `json:"relatedPosts,omitempty"`
+	CTALabel           string            `json:"ctaLabel" db:"cta_label"`
+	CTAText            string            `json:"ctaText" db:"cta_text"`
+	CTAURL             string            `json:"ctaUrl" db:"cta_url"`
+	Status             string            `json:"status" db:"status"`
+	ScheduledFor       *time.Time        `json:"scheduledFor,omitempty" db:"scheduled_for"`
+	ScheduledForTehran string            `json:"scheduledForTehranLocal,omitempty"`
+	PublishedAt        *time.Time        `json:"publishedAt,omitempty" db:"published_at"`
+	ReadingTimeMinutes int               `json:"readingTimeMinutes" db:"reading_time_minutes"`
+	CreatedAt          time.Time         `json:"createdAt" db:"created_at"`
+	UpdatedAt          time.Time         `json:"updatedAt" db:"updated_at"`
+}
+
+type BlogList struct {
+	Posts      []BlogPostSummary `json:"posts"`
+	Page       int               `json:"page"`
+	Limit      int               `json:"limit"`
+	Total      int               `json:"total"`
+	TotalPages int               `json:"totalPages"`
 }
 
 type ProjectImage = ImageDocument

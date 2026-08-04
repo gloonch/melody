@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Send, Smartphone } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import logoImage from "../assets/Logo.png";
+import logoImage from "../assets/Logo.webp";
 import { PasswordInput } from "../components/panel/PanelForm";
 import { Button } from "../components/ui/Button";
 import { trackEvent } from "../lib/analytics";
@@ -102,7 +102,7 @@ export default function AuthPage({ authStatus, user, onAuthenticate }) {
         <div className="bg-[#f8fbff] px-6 py-6">
           <Link to="/" className="inline-flex items-center gap-3 text-right" aria-label="بازگشت به گلملو">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#51645a] shadow-[0_14px_30px_rgba(81,100,90,0.22)]">
-              <img src={logoImage} alt="نشان گلملو" className="h-8 w-8 object-contain" />
+              <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-8 w-8 object-contain" />
             </span>
             <span>
               <span className="block text-lg font-black text-[#26364c]">Golmelo</span>

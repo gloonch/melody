@@ -1,9 +1,11 @@
 package httpapi
 
 import (
+	"context"
 	"crypto/subtle"
 	"net/http"
 	"strings"
+	"time"
 
 	"melody-server/internal/config"
 	"melody-server/internal/database"
@@ -31,9 +33,19 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 			"service": "melody-api",
 		})
 	})
+	router.GET("/health/ready", func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		if err := db.VerifyBlogSchema(ctx); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "not_ready"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ready", "service": "melody-api"})
+	})
 	router.GET("/sitemap.xml", handler.Sitemap)
 	router.GET("/robots.txt", handler.Robots)
 	router.GET("/llms.txt", handler.LLMs)
+	router.GET("/blogs/feed.xml", handler.BlogFeed)
 	router.GET("/llm.txt", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/llms.txt")
 	})
@@ -88,9 +100,13 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 		v1.GET("/courses", handler.ListCourses)
 		v1.GET("/courses/:id", handler.GetCourse)
 		v1.GET("/courses/:id/images/:imageId/content", handler.GetCourseImageContent)
+		v1.GET("/blogs", handler.ListBlogs)
+		v1.GET("/blogs/:slug", handler.GetBlog)
+		v1.GET("/blog-images/:id/content", handler.GetBlogImageContent)
 		v1.GET("/image-variants/:id/content", handler.GetImageVariantContent)
 
 		admin := v1.Group("/admin")
+		admin.Use(adminPrivateMiddleware())
 		{
 			admin.POST("/login", handler.AdminLogin)
 
@@ -127,11 +143,27 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 				protected.GET("/courses/:id/images", handler.ListCourseImages)
 				protected.POST("/courses/:id/images", handler.UploadCourseImages)
 				protected.DELETE("/courses/:id/images/:imageId", handler.DeleteCourseImage)
+				protected.GET("/blogs", handler.ListAdminBlogs)
+				protected.POST("/blogs", handler.CreateAdminBlog)
+				protected.GET("/blogs/:id", handler.GetAdminBlog)
+				protected.PUT("/blogs/:id", handler.UpdateAdminBlog)
+				protected.DELETE("/blogs/:id", handler.DeleteAdminBlog)
+				protected.PATCH("/blogs/:id/publication", handler.UpdateAdminBlogPublication)
+				protected.POST("/blogs/:id/preview", handler.PreviewAdminBlog)
+				protected.GET("/blogs/:id/images", handler.ListAdminBlogImages)
+				protected.POST("/blogs/:id/images", handler.UploadAdminBlogImages)
+				protected.PUT("/blogs/:id/images/:imageId", handler.UpdateAdminBlogImage)
+				protected.DELETE("/blogs/:id/images/:imageId", handler.DeleteAdminBlogImage)
+				protected.GET("/blog-categories", handler.ListAdminBlogCategories)
+				protected.POST("/blog-categories", handler.CreateAdminBlogCategory)
+				protected.PUT("/blog-categories/:id", handler.UpdateAdminBlogCategory)
+				protected.DELETE("/blog-categories/:id", handler.DeleteAdminBlogCategory)
 			}
 		}
 	}
 
 	router.NoRoute(handler.SiteShell)
+	handler.StartBlogScheduler()
 
 	return router
 }
@@ -177,12 +209,22 @@ func adminAuthMiddleware(token string) gin.HandlerFunc {
 	expected := "Bearer " + token
 
 	return func(c *gin.Context) {
+		c.Header("X-Robots-Tag", "noindex, nofollow, noarchive")
+		c.Header("Cache-Control", "private, no-store")
 		got := c.GetHeader("Authorization")
 		if subtle.ConstantTimeCompare([]byte(got), []byte(expected)) != 1 {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "دسترسی ادمین معتبر نیست."})
 			return
 		}
 
+		c.Next()
+	}
+}
+
+func adminPrivateMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("X-Robots-Tag", "noindex, nofollow, noarchive")
+		c.Header("Cache-Control", "private, no-store")
 		c.Next()
 	}
 }
