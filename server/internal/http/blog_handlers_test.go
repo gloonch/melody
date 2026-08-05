@@ -1,14 +1,37 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"melody-server/internal/models"
+
 	"github.com/gin-gonic/gin"
 )
+
+func TestProcessBlogHTMLAcceptsTiptapDocument(t *testing.T) {
+	post := models.BlogPost{
+		BodyHTMLSource: `<h2>عنوان بخش</h2><p>متن مقاله</p>`,
+		BodyJSON:       json.RawMessage(`{"type":"doc","content":[{"type":"paragraph"}]}`),
+	}
+	if err := processBlogHTML(&post); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(post.BodyHTML, "<h2") || post.ReadingTimeMinutes != 1 {
+		t.Fatalf("editor content was not processed: %+v", post)
+	}
+}
+
+func TestProcessBlogHTMLRejectsInvalidEditorDocument(t *testing.T) {
+	post := models.BlogPost{BodyHTMLSource: `<p>متن مقاله</p>`, BodyJSON: json.RawMessage(`{"type":"not-a-document"}`)}
+	if err := processBlogHTML(&post); err == nil {
+		t.Fatal("expected invalid editor JSON to be rejected")
+	}
+}
 
 func TestParseTehranPublicationTimeUsesTehranRegardlessOfHostTimezone(t *testing.T) {
 	parsed, err := parseTehranPublicationTime("2026-08-04 18:30")

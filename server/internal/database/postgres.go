@@ -337,6 +337,7 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			excerpt TEXT NOT NULL DEFAULT '',
 			body_html TEXT NOT NULL DEFAULT '',
 			body_html_source TEXT NOT NULL DEFAULT '',
+			body_json JSONB NOT NULL DEFAULT '{}'::jsonb,
 			category_id TEXT REFERENCES blog_categories(id) ON DELETE SET NULL,
 			tags JSONB NOT NULL DEFAULT '[]'::jsonb,
 			cover_image_id TEXT NOT NULL DEFAULT '',
@@ -362,6 +363,7 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
 		`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS body_html_source TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS body_json JSONB NOT NULL DEFAULT '{}'::jsonb`,
 		`UPDATE blog_posts SET body_html_source=body_html WHERE body_html_source='' AND body_html<>''`,
 		`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts (status)`,
 		`CREATE INDEX IF NOT EXISTS idx_blog_posts_scheduled_for ON blog_posts (scheduled_for) WHERE status='scheduled'`,
@@ -445,6 +447,7 @@ func (p *PostgresDB) VerifyBlogSchema(ctx context.Context) error {
 	}
 	columns := []struct{ table, column string }{
 		{"blog_posts", "body_html_source"},
+		{"blog_posts", "body_json"},
 		{"blog_images", "width"},
 		{"blog_images", "height"},
 		{"image_variants", "variant_key"},

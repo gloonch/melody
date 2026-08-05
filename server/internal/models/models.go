@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -324,6 +325,7 @@ type BlogPost struct {
 	Excerpt            string            `json:"excerpt" db:"excerpt"`
 	BodyHTML           string            `json:"bodyHtml" db:"body_html"`
 	BodyHTMLSource     string            `json:"bodyHtmlSource,omitempty" db:"body_html_source"`
+	BodyJSON           json.RawMessage   `json:"bodyJson,omitempty" db:"body_json"`
 	TableOfContents    []BlogTOCItem     `json:"tableOfContents"`
 	CategoryID         string            `json:"categoryId" db:"category_id"`
 	CategoryName       string            `json:"categoryName,omitempty"`

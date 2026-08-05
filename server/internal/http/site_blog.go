@@ -108,6 +108,7 @@ func (h *Handler) blogSitePage(ctx context.Context, path string) (string, string
 	}
 	h.prepareBlogPost(ctx, &post)
 	post.BodyHTMLSource = ""
+	post.BodyJSON = nil
 	meta.Title = firstNonEmpty(post.SEOTitle, post.Title+" | گلملو")
 	meta.Description = firstNonEmpty(post.SEODescription, post.Excerpt)
 	meta.Canonical = baseURL + "/blogs/" + url.PathEscape(post.Slug)

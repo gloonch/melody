@@ -9,6 +9,8 @@ import gregorianEn from "react-date-object/locales/gregorian_en";
 import { CheckCircle2, Clipboard, Eye, Loader2, Newspaper, Plus, Save, Search, Trash2, Upload, X } from "lucide-react";
 import { apiRequest } from "./api";
 
+const RichTextEditor = React.lazy(() => import("./components/RichTextEditor"));
+
 const tabs = [
   ["content", "محتوا"],
   ["media", "رسانه"],
@@ -23,6 +25,7 @@ const emptyPost = () => ({
   excerpt: "",
   bodyHtml: "",
   bodyHtmlSource: "",
+  bodyJson: {},
   categoryId: "",
   tags: [],
   coverImageId: "",
@@ -85,6 +88,12 @@ export function BlogManager({ token, onStatus }) {
 
   const update = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setDirty(true);
+  };
+
+  const updateContent = ({ html, json }) => {
+    setForm((current) => ({ ...current, bodyHtmlSource: html, bodyJson: json }));
+    setPreview(null);
     setDirty(true);
   };
 
@@ -262,6 +271,35 @@ export function BlogManager({ token, onStatus }) {
     }
   };
 
+  const uploadInlineImage = async (file, alt) => {
+    if (!form.id) {
+      onStatus({ type: "error", message: "ابتدا مقاله را ذخیره کنید، سپس تصویر داخل متن اضافه کنید." });
+      return null;
+    }
+    setBusy("editor-image");
+    try {
+      const body = new FormData();
+      body.append("images", file);
+      const uploadedData = await apiRequest(`admin/blogs/${form.id}/images`, { token, method: "POST", body });
+      const uploaded = uploadedData.images?.[0];
+      if (!uploaded) throw new Error("آپلود تصویر انجام نشد.");
+      const imageData = await apiRequest(`admin/blogs/${form.id}/images/${uploaded.id}`, {
+        token,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alt, caption: "" }),
+      });
+      setImages((current) => [...current.filter((item) => item.id !== imageData.image.id), imageData.image]);
+      onStatus({ type: "success", message: "تصویر داخل متن درج شد." });
+      return imageData.image;
+    } catch (error) {
+      onStatus({ type: "error", message: error.message });
+      return null;
+    } finally {
+      setBusy("");
+    }
+  };
+
   const seoWarnings = useMemo(() => qualityWarnings(form, preview), [form, preview]);
 
   return (
@@ -287,7 +325,7 @@ export function BlogManager({ token, onStatus }) {
           <div className="mb-5 flex flex-wrap gap-2 border-b border-[#eee7df] pb-3">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setActiveTab(id)} className={`h-9 px-4 text-sm ${activeTab === id ? "bg-[#c08081] text-white" : "bg-[#f7f3ef] text-[#6f625b]"}`}>{label}</button>)}</div>
           {busy === "load" ? <div className="grid min-h-80 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-[#c08081]" /></div> : (
             <>
-              {activeTab === "content" ? <ContentFields form={form} update={update} categories={categories} posts={posts} preview={preview} onPreview={previewPost} busy={busy} /> : null}
+              {activeTab === "content" ? <ContentFields form={form} update={update} updateContent={updateContent} categories={categories} posts={posts} preview={preview} onPreview={previewPost} onUploadImage={uploadInlineImage} onStatus={onStatus} busy={busy} /> : null}
               {activeTab === "media" ? <MediaFields form={form} update={update} images={images} setImages={setImages} token={token} onUpload={uploadImages} onSetCover={persistCoverImage} busy={busy} onStatus={onStatus} /> : null}
               {activeTab === "seo" ? <SEOFields form={form} update={update} warnings={seoWarnings} /> : null}
               {activeTab === "publication" ? <PublicationFields form={form} categories={categories} setCategories={setCategories} token={token} scheduleDate={scheduleDate} setScheduleDate={setScheduleDate} onPublication={publication} busy={busy} onStatus={onStatus} /> : null}
@@ -304,14 +342,14 @@ export function BlogManager({ token, onStatus }) {
   );
 }
 
-function ContentFields({ form, update, categories, posts, preview, onPreview, busy }) {
+function ContentFields({ form, update, updateContent, categories, posts, preview, onPreview, onUploadImage, onStatus, busy }) {
   const addFAQ = () => update("faqItems", [...form.faqItems, { question: "", answer: "" }]);
   return <div className="grid gap-4">
     <div className="grid gap-4 md:grid-cols-2"><Field label="عنوان مقاله"><input className={fieldClass} value={form.title} onChange={(e) => update("title", e.target.value)} maxLength={180} /></Field><Field label="Slug لاتین"><input dir="ltr" className={`${fieldClass} text-left`} value={form.slug} onChange={(e) => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="choose-fabric-flower" /></Field></div>
     <Field label="خلاصه"><textarea className={`${fieldClass} min-h-24`} value={form.excerpt} onChange={(e) => update("excerpt", e.target.value)} maxLength={500} /></Field>
     <div className="grid gap-4 md:grid-cols-3"><Field label="دسته‌بندی"><select className={fieldClass} value={form.categoryId} onChange={(e) => update("categoryId", e.target.value)}><option value="">بدون دسته‌بندی</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="برچسب‌ها"><input className={fieldClass} value={form.tags.join("، ")} onChange={(e) => update("tags", splitList(e.target.value))} placeholder="استایل، گل پارچه‌ای" /></Field><Field label="نویسنده"><input className={fieldClass} value={form.authorName} onChange={(e) => update("authorName", e.target.value)} /></Field></div>
-    <div className="flex items-center justify-between"><label className="text-sm font-medium text-[#5f544d]">HTML مقاله</label><button type="button" onClick={onPreview} disabled={busy === "preview"} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#d9cfc5] px-3 text-sm text-[#6f625b]">{busy === "preview" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}پیش‌نمایش امن</button></div>
-    <textarea dir="rtl" spellCheck="true" className={`${fieldClass} min-h-[420px] font-mono leading-7`} value={form.bodyHtmlSource} onChange={(e) => update("bodyHtmlSource", e.target.value)} placeholder="<h2>عنوان بخش</h2>&#10;<p>متن مقاله...</p>" />
+    <div className="flex items-center justify-between"><label className="text-sm font-medium text-[#5f544d]">متن مقاله</label><button type="button" onClick={onPreview} disabled={busy === "preview"} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#d9cfc5] px-3 text-sm text-[#6f625b]">{busy === "preview" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}پیش‌نمایش نهایی</button></div>
+    <React.Suspense fallback={<div className="grid min-h-[420px] place-items-center border border-[#d9cfc5] bg-white"><Loader2 className="h-5 w-5 animate-spin text-[#a05f62]" /></div>}><RichTextEditor contentKey={form.id || "new"} html={form.bodyHtmlSource} json={form.bodyJson} onChange={updateContent} onUploadImage={onUploadImage} onStatus={onStatus} /></React.Suspense>
     {preview ? <div className="rounded-md border border-[#d9cfc5] bg-[#fffdfb] p-5"><div className="mb-4 flex flex-wrap gap-2 text-xs text-[#807269]"><span>{preview.readingTimeMinutes} دقیقه مطالعه</span>{preview.warnings?.map((warning) => <span key={warning} className="bg-[#fff2dc] px-2 py-1 text-[#8a652e]">{warning}</span>)}</div><div className="admin-blog-preview" dangerouslySetInnerHTML={{ __html: preview.html }} /></div> : null}
     <section className="border-t border-[#eee7df] pt-5"><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold text-[#3f352f]">سؤال‌های متداول</h3><button type="button" onClick={addFAQ} className="inline-flex h-9 items-center gap-1 text-sm text-[#a05f62]"><Plus className="h-4 w-4" />افزودن سؤال</button></div>{form.faqItems.map((faq, index) => <div key={index} className="mb-3 grid gap-2 border-b border-[#eee7df] pb-3 md:grid-cols-[1fr_1fr_auto]"><input className={fieldClass} value={faq.question} onChange={(e) => updateFAQ(form, update, index, "question", e.target.value)} placeholder="سؤال" /><textarea className={fieldClass} value={faq.answer} onChange={(e) => updateFAQ(form, update, index, "answer", e.target.value)} placeholder="پاسخ" /><button type="button" onClick={() => update("faqItems", form.faqItems.filter((_, i) => i !== index))} aria-label="حذف سؤال"><X className="h-4 w-4 text-[#b85d60]" /></button></div>)}</section>
     <section className="border-t border-[#eee7df] pt-5"><h3 className="mb-3 font-semibold text-[#3f352f]">مقالات مرتبط</h3><div className="grid gap-2 md:grid-cols-2">{posts.filter((post) => post.id !== form.id).map((post) => <label key={post.id} className="flex items-center gap-2 text-sm text-[#5f544d]"><input type="checkbox" checked={form.relatedPostIds.includes(post.id)} onChange={() => update("relatedPostIds", toggleValue(form.relatedPostIds, post.id))} />{post.title}</label>)}</div><p className="mt-2 text-xs text-[#8b7d74]">اگر انتخابی نداشته باشید، سه مقاله هم‌دسته خودکار نمایش داده می‌شود.</p></section>
@@ -372,7 +410,7 @@ function qualityWarnings(form, preview) {
 }
 
 function normalizePostForEditor(post) {
-  return { ...post, bodyHtmlSource: post?.bodyHtmlSource || post?.bodyHtml || "" };
+  return { ...post, bodyHtmlSource: post?.bodyHtmlSource || post?.bodyHtml || "", bodyJson: post?.bodyJson || {} };
 }
 
 function dateObjectFromTehranLocal(value) {

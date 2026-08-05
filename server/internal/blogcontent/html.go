@@ -119,7 +119,7 @@ func policy() *bluemonday.Policy {
 	p.AllowAttrs("src", "srcset", "sizes", "alt", "title", "width", "height", "loading", "decoding").OnElements("img")
 	p.AllowAttrs("srcset", "sizes", "type", "media").OnElements("source")
 	p.AllowAttrs("scope", "colspan", "rowspan").OnElements("th", "td")
-	p.AllowURLSchemes("http", "https", "mailto")
+	p.AllowURLSchemes("http", "https", "mailto", "tel")
 	p.AllowRelativeURLs(true)
 	return p
 }

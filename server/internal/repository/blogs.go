@@ -24,7 +24,7 @@ var (
 
 var blogSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
-const blogColumns = `p.id, p.title, p.slug, p.excerpt, p.body_html, p.body_html_source, COALESCE(p.category_id, ''),
+const blogColumns = `p.id, p.title, p.slug, p.excerpt, p.body_html, p.body_html_source, p.body_json, COALESCE(p.category_id, ''),
 	COALESCE(c.name, ''), p.tags, p.cover_image_id, p.cover_image_alt, p.og_image_id, p.og_image_alt,
 	p.focus_keyword, p.secondary_keywords, p.seo_title, p.seo_description, p.author_name, p.reviewer_name,
 	p.faq_items, p.related_post_ids, p.cta_label, p.cta_text, p.cta_url, p.status, p.scheduled_for,
@@ -153,11 +153,11 @@ func (r *BlogRepository) Create(ctx context.Context, post models.BlogPost) (mode
 		return models.BlogPost{}, fmt.Errorf("%w: slug belongs to publication history", ErrInvalidBlog)
 	}
 	_, err := r.pool.Exec(ctx, `INSERT INTO blog_posts (
-		id,title,slug,excerpt,body_html,body_html_source,category_id,tags,cover_image_id,cover_image_alt,og_image_id,og_image_alt,
+		id,title,slug,excerpt,body_html,body_html_source,body_json,category_id,tags,cover_image_id,cover_image_alt,og_image_id,og_image_alt,
 		focus_keyword,secondary_keywords,seo_title,seo_description,author_name,reviewer_name,faq_items,related_post_ids,
 		cta_label,cta_text,cta_url,status,scheduled_for,published_at,reading_time_minutes,created_at,updated_at
-	) VALUES ($1,$2,$3,$4,$5,$6,NULLIF($7,''),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)`,
-		post.ID, post.Title, post.Slug, post.Excerpt, post.BodyHTML, post.BodyHTMLSource, post.CategoryID, mustJSON(post.Tags), post.CoverImageID,
+	) VALUES ($1,$2,$3,$4,$5,$6,$7,NULLIF($8,''),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
+		post.ID, post.Title, post.Slug, post.Excerpt, post.BodyHTML, post.BodyHTMLSource, post.BodyJSON, post.CategoryID, mustJSON(post.Tags), post.CoverImageID,
 		post.CoverImageAlt, post.OGImageID, post.OGImageAlt, post.FocusKeyword, mustJSON(post.SecondaryKeywords), post.SEOTitle,
 		post.SEODescription, post.AuthorName, post.ReviewerName, mustJSON(post.FAQItems), mustJSON(post.RelatedPostIDs), post.CTALabel,
 		post.CTAText, post.CTAURL, post.Status, post.ScheduledFor, post.PublishedAt, post.ReadingTimeMinutes, post.CreatedAt, post.UpdatedAt)
@@ -205,11 +205,11 @@ func (r *BlogRepository) Update(ctx context.Context, id string, post models.Blog
 			}
 		}
 	}
-	_, err = tx.Exec(ctx, `UPDATE blog_posts SET title=$2,slug=$3,excerpt=$4,body_html=$5,body_html_source=$6,category_id=NULLIF($7,''),tags=$8,
-		cover_image_id=$9,cover_image_alt=$10,og_image_id=$11,og_image_alt=$12,focus_keyword=$13,secondary_keywords=$14,
-		seo_title=$15,seo_description=$16,author_name=$17,reviewer_name=$18,faq_items=$19,related_post_ids=$20,
-		cta_label=$21,cta_text=$22,cta_url=$23,reading_time_minutes=$24,updated_at=NOW() WHERE id=$1`,
-		id, post.Title, post.Slug, post.Excerpt, post.BodyHTML, post.BodyHTMLSource, post.CategoryID, mustJSON(post.Tags), post.CoverImageID,
+	_, err = tx.Exec(ctx, `UPDATE blog_posts SET title=$2,slug=$3,excerpt=$4,body_html=$5,body_html_source=$6,body_json=$7,category_id=NULLIF($8,''),tags=$9,
+		cover_image_id=$10,cover_image_alt=$11,og_image_id=$12,og_image_alt=$13,focus_keyword=$14,secondary_keywords=$15,
+		seo_title=$16,seo_description=$17,author_name=$18,reviewer_name=$19,faq_items=$20,related_post_ids=$21,
+		cta_label=$22,cta_text=$23,cta_url=$24,reading_time_minutes=$25,updated_at=NOW() WHERE id=$1`,
+		id, post.Title, post.Slug, post.Excerpt, post.BodyHTML, post.BodyHTMLSource, post.BodyJSON, post.CategoryID, mustJSON(post.Tags), post.CoverImageID,
 		post.CoverImageAlt, post.OGImageID, post.OGImageAlt, post.FocusKeyword, mustJSON(post.SecondaryKeywords), post.SEOTitle,
 		post.SEODescription, post.AuthorName, post.ReviewerName, mustJSON(post.FAQItems), mustJSON(post.RelatedPostIDs), post.CTALabel,
 		post.CTAText, post.CTAURL, post.ReadingTimeMinutes)
@@ -489,6 +489,9 @@ func normalizeBlog(post *models.BlogPost) {
 		post.BodyHTMLSource = post.BodyHTML
 	}
 	post.Slug = strings.TrimSpace(strings.ToLower(post.Slug))
+	if len(strings.TrimSpace(string(post.BodyJSON))) == 0 {
+		post.BodyJSON = json.RawMessage(`{}`)
+	}
 	post.Excerpt = strings.TrimSpace(post.Excerpt)
 	post.CategoryID = strings.TrimSpace(post.CategoryID)
 	post.CoverImageID = strings.TrimSpace(post.CoverImageID)
@@ -575,8 +578,8 @@ func normalizePublicBlogSummary(post *models.BlogPostSummary) {
 
 func scanBlogPost(row pgx.Row) (models.BlogPost, error) {
 	var post models.BlogPost
-	var tags, secondary, faqs, related []byte
-	err := row.Scan(&post.ID, &post.Title, &post.Slug, &post.Excerpt, &post.BodyHTML, &post.BodyHTMLSource, &post.CategoryID, &post.CategoryName,
+	var bodyJSON, tags, secondary, faqs, related []byte
+	err := row.Scan(&post.ID, &post.Title, &post.Slug, &post.Excerpt, &post.BodyHTML, &post.BodyHTMLSource, &bodyJSON, &post.CategoryID, &post.CategoryName,
 		&tags, &post.CoverImageID, &post.CoverImageAlt, &post.OGImageID, &post.OGImageAlt, &post.FocusKeyword, &secondary,
 		&post.SEOTitle, &post.SEODescription, &post.AuthorName, &post.ReviewerName, &faqs, &related, &post.CTALabel,
 		&post.CTAText, &post.CTAURL, &post.Status, &post.ScheduledFor, &post.PublishedAt, &post.ReadingTimeMinutes,
@@ -584,6 +587,7 @@ func scanBlogPost(row pgx.Row) (models.BlogPost, error) {
 	if err != nil {
 		return models.BlogPost{}, err
 	}
+	post.BodyJSON = json.RawMessage(bodyJSON)
 	_ = json.Unmarshal(tags, &post.Tags)
 	_ = json.Unmarshal(secondary, &post.SecondaryKeywords)
 	_ = json.Unmarshal(faqs, &post.FAQItems)

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -74,6 +75,7 @@ func (h *Handler) GetBlog(c *gin.Context) {
 	}
 	h.prepareBlogPost(ctx, &post)
 	post.BodyHTMLSource = ""
+	post.BodyJSON = nil
 	c.JSON(http.StatusOK, gin.H{"post": post})
 }
 
@@ -388,6 +390,17 @@ func processBlogHTML(post *models.BlogPost) error {
 	post.BodyHTML = result.HTML
 	post.TableOfContents = result.TableOfContents
 	post.ReadingTimeMinutes = result.ReadingTimeMinutes
+	bodyJSON := strings.TrimSpace(string(post.BodyJSON))
+	if bodyJSON == "" || bodyJSON == "null" || bodyJSON == "{}" {
+		post.BodyJSON = json.RawMessage(`{}`)
+		return nil
+	}
+	var document struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(post.BodyJSON, &document); err != nil || document.Type != "doc" {
+		return fmt.Errorf("invalid editor document")
+	}
 	return nil
 }
 
