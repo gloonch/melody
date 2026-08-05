@@ -321,8 +321,9 @@ func (h *Handler) UpdateAdminBlogImage(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ویرایش تصویر انجام نشد."})
 		return
 	}
-	h.attachBlogImages(ctx, []models.BlogImage{image})
-	c.JSON(http.StatusOK, gin.H{"image": image})
+	images := []models.BlogImage{image}
+	h.attachBlogImages(ctx, images)
+	c.JSON(http.StatusOK, gin.H{"image": images[0]})
 }
 
 func (h *Handler) DeleteAdminBlogImage(c *gin.Context) {

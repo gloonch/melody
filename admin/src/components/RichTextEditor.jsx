@@ -132,9 +132,14 @@ export default function RichTextEditor({ contentKey, html, json, onChange, onUpl
     try {
       const image = await onUploadImage(file, alt.trim());
       if (!image) return;
+      if (!image.url) {
+        onStatus?.({ type: "error", message: "آدرس تصویر از سرور دریافت نشد؛ تصویر داخل متن درج نشد." });
+        return;
+      }
+      const source = preferredImageSource(image);
       const maxPosition = editor.state.doc.content.size;
       editor.chain().focus().setTextSelection(Math.min(insertionPosition, maxPosition)).setImage({
-        src: image.url,
+        src: source.url,
         alt: image.alt || alt.trim(),
         width: image.width || null,
         height: image.height || null,
@@ -209,4 +214,9 @@ function countLinks(html = "") {
 
 function isSafeLink(href) {
   return /^(\/(?!\/)|https:\/\/|mailto:|tel:|#)/i.test(href);
+}
+
+function preferredImageSource(image) {
+  const sources = [...(image.sources || [])].sort((first, second) => first.width - second.width);
+  return sources.find((source) => source.width >= 960) || sources.at(-1) || { url: image.url };
 }

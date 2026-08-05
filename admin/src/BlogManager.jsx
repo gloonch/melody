@@ -289,9 +289,15 @@ export function BlogManager({ token, onStatus }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alt, caption: "" }),
       });
-      setImages((current) => [...current.filter((item) => item.id !== imageData.image.id), imageData.image]);
+      const image = {
+        ...imageData.image,
+        url: imageData.image.url || uploaded.url,
+        sources: imageData.image.sources?.length ? imageData.image.sources : uploaded.sources,
+        ogUrl: imageData.image.ogUrl || uploaded.ogUrl,
+      };
+      setImages((current) => [...current.filter((item) => item.id !== image.id), image]);
       onStatus({ type: "success", message: "تصویر داخل متن درج شد." });
-      return imageData.image;
+      return image;
     } catch (error) {
       onStatus({ type: "error", message: error.message });
       return null;
