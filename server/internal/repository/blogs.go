@@ -268,6 +268,36 @@ func (r *BlogRepository) SetPublication(ctx context.Context, id, status string, 
 	return r.GetAdmin(ctx, id)
 }
 
+func (r *BlogRepository) UpdatePublishedAt(ctx context.Context, id string, publishedAt time.Time) (models.BlogPost, error) {
+	post, err := r.GetAdmin(ctx, id)
+	if err != nil {
+		return models.BlogPost{}, err
+	}
+	now, err := r.databaseNow(ctx)
+	if err != nil {
+		return models.BlogPost{}, err
+	}
+	if err := validatePublishedAtChange(post, publishedAt, now); err != nil {
+		return models.BlogPost{}, err
+	}
+	result, err := r.pool.Exec(ctx, `UPDATE blog_posts SET published_at=$2,updated_at=NOW()
+		WHERE id=$1 AND status='published' AND published_at IS NOT NULL`, id, publishedAt.UTC())
+	if err != nil {
+		return models.BlogPost{}, err
+	}
+	if result.RowsAffected() == 0 {
+		return models.BlogPost{}, ErrInvalidPublish
+	}
+	return r.GetAdmin(ctx, id)
+}
+
+func validatePublishedAtChange(post models.BlogPost, publishedAt, now time.Time) error {
+	if post.Status != "published" || post.PublishedAt == nil || publishedAt.After(now) {
+		return ErrInvalidPublish
+	}
+	return nil
+}
+
 func (r *BlogRepository) ReconcileScheduled(ctx context.Context) (int64, error) {
 	result, err := r.pool.Exec(ctx, `UPDATE blog_posts SET status='published',published_at=COALESCE(published_at,scheduled_for),scheduled_for=NULL,updated_at=NOW()
 		WHERE status='scheduled' AND scheduled_for IS NOT NULL AND scheduled_for <= NOW()`)

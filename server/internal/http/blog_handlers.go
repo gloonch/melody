@@ -28,6 +28,10 @@ type blogPublicationBody struct {
 	ScheduledForTehranLocal string     `json:"scheduledForTehranLocal"`
 }
 
+type blogPublishedAtBody struct {
+	PublishedAtTehranLocal string `json:"publishedAtTehranLocal" binding:"required"`
+}
+
 type blogPreviewBody struct {
 	BodyHTML string `json:"bodyHtml"`
 }
@@ -186,6 +190,36 @@ func (h *Handler) UpdateAdminBlogPublication(c *gin.Context) {
 	post, err := h.blogs.SetPublication(ctx, c.Param("id"), body.Status, body.ScheduledFor)
 	if err != nil {
 		h.writeBlogMutationError(c, err)
+		return
+	}
+	h.prepareBlogPost(ctx, &post)
+	c.JSON(http.StatusOK, gin.H{"post": post})
+}
+
+func (h *Handler) UpdateAdminBlogPublishedAt(c *gin.Context) {
+	var body blogPublishedAtBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "تاریخ انتشار معتبر نیست."})
+		return
+	}
+	publishedAt, err := parseTehranPublicationTime(body.PublishedAtTehranLocal)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "تاریخ انتشار معتبر نیست."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	post, err := h.blogs.UpdatePublishedAt(ctx, c.Param("id"), publishedAt)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "مقاله پیدا نشد."})
+		return
+	}
+	if errors.Is(err, repository.ErrInvalidPublish) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "تاریخ انتشار فقط برای مقاله منتشرشده و تا زمان فعلی قابل اصلاح است."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "اصلاح تاریخ انتشار انجام نشد."})
 		return
 	}
 	h.prepareBlogPost(ctx, &post)

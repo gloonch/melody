@@ -43,6 +43,12 @@ func TestParseTehranPublicationTimeUsesTehranRegardlessOfHostTimezone(t *testing
 	}
 }
 
+func TestParseTehranPublicationTimeRejectsInvalidValue(t *testing.T) {
+	if _, err := parseTehranPublicationTime("۱۴۰۵/۰۵/۱۵"); err == nil {
+		t.Fatal("expected an invalid publication date to be rejected")
+	}
+}
+
 func TestAdminPreviewIsProtectedNoStoreAndSanitized(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()

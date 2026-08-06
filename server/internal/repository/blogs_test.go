@@ -65,3 +65,28 @@ func TestValidateBlogForPublicationRejectsAnotherPostsCover(t *testing.T) {
 		t.Fatalf("expected another post's cover to be rejected, got %v", err)
 	}
 }
+
+func TestValidatePublishedAtChange(t *testing.T) {
+	now := time.Date(2026, 8, 6, 12, 0, 0, 0, time.UTC)
+	original := now.Add(-24 * time.Hour)
+	published := models.BlogPost{Status: "published", PublishedAt: &original}
+
+	for _, value := range []time.Time{now.Add(-48 * time.Hour), now} {
+		if err := validatePublishedAtChange(published, value, now); err != nil {
+			t.Fatalf("expected %s to be accepted: %v", value, err)
+		}
+	}
+	if err := validatePublishedAtChange(published, now.Add(time.Second), now); !errors.Is(err, ErrInvalidPublish) {
+		t.Fatalf("expected a future publication date to be rejected, got %v", err)
+	}
+
+	for _, status := range []string{"draft", "scheduled", "archived"} {
+		post := models.BlogPost{Status: status, PublishedAt: &original}
+		if err := validatePublishedAtChange(post, original, now); !errors.Is(err, ErrInvalidPublish) {
+			t.Fatalf("expected status %q to be rejected, got %v", status, err)
+		}
+	}
+	if err := validatePublishedAtChange(models.BlogPost{Status: "published"}, original, now); !errors.Is(err, ErrInvalidPublish) {
+		t.Fatalf("expected missing original publication date to be rejected, got %v", err)
+	}
+}

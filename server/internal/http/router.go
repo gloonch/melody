@@ -149,6 +149,7 @@ func NewRouter(db *database.PostgresDB, cfg *config.Config) *gin.Engine {
 				protected.PUT("/blogs/:id", handler.UpdateAdminBlog)
 				protected.DELETE("/blogs/:id", handler.DeleteAdminBlog)
 				protected.PATCH("/blogs/:id/publication", handler.UpdateAdminBlogPublication)
+				protected.PATCH("/blogs/:id/published-at", handler.UpdateAdminBlogPublishedAt)
 				protected.POST("/blogs/:id/preview", handler.PreviewAdminBlog)
 				protected.GET("/blogs/:id/images", handler.ListAdminBlogImages)
 				protected.POST("/blogs/:id/images", handler.UploadAdminBlogImages)

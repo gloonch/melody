@@ -6,12 +6,12 @@ import persian from "react-date-object/calendars/persian";
 import persianFa from "react-date-object/locales/persian_fa";
 import gregorian from "react-date-object/calendars/gregorian";
 import gregorianEn from "react-date-object/locales/gregorian_en";
-import { CheckCircle2, Clipboard, Eye, Loader2, Newspaper, Plus, Save, Search, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Clipboard, Eye, Loader2, Newspaper, Plus, Save, Search, Trash2, Upload, X } from "lucide-react";
 import { apiRequest } from "./api";
 
 const RichTextEditor = React.lazy(() => import("./components/RichTextEditor"));
 
-const tabs = [
+const editorSections = [
   ["content", "محتوا"],
   ["media", "رسانه"],
   ["seo", "SEO"],
@@ -55,13 +55,17 @@ export function BlogManager({ token, onStatus }) {
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
   const [form, setForm] = useState(emptyPost);
-  const [activeTab, setActiveTab] = useState("content");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [busy, setBusy] = useState("");
   const [dirty, setDirty] = useState(false);
   const [preview, setPreview] = useState(null);
   const [scheduleDate, setScheduleDate] = useState(null);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+  const [publishedDate, setPublishedDate] = useState(null);
+  const [publishedDateDirty, setPublishedDateDirty] = useState(false);
+  const editorRef = useRef(null);
+  const hasUnsavedChanges = dirty || scheduleDirty || publishedDateDirty;
 
   const loadLists = async () => {
     const [postData, categoryData] = await Promise.all([
@@ -78,13 +82,13 @@ export function BlogManager({ token, onStatus }) {
 
   useEffect(() => {
     const warn = (event) => {
-      if (!dirty) return;
+      if (!hasUnsavedChanges) return;
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [hasUnsavedChanges]);
 
   const update = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -98,7 +102,7 @@ export function BlogManager({ token, onStatus }) {
   };
 
   const choosePost = async (id) => {
-    if (dirty && !window.confirm("تغییرات ذخیره‌نشده کنار گذاشته شوند؟")) return;
+    if (hasUnsavedChanges && !window.confirm("تغییرات ذخیره‌نشده کنار گذاشته شوند؟")) return;
     setBusy("load");
     try {
       const [postData, imageData] = await Promise.all([
@@ -108,10 +112,13 @@ export function BlogManager({ token, onStatus }) {
       const loadedPost = normalizePostForEditor(postData.post);
       setForm({ ...emptyPost(), ...loadedPost });
       setScheduleDate(dateObjectFromTehranLocal(loadedPost.scheduledForTehranLocal));
+      setPublishedDate(dateObjectFromISOInTehran(loadedPost.publishedAt));
       setImages(imageData.images || []);
       setDirty(false);
+      setScheduleDirty(false);
+      setPublishedDateDirty(false);
       setPreview(null);
-      setActiveTab("content");
+      requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (error) {
       onStatus({ type: "error", message: error.message });
     } finally {
@@ -120,13 +127,26 @@ export function BlogManager({ token, onStatus }) {
   };
 
   const startNew = () => {
-    if (dirty && !window.confirm("تغییرات ذخیره‌نشده کنار گذاشته شوند؟")) return;
+    if (hasUnsavedChanges && !window.confirm("تغییرات ذخیره‌نشده کنار گذاشته شوند؟")) return;
     setForm(emptyPost());
     setImages([]);
     setScheduleDate(null);
+    setPublishedDate(null);
     setPreview(null);
     setDirty(false);
-    setActiveTab("content");
+    setScheduleDirty(false);
+    setPublishedDateDirty(false);
+    requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const updateScheduleDate = (value) => {
+    setScheduleDate(value);
+    setScheduleDirty(true);
+  };
+
+  const updatePublishedDate = (value) => {
+    setPublishedDate(value);
+    setPublishedDateDirty(true);
   };
 
   const savePost = async () => {
@@ -142,7 +162,7 @@ export function BlogManager({ token, onStatus }) {
       setForm({ ...emptyPost(), ...normalizePostForEditor(data.post) });
       setDirty(false);
       await loadLists();
-      onStatus({ type: "success", message: "پیش‌نویس مقاله ذخیره شد." });
+      onStatus({ type: "success", message: data.post.status === "published" ? "تغییرات مقاله ذخیره شد." : "پیش‌نویس مقاله ذخیره شد." });
       return data.post;
     } catch (error) {
       onStatus({ type: "error", message: error.message });
@@ -186,8 +206,40 @@ export function BlogManager({ token, onStatus }) {
       });
       setForm({ ...emptyPost(), ...normalizePostForEditor(data.post) });
       setDirty(false);
+      setScheduleDate(dateObjectFromTehranLocal(data.post.scheduledForTehranLocal));
+      setPublishedDate(dateObjectFromISOInTehran(data.post.publishedAt));
+      setScheduleDirty(false);
+      setPublishedDateDirty(false);
       await loadLists();
       onStatus({ type: "success", message: publicationMessage(nextStatus) });
+    } catch (error) {
+      onStatus({ type: "error", message: error.message });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const savePublishedAt = async () => {
+    if (!form.id || form.status !== "published" || !publishedDate) return;
+    if (!window.confirm("تاریخ انتشار اصلاح شود؟ این تغییر ترتیب مقالات و اطلاعات SEO را تغییر می‌دهد.")) return;
+    let post = form;
+    if (dirty) post = await savePost();
+    if (!post?.id) return;
+    const publishedAtTehranLocal = dateObjectToGregorianLocal(publishedDate);
+    setBusy("published-at");
+    try {
+      const data = await apiRequest(`admin/blogs/${post.id}/published-at`, {
+        token,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publishedAtTehranLocal }),
+      });
+      const updatedPost = normalizePostForEditor(data.post);
+      setForm({ ...emptyPost(), ...updatedPost });
+      setPublishedDate(dateObjectFromISOInTehran(updatedPost.publishedAt));
+      setPublishedDateDirty(false);
+      await loadLists();
+      onStatus({ type: "success", message: "تاریخ انتشار اصلاح شد." });
     } catch (error) {
       onStatus({ type: "error", message: error.message });
     } finally {
@@ -200,7 +252,14 @@ export function BlogManager({ token, onStatus }) {
     setBusy("delete");
     try {
       await apiRequest(`admin/blogs/${form.id}`, { token, method: "DELETE" });
-      startNew();
+      setForm(emptyPost());
+      setImages([]);
+      setScheduleDate(null);
+      setPublishedDate(null);
+      setPreview(null);
+      setDirty(false);
+      setScheduleDirty(false);
+      setPublishedDateDirty(false);
       await loadLists();
       onStatus({ type: "success", message: "پیش‌نویس حذف شد." });
     } catch (error) {
@@ -315,37 +374,69 @@ export function BlogManager({ token, onStatus }) {
         <button type="button" onClick={startNew} className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm font-medium text-white"><Plus className="h-4 w-4" />مقاله جدید</button>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="border-l-0 border-[#eee7df] xl:border-l xl:pl-5">
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            <label className="relative"><Search className="absolute right-3 top-3 h-4 w-4 text-[#9b8c83]" /><input value={search} onChange={(event) => setSearch(event.target.value)} className={`${fieldClass} pr-9`} placeholder="جستجوی عنوان یا slug" /></label>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={fieldClass}><option value="">همه وضعیت‌ها</option><option value="draft">پیش‌نویس</option><option value="scheduled">زمان‌بندی‌شده</option><option value="published">منتشرشده</option><option value="archived">آرشیو</option></select>
-          </div>
-          <div className="mt-3 max-h-[520px] space-y-2 overflow-y-auto">
-            {posts.map((post) => <button type="button" key={post.id} onClick={() => choosePost(post.id)} className={`w-full rounded-md border p-3 text-right ${form.id === post.id ? "border-[#c08081] bg-[#fbf2f2]" : "border-[#eee7df] bg-[#fbf9f6]"}`}><span className="block truncate text-sm font-medium text-[#3f352f]">{post.title}</span><span className="mt-1 block text-xs text-[#8b7d74]">{statusLabel(post.status)} · {post.slug}</span></button>)}
-            {posts.length === 0 ? <p className="py-6 text-center text-sm text-[#8b7d74]">مقاله‌ای پیدا نشد.</p> : null}
-          </div>
-        </aside>
+      <details className="group mb-5 border-y border-[#eee7df] py-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-[#5f544d]">
+          <span>مدیریت دسته‌بندی‌ها</span>
+          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pt-4"><CategoryManager categories={categories} setCategories={setCategories} token={token} onStatus={onStatus} onChanged={loadLists} /></div>
+      </details>
 
-        <div className="min-w-0">
-          <div className="mb-5 flex flex-wrap gap-2 border-b border-[#eee7df] pb-3">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setActiveTab(id)} className={`h-9 px-4 text-sm ${activeTab === id ? "bg-[#c08081] text-white" : "bg-[#f7f3ef] text-[#6f625b]"}`}>{label}</button>)}</div>
-          {busy === "load" ? <div className="grid min-h-80 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-[#c08081]" /></div> : (
-            <>
-              {activeTab === "content" ? <ContentFields form={form} update={update} updateContent={updateContent} categories={categories} posts={posts} preview={preview} onPreview={previewPost} onUploadImage={uploadInlineImage} onStatus={onStatus} busy={busy} /> : null}
-              {activeTab === "media" ? <MediaFields form={form} update={update} images={images} setImages={setImages} token={token} onUpload={uploadImages} onSetCover={persistCoverImage} busy={busy} onStatus={onStatus} /> : null}
-              {activeTab === "seo" ? <SEOFields form={form} update={update} warnings={seoWarnings} /> : null}
-              {activeTab === "publication" ? <PublicationFields form={form} categories={categories} setCategories={setCategories} token={token} scheduleDate={scheduleDate} setScheduleDate={setScheduleDate} onPublication={publication} busy={busy} onStatus={onStatus} /> : null}
-              <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[#eee7df] pt-5">
-                <button type="button" onClick={savePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">{busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{form.status === "published" ? "ذخیره تغییرات" : "ذخیره پیش‌نویس"}</button>
-                {form.id && form.status === "draft" && !form.publishedAt ? <button type="button" onClick={removePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#e4c6c8] px-4 text-sm text-[#b85d60]"><Trash2 className="h-4 w-4" />حذف</button> : null}
-                {dirty ? <span className="text-xs text-[#a05f62]">تغییرات ذخیره نشده‌اند.</span> : <span className="inline-flex items-center gap-1 text-xs text-[#5d8066]"><CheckCircle2 className="h-4 w-4" />ذخیره‌شده</span>}
-              </div>
-            </>
-          )}
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+        <label className="relative"><Search className="absolute right-3 top-3 h-4 w-4 text-[#9b8c83]" /><input value={search} onChange={(event) => setSearch(event.target.value)} className={`${fieldClass} pr-9`} placeholder="جستجوی عنوان یا slug" /></label>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={fieldClass}><option value="">همه وضعیت‌ها</option><option value="draft">پیش‌نویس</option><option value="scheduled">زمان‌بندی‌شده</option><option value="published">منتشرشده</option><option value="archived">آرشیو</option></select>
+      </div>
+      <BlogList posts={posts} selectedId={form.id} onSelect={choosePost} />
+
+      <div ref={editorRef} className="mt-8 min-w-0 scroll-mt-24 border-t border-[#ddd3c9] pt-6">
+        <div className="sticky top-0 z-20 -mx-1 mb-7 bg-white/95 px-1 py-3 backdrop-blur-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0"><p className="text-xs text-[#8b7d74]">{form.id ? statusLabel(form.status) : "مقاله جدید"}</p><h3 className="truncate text-base font-semibold text-[#3f352f]">{form.title || "مقاله بدون عنوان"}</h3></div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={savePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">{busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{form.status === "published" ? "ذخیره تغییرات" : "ذخیره پیش‌نویس"}</button>
+              {form.id && form.status === "draft" && !form.publishedAt ? <button type="button" onClick={removePost} disabled={Boolean(busy)} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#e4c6c8] px-4 text-sm text-[#b85d60]"><Trash2 className="h-4 w-4" />حذف</button> : null}
+              {hasUnsavedChanges ? <span className="text-xs text-[#a05f62]">تغییرات ذخیره نشده‌اند.</span> : <span className="inline-flex items-center gap-1 text-xs text-[#5d8066]"><CheckCircle2 className="h-4 w-4" />ذخیره‌شده</span>}
+            </div>
+          </div>
+          <nav className="mt-3 flex gap-1 overflow-x-auto border-t border-[#eee7df] pt-3" aria-label="بخش‌های فرم مقاله">{editorSections.map(([id, label]) => <a key={id} href={`#blog-editor-${id}`} className="shrink-0 px-3 py-1.5 text-sm text-[#6f625b] hover:bg-[#f7f3ef] hover:text-[#a05f62]">{label}</a>)}</nav>
         </div>
+
+        {busy === "load" ? <div className="grid min-h-80 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-[#c08081]" /></div> : <>
+          <EditorSection id="blog-editor-content" title="محتوا" description="عنوان، متن، پرسش‌های متداول و مسیرهای مرتبط مقاله"><ContentFields form={form} update={update} updateContent={updateContent} categories={categories} posts={posts} preview={preview} onPreview={previewPost} onUploadImage={uploadInlineImage} onStatus={onStatus} busy={busy} /></EditorSection>
+          <EditorSection id="blog-editor-media" title="رسانه" description="تصویر شاخص، تصویر شبکه‌های اجتماعی و تصاویر داخل متن"><MediaFields form={form} update={update} images={images} setImages={setImages} token={token} onUpload={uploadImages} onSetCover={persistCoverImage} busy={busy} onStatus={onStatus} /></EditorSection>
+          <EditorSection id="blog-editor-seo" title="SEO" description="کلیدواژه‌ها، metadata و کنترل کیفیت صفحه"><SEOFields form={form} update={update} warnings={seoWarnings} /></EditorSection>
+          <EditorSection id="blog-editor-publication" title="انتشار" description="وضعیت، زمان‌بندی و اصلاح تاریخ انتشار"><PublicationFields form={form} scheduleDate={scheduleDate} onScheduleDateChange={updateScheduleDate} publishedDate={publishedDate} publishedDateDirty={publishedDateDirty} onPublishedDateChange={updatePublishedDate} onSavePublishedAt={savePublishedAt} onPublication={publication} busy={busy} /></EditorSection>
+        </>}
       </div>
     </section>
   );
+}
+
+function BlogList({ posts, selectedId, onSelect }) {
+  if (posts.length === 0) return <p className="py-8 text-center text-sm text-[#8b7d74]">مقاله‌ای پیدا نشد.</p>;
+  return <div className="mt-4 overflow-hidden border-y border-[#e5ddd5]">
+    <div className="hidden overflow-x-auto md:block">
+      <table className="w-full min-w-[980px] border-collapse text-right text-sm">
+        <thead className="bg-[#f8f5f1] text-xs text-[#786b63]"><tr><th className="px-4 py-3 font-medium">مقاله</th><th className="px-3 py-3 font-medium">وضعیت</th><th className="px-3 py-3 font-medium">دسته‌بندی</th><th className="px-3 py-3 font-medium">انتشار / زمان‌بندی</th><th className="px-3 py-3 font-medium">آخرین ویرایش</th><th className="px-3 py-3 font-medium">محتوا</th></tr></thead>
+        <tbody className="divide-y divide-[#eee7df]">{posts.map((post) => <tr key={post.id} tabIndex={0} onClick={() => onSelect(post.id)} onKeyDown={(event) => activateRow(event, () => onSelect(post.id))} className={`cursor-pointer outline-none transition hover:bg-[#fbf7f4] focus:bg-[#fbf2f2] ${selectedId === post.id ? "bg-[#fbf2f2]" : "bg-white"}`}>
+          <td className="max-w-[330px] px-4 py-3"><span className="block truncate font-medium text-[#3f352f]">{post.title}</span><span dir="ltr" className="mt-1 block truncate text-left text-xs text-[#8b7d74]">/{post.slug}</span></td>
+          <td className="px-3 py-3"><StatusBadge status={post.status} /></td>
+          <td className="px-3 py-3 text-xs text-[#6f625b]">{post.categoryName || "بدون دسته‌بندی"}</td>
+          <td className="whitespace-nowrap px-3 py-3 text-xs text-[#6f625b]">{publicationDateLabel(post)}</td>
+          <td className="whitespace-nowrap px-3 py-3 text-xs text-[#6f625b]">{formatCompactTehranDateTime(post.updatedAt)}</td>
+          <td className="whitespace-nowrap px-3 py-3 text-xs text-[#6f625b]"><span className="block">{post.readingTimeMinutes || 1} دقیقه مطالعه</span><span className={post.coverImageId ? "text-[#5d8066]" : "text-[#9a6c48]"}>{post.coverImageId ? "تصویر شاخص دارد" : "بدون تصویر شاخص"}</span></td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <div className="divide-y divide-[#eee7df] md:hidden">{posts.map((post) => <button type="button" key={post.id} onClick={() => onSelect(post.id)} className={`w-full p-4 text-right ${selectedId === post.id ? "bg-[#fbf2f2]" : "bg-white"}`}>
+      <span className="flex items-start justify-between gap-3"><span className="min-w-0"><span className="block font-medium text-[#3f352f]">{post.title}</span><span dir="ltr" className="mt-1 block break-all text-left text-xs text-[#8b7d74]">/{post.slug}</span></span><StatusBadge status={post.status} /></span>
+      <span className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-[#6f625b]"><span>{post.categoryName || "بدون دسته‌بندی"}</span><span>{publicationDateLabel(post)}</span><span>ویرایش: {formatCompactTehranDateTime(post.updatedAt)}</span><span>{post.readingTimeMinutes || 1} دقیقه · {post.coverImageId ? "با تصویر" : "بدون تصویر"}</span></span>
+    </button>)}</div>
+  </div>;
+}
+
+function EditorSection({ id, title, description, children }) {
+  return <section id={id} className="scroll-mt-32 border-t border-[#eee7df] py-8 first:border-t-0 first:pt-0"><header className="mb-5"><h3 className="text-lg font-semibold text-[#3f352f]">{title}</h3><p className="mt-1 text-sm text-[#8b7d74]">{description}</p></header>{children}</section>;
 }
 
 function ContentFields({ form, update, updateContent, categories, posts, preview, onPreview, onUploadImage, onStatus, busy }) {
@@ -384,15 +475,31 @@ function SEOFields({ form, update, warnings }) {
   return <div className="grid gap-4"><Field label="کلیدواژه اصلی"><input className={fieldClass} value={form.focusKeyword} onChange={(e) => update("focusKeyword", e.target.value)} /></Field><Field label="کلیدواژه‌های فرعی"><input className={fieldClass} value={form.secondaryKeywords.join("، ")} onChange={(e) => update("secondaryKeywords", splitList(e.target.value))} /></Field><Field label={`عنوان SEO (${[...form.seoTitle].length}/۶۰)`}><input className={fieldClass} value={form.seoTitle} onChange={(e) => update("seoTitle", e.target.value)} maxLength={180} /></Field><Field label={`توضیح SEO (${[...form.seoDescription].length}/۱۶۰)`}><textarea className={`${fieldClass} min-h-24`} value={form.seoDescription} onChange={(e) => update("seoDescription", e.target.value)} maxLength={320} /></Field><section className="bg-[#fbf9f6] p-4"><h3 className="font-semibold text-[#3f352f]">کنترل کیفیت</h3>{warnings.length ? <ul className="mt-3 list-disc space-y-2 pr-5 text-sm text-[#8a652e]">{warnings.map((item) => <li key={item}>{item}</li>)}</ul> : <p className="mt-3 text-sm text-[#5d8066]">بررسی‌های اصلی محتوا پاس شده‌اند.</p>}</section></div>;
 }
 
-function PublicationFields({ form, categories, setCategories, token, scheduleDate, setScheduleDate, onPublication, busy, onStatus }) {
-  return <div className="grid gap-6"><section className="bg-[#fbf9f6] p-4"><p className="text-sm text-[#5f544d]">وضعیت فعلی: <strong>{statusLabel(form.status)}</strong></p>{form.publishedAt ? <p className="mt-2 text-xs text-[#807269]">تاریخ اولین انتشار ثابت می‌ماند: {formatTehranDateTime(form.publishedAt)}</p> : null}{form.scheduledFor ? <div className="mt-3 space-y-1 text-xs text-[#807269]"><p>زمان تهران: {formatTehranDateTime(form.scheduledFor)}</p><p dir="ltr" className="text-right">UTC ذخیره‌شده: {new Date(form.scheduledFor).toISOString()}</p></div> : null}</section><div className="grid gap-3"><label className="text-sm font-medium text-[#5f544d]">زمان انتشار به تقویم شمسی و ساعت تهران</label><DatePicker value={scheduleDate} onChange={setScheduleDate} calendar={persian} locale={persianFa} format="YYYY/MM/DD HH:mm" plugins={[<TimePicker key="time" position="bottom" hideSeconds />]} inputClass={fieldClass} calendarPosition="bottom-right" /></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => onPublication("published")} disabled={Boolean(busy)} className="h-11 rounded-full bg-[#a05f62] px-5 text-sm text-white">انتشار اکنون</button><button type="button" onClick={() => onPublication("scheduled")} disabled={Boolean(busy) || !scheduleDate} className="h-11 rounded-full border border-[#c08081] px-5 text-sm text-[#a05f62] disabled:opacity-50">زمان‌بندی انتشار</button>{form.publishedAt && form.status !== "archived" ? <button type="button" onClick={() => onPublication("archived")} className="h-11 rounded-md border border-[#d9cfc5] px-5 text-sm text-[#6f625b]">آرشیو مقاله</button> : null}</div><CategoryManager categories={categories} setCategories={setCategories} token={token} onStatus={onStatus} /></div>;
+function PublicationFields({ form, scheduleDate, onScheduleDateChange, publishedDate, publishedDateDirty, onPublishedDateChange, onSavePublishedAt, onPublication, busy }) {
+  const isDraft = form.status === "draft";
+  const isScheduled = form.status === "scheduled";
+  const isPublished = form.status === "published";
+  const isArchived = form.status === "archived";
+  return <div className="grid gap-6">
+    <section className="bg-[#fbf9f6] p-4"><div className="flex flex-wrap items-center gap-2"><span className="text-sm text-[#5f544d]">وضعیت فعلی:</span><StatusBadge status={form.status} /></div>{form.publishedAt ? <p className="mt-3 text-xs text-[#807269]">تاریخ انتشار: {formatTehranDateTime(form.publishedAt)}</p> : null}{form.scheduledFor ? <div className="mt-3 space-y-1 text-xs text-[#807269]"><p>زمان‌بندی تهران: {formatTehranDateTime(form.scheduledFor)}</p><p dir="ltr" className="text-right">UTC: {new Date(form.scheduledFor).toISOString()}</p></div> : null}</section>
+
+    {isPublished ? <div className="grid max-w-xl gap-3"><label className="text-sm font-medium text-[#5f544d]">اصلاح تاریخ انتشار با تقویم شمسی و ساعت تهران</label><DatePicker value={publishedDate} onChange={onPublishedDateChange} calendar={persian} locale={persianFa} format="YYYY/MM/DD HH:mm" plugins={[<TimePicker key="published-time" position="bottom" hideSeconds />]} inputClass={fieldClass} calendarPosition="bottom-right" /><p className="text-xs text-[#8b7d74]">تاریخ آینده پذیرفته نمی‌شود و برای انتشار آینده باید از زمان‌بندی استفاده کنید.</p><div><button type="button" onClick={onSavePublishedAt} disabled={Boolean(busy) || !publishedDate || !publishedDateDirty} className="h-10 rounded-md border border-[#c08081] px-4 text-sm text-[#a05f62] disabled:opacity-50">{busy === "published-at" ? "در حال ذخیره..." : "ذخیره تاریخ انتشار"}</button></div></div> : null}
+
+    {isDraft || isScheduled ? <div className="grid max-w-xl gap-3"><label className="text-sm font-medium text-[#5f544d]">زمان انتشار با تقویم شمسی و ساعت تهران</label><DatePicker value={scheduleDate} onChange={onScheduleDateChange} calendar={persian} locale={persianFa} format="YYYY/MM/DD HH:mm" plugins={[<TimePicker key="schedule-time" position="bottom" hideSeconds />]} inputClass={fieldClass} calendarPosition="bottom-right" /></div> : null}
+
+    <div className="flex flex-wrap gap-2">
+      {isDraft || isScheduled || isArchived ? <button type="button" onClick={() => onPublication("published")} disabled={Boolean(busy)} className="h-11 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-50">{isArchived ? "انتشار دوباره" : "انتشار اکنون"}</button> : null}
+      {isDraft || isScheduled ? <button type="button" onClick={() => onPublication("scheduled")} disabled={Boolean(busy) || !scheduleDate} className="h-11 rounded-full border border-[#c08081] px-5 text-sm text-[#a05f62] disabled:opacity-50">{isScheduled ? "به‌روزرسانی زمان‌بندی" : "زمان‌بندی انتشار"}</button> : null}
+      {isPublished ? <button type="button" onClick={() => onPublication("archived")} disabled={Boolean(busy)} className="h-11 rounded-md border border-[#d9cfc5] px-5 text-sm text-[#6f625b] disabled:opacity-50">آرشیو مقاله</button> : null}
+    </div>
+  </div>;
 }
 
-function CategoryManager({ categories, setCategories, token, onStatus }) {
+function CategoryManager({ categories, setCategories, token, onStatus, onChanged }) {
   const [category, setCategory] = useState({ name: "", slug: "", description: "", sortOrder: 0, isActive: true });
-  const save = async () => { try { const editing = Boolean(category.id); const data = await apiRequest(editing ? `admin/blog-categories/${category.id}` : "admin/blog-categories", { token, method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(category) }); setCategories((current) => editing ? current.map((item) => item.id === data.category.id ? data.category : item) : [...current, data.category]); setCategory({ name: "", slug: "", description: "", sortOrder: 0, isActive: true }); } catch (error) { onStatus({ type: "error", message: error.message }); } };
-  const remove = async (id) => { if (!window.confirm("دسته‌بندی حذف شود؟ مقاله‌ها بدون دسته‌بندی باقی می‌مانند.")) return; try { await apiRequest(`admin/blog-categories/${id}`, { token, method: "DELETE" }); setCategories((current) => current.filter((item) => item.id !== id)); } catch (error) { onStatus({ type: "error", message: error.message }); } };
-  return <section className="border-t border-[#eee7df] pt-5"><h3 className="mb-3 font-semibold text-[#3f352f]">دسته‌بندی‌ها</h3><div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]"><input className={fieldClass} value={category.name} onChange={(e) => setCategory({ ...category, name: e.target.value })} placeholder="نام فارسی" /><input dir="ltr" className={`${fieldClass} text-left`} value={category.slug} onChange={(e) => setCategory({ ...category, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="latin-slug" /><button type="button" onClick={save} className="h-10 rounded-md bg-[#51645a] px-4 text-sm text-white">{category.id ? "ویرایش" : "افزودن"}</button></div><div className="mt-2 grid gap-2 md:grid-cols-[1fr_140px_auto]"><input className={fieldClass} value={category.description || ""} onChange={(e) => setCategory({ ...category, description: e.target.value })} placeholder="توضیح کوتاه دسته‌بندی" /><input type="number" className={fieldClass} value={category.sortOrder || 0} onChange={(e) => setCategory({ ...category, sortOrder: Number(e.target.value) })} placeholder="ترتیب" /><label className="flex items-center gap-2 text-sm text-[#5f544d]"><input type="checkbox" checked={category.isActive !== false} onChange={(e) => setCategory({ ...category, isActive: e.target.checked })} />فعال</label></div><div className="mt-3 flex flex-wrap gap-2">{categories.map((item) => <span key={item.id} className="inline-flex items-center gap-2 bg-[#f7f3ef] px-3 py-2 text-xs"><button type="button" onClick={() => setCategory(item)} className="text-[#5f544d]">{item.name}</button><button type="button" onClick={() => remove(item.id)} aria-label="حذف دسته‌بندی"><X className="h-3.5 w-3.5 text-[#b85d60]" /></button></span>)}</div></section>;
+  const save = async () => { try { const editing = Boolean(category.id); const data = await apiRequest(editing ? `admin/blog-categories/${category.id}` : "admin/blog-categories", { token, method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(category) }); setCategories((current) => editing ? current.map((item) => item.id === data.category.id ? data.category : item) : [...current, data.category]); setCategory({ name: "", slug: "", description: "", sortOrder: 0, isActive: true }); await onChanged?.(); } catch (error) { onStatus({ type: "error", message: error.message }); } };
+  const remove = async (id) => { if (!window.confirm("دسته‌بندی حذف شود؟ مقاله‌ها بدون دسته‌بندی باقی می‌مانند.")) return; try { await apiRequest(`admin/blog-categories/${id}`, { token, method: "DELETE" }); setCategories((current) => current.filter((item) => item.id !== id)); await onChanged?.(); } catch (error) { onStatus({ type: "error", message: error.message }); } };
+  return <section><div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]"><input className={fieldClass} value={category.name} onChange={(e) => setCategory({ ...category, name: e.target.value })} placeholder="نام فارسی" /><input dir="ltr" className={`${fieldClass} text-left`} value={category.slug} onChange={(e) => setCategory({ ...category, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="latin-slug" /><button type="button" onClick={save} className="h-10 rounded-md bg-[#51645a] px-4 text-sm text-white">{category.id ? "ویرایش" : "افزودن"}</button></div><div className="mt-2 grid gap-2 md:grid-cols-[1fr_140px_auto]"><input className={fieldClass} value={category.description || ""} onChange={(e) => setCategory({ ...category, description: e.target.value })} placeholder="توضیح کوتاه دسته‌بندی" /><input type="number" className={fieldClass} value={category.sortOrder || 0} onChange={(e) => setCategory({ ...category, sortOrder: Number(e.target.value) })} placeholder="ترتیب" /><label className="flex items-center gap-2 text-sm text-[#5f544d]"><input type="checkbox" checked={category.isActive !== false} onChange={(e) => setCategory({ ...category, isActive: e.target.checked })} />فعال</label></div><div className="mt-3 flex flex-wrap gap-2">{categories.map((item) => <span key={item.id} className="inline-flex items-center gap-2 bg-[#f7f3ef] px-3 py-2 text-xs"><button type="button" onClick={() => setCategory(item)} className="text-[#5f544d]">{item.name}</button><button type="button" onClick={() => remove(item.id)} aria-label="حذف دسته‌بندی"><X className="h-3.5 w-3.5 text-[#b85d60]" /></button></span>)}</div></section>;
 }
 
 function Field({ label, children }) { return <label className="grid gap-2 text-sm font-medium text-[#5f544d]"><span>{label}</span>{children}</label>; }
@@ -400,8 +507,23 @@ function splitList(value) { return value.split(/[،,]/).map((item) => item.trim(
 function toggleValue(values, value) { return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]; }
 function updateFAQ(form, update, index, field, value) { update("faqItems", form.faqItems.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item)); }
 function statusLabel(status) { return ({ draft: "پیش‌نویس", scheduled: "زمان‌بندی‌شده", published: "منتشرشده", archived: "آرشیو" }[status] || status); }
+function StatusBadge({ status }) {
+  const classes = { draft: "bg-[#eee9e3] text-[#6f625b]", scheduled: "bg-[#fff2dc] text-[#8a652e]", published: "bg-[#e7f1e9] text-[#42644b]", archived: "bg-[#eeeef0] text-[#62616a]" };
+  return <span className={`inline-flex whitespace-nowrap px-2.5 py-1 text-xs font-medium ${classes[status] || classes.draft}`}>{statusLabel(status)}</span>;
+}
 function publicationMessage(status) { return ({ published: "مقاله منتشر شد.", scheduled: "انتشار مقاله زمان‌بندی شد.", archived: "مقاله آرشیو شد.", draft: "مقاله به پیش‌نویس برگشت." }[status] || "وضعیت انتشار تغییر کرد."); }
 function copyImageHTML(image) { const alt = String(image.alt || "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;"); navigator.clipboard.writeText(`<figure><img src="${image.url}" alt="${alt}" width="${image.width || 1200}" height="${image.height || 800}" loading="lazy">${image.caption ? `<figcaption>${image.caption}</figcaption>` : ""}</figure>`); }
+function activateRow(event, action) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  action();
+}
+
+function publicationDateLabel(post) {
+  if (post.status === "scheduled" && post.scheduledFor) return formatCompactTehranDateTime(post.scheduledFor);
+  if (post.publishedAt) return formatCompactTehranDateTime(post.publishedAt);
+  return "منتشر نشده";
+}
 function qualityWarnings(form, preview) {
   const warnings = [];
   if ([...form.title].length < 20) warnings.push("عنوان مقاله کوتاه است.");
@@ -424,6 +546,26 @@ function dateObjectFromTehranLocal(value) {
   return new DateObject({ date: value, format: "YYYY-MM-DD HH:mm", calendar: gregorian, locale: gregorianEn }).convert(persian, persianFa);
 }
 
+function dateObjectFromISOInTehran(value) {
+  if (!value) return null;
+  return dateObjectFromTehranLocal(tehranLocalFromISO(value));
+}
+
+function dateObjectToGregorianLocal(value) {
+  return new DateObject(value).convert(gregorian, gregorianEn).format("YYYY-MM-DD HH:mm");
+}
+
+function tehranLocalFromISO(value) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(value));
+  const part = (type) => parts.find((item) => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")}`;
+}
+
 function formatTehranDateTime(value) {
   return new Intl.DateTimeFormat("fa-IR", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Tehran" }).format(new Date(value));
+}
+
+function formatCompactTehranDateTime(value) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tehran" }).format(new Date(value));
 }
