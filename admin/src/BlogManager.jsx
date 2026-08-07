@@ -190,6 +190,7 @@ export function BlogManager({ token, onStatus }) {
   };
 
   const publication = async (nextStatus) => {
+    if (nextStatus === "scheduled" && form.status === "published" && !window.confirm("مقاله تا زمان انتخاب‌شده از سایت مخفی و دوباره زمان‌بندی شود؟")) return;
     let post = form;
     if (dirty || !form.id) post = await savePost();
     if (!post?.id) return;
@@ -485,11 +486,12 @@ function PublicationFields({ form, scheduleDate, onScheduleDateChange, published
 
     {isPublished ? <div className="grid max-w-xl gap-3"><label className="text-sm font-medium text-[#5f544d]">اصلاح تاریخ انتشار با تقویم شمسی و ساعت تهران</label><DatePicker value={publishedDate} onChange={onPublishedDateChange} calendar={persian} locale={persianFa} format="YYYY/MM/DD HH:mm" plugins={[<TimePicker key="published-time" position="bottom" hideSeconds />]} inputClass={fieldClass} calendarPosition="bottom-right" /><p className="text-xs text-[#8b7d74]">تاریخ آینده پذیرفته نمی‌شود و برای انتشار آینده باید از زمان‌بندی استفاده کنید.</p><div><button type="button" onClick={onSavePublishedAt} disabled={Boolean(busy) || !publishedDate || !publishedDateDirty} className="h-10 rounded-md border border-[#c08081] px-4 text-sm text-[#a05f62] disabled:opacity-50">{busy === "published-at" ? "در حال ذخیره..." : "ذخیره تاریخ انتشار"}</button></div></div> : null}
 
-    {isDraft || isScheduled ? <div className="grid max-w-xl gap-3"><label className="text-sm font-medium text-[#5f544d]">زمان انتشار با تقویم شمسی و ساعت تهران</label><DatePicker value={scheduleDate} onChange={onScheduleDateChange} calendar={persian} locale={persianFa} format="YYYY/MM/DD HH:mm" plugins={[<TimePicker key="schedule-time" position="bottom" hideSeconds />]} inputClass={fieldClass} calendarPosition="bottom-right" /></div> : null}
+    <div className="grid max-w-xl gap-3"><label className="text-sm font-medium text-[#5f544d]">{isPublished ? "زمان انتشار مجدد با تقویم شمسی و ساعت تهران" : "زمان انتشار با تقویم شمسی و ساعت تهران"}</label><DatePicker value={scheduleDate} onChange={onScheduleDateChange} calendar={persian} locale={persianFa} format="YYYY/MM/DD HH:mm" plugins={[<TimePicker key="schedule-time" position="bottom" hideSeconds />]} inputClass={fieldClass} calendarPosition="bottom-right" />{isPublished ? <p className="text-xs text-[#8b7d74]">با زمان‌بندی مجدد، مقاله فوراً از سایت مخفی می‌شود و دقیقاً در زمان انتخاب‌شده دوباره منتشر خواهد شد.</p> : null}</div>
 
     <div className="flex flex-wrap gap-2">
       {isDraft || isScheduled || isArchived ? <button type="button" onClick={() => onPublication("published")} disabled={Boolean(busy)} className="h-11 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-50">{isArchived ? "انتشار دوباره" : "انتشار اکنون"}</button> : null}
-      {isDraft || isScheduled ? <button type="button" onClick={() => onPublication("scheduled")} disabled={Boolean(busy) || !scheduleDate} className="h-11 rounded-full border border-[#c08081] px-5 text-sm text-[#a05f62] disabled:opacity-50">{isScheduled ? "به‌روزرسانی زمان‌بندی" : "زمان‌بندی انتشار"}</button> : null}
+      <button type="button" onClick={() => onPublication("scheduled")} disabled={Boolean(busy) || !scheduleDate} className="h-11 rounded-full border border-[#c08081] px-5 text-sm text-[#a05f62] disabled:opacity-50">{isScheduled ? "به‌روزرسانی زمان‌بندی" : "زمان‌بندی انتشار"}</button>
+      {isScheduled ? <button type="button" onClick={() => onPublication("draft")} disabled={Boolean(busy)} className="h-11 rounded-md border border-[#d9cfc5] px-5 text-sm text-[#6f625b] disabled:opacity-50">لغو زمان‌بندی</button> : null}
       {isPublished ? <button type="button" onClick={() => onPublication("archived")} disabled={Boolean(busy)} className="h-11 rounded-md border border-[#d9cfc5] px-5 text-sm text-[#6f625b] disabled:opacity-50">آرشیو مقاله</button> : null}
     </div>
   </div>;

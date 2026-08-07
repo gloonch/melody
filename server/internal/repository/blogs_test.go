@@ -27,14 +27,31 @@ func TestEffectivePublicationBoundary(t *testing.T) {
 	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
 	due := now
 	future := now.Add(time.Second)
-	if !isEffectivePublished(models.BlogPost{Status: "scheduled", ScheduledFor: &due}, now) {
-		t.Fatal("scheduled post must be visible at its exact database boundary")
+	if isEffectivePublished(models.BlogPost{Status: "scheduled", ScheduledFor: &due}, now) {
+		t.Fatal("scheduled post must remain hidden until the reconciler publishes it")
 	}
 	if isEffectivePublished(models.BlogPost{Status: "scheduled", ScheduledFor: &future}, now) {
 		t.Fatal("future scheduled post must remain hidden")
 	}
 	if !isEffectivePublished(models.BlogPost{Status: "published", PublishedAt: &due}, now) {
 		t.Fatal("published post must be visible")
+	}
+	if isEffectivePublished(models.BlogPost{Status: "published", PublishedAt: &future}, now) {
+		t.Fatal("published post with a future publication date must remain hidden")
+	}
+}
+
+func TestValidateScheduleChange(t *testing.T) {
+	now := time.Date(2026, 8, 7, 9, 0, 0, 0, time.UTC)
+	future := now.Add(time.Minute)
+
+	if err := validateScheduleChange(&future, now); err != nil {
+		t.Fatalf("expected future schedule to be accepted: %v", err)
+	}
+	for _, value := range []*time.Time{nil, &now} {
+		if err := validateScheduleChange(value, now); !errors.Is(err, ErrInvalidPublish) {
+			t.Fatalf("expected non-future schedule to be rejected, got %v", err)
+		}
 	}
 }
 

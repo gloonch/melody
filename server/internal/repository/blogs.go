@@ -34,8 +34,7 @@ const blogSummaryColumns = `p.id, p.title, p.slug, p.excerpt, COALESCE(p.categor
 	COALESCE(c.name, ''), p.cover_image_id, p.cover_image_alt, p.author_name, p.reading_time_minutes,
 	p.published_at, p.updated_at, p.status, p.scheduled_for`
 
-const publicBlogPredicate = `((p.status = 'published' AND p.published_at IS NOT NULL AND p.published_at <= NOW())
-	OR (p.status = 'scheduled' AND p.scheduled_for IS NOT NULL AND p.scheduled_for <= NOW()))`
+const publicBlogPredicate = `(p.status = 'published' AND p.published_at IS NOT NULL AND p.published_at <= NOW())`
 
 type BlogRepository struct {
 	pool *pgxpool.Pool
@@ -125,12 +124,6 @@ func (r *BlogRepository) GetPublic(ctx context.Context, slug string) (models.Blo
 		return models.BlogPost{}, false, ErrNotFound
 	}
 	post.RelatedPosts, _ = r.relatedPosts(ctx, post)
-	if post.PublishedAt == nil && post.ScheduledFor != nil {
-		publishedAt := *post.ScheduledFor
-		post.PublishedAt = &publishedAt
-	}
-	post.Status = "published"
-	post.ScheduledFor = nil
 	return post, redirected, nil
 }
 
@@ -235,9 +228,6 @@ func (r *BlogRepository) SetPublication(ctx context.Context, id, status string, 
 		}
 		_, err = r.pool.Exec(ctx, `UPDATE blog_posts SET status='draft',scheduled_for=NULL,updated_at=NOW() WHERE id=$1`, id)
 	case "scheduled":
-		if post.PublishedAt != nil || scheduledFor == nil {
-			return models.BlogPost{}, fmt.Errorf("%w: a new scheduled post needs a publication time", ErrInvalidPublish)
-		}
 		if err = r.validateForPublication(ctx, post); err != nil {
 			return models.BlogPost{}, err
 		}
@@ -245,10 +235,10 @@ func (r *BlogRepository) SetPublication(ctx context.Context, id, status string, 
 		if nowErr != nil {
 			return models.BlogPost{}, nowErr
 		}
-		if !scheduledFor.After(now) {
-			return models.BlogPost{}, fmt.Errorf("%w: scheduled time must be in the future", ErrInvalidPublish)
+		if err = validateScheduleChange(scheduledFor, now); err != nil {
+			return models.BlogPost{}, err
 		}
-		_, err = r.pool.Exec(ctx, `UPDATE blog_posts SET status='scheduled',scheduled_for=$2,updated_at=NOW() WHERE id=$1`, id, scheduledFor.UTC())
+		_, err = r.pool.Exec(ctx, `UPDATE blog_posts SET status='scheduled',scheduled_for=$2,published_at=NULL,updated_at=NOW() WHERE id=$1`, id, scheduledFor.UTC())
 	case "published":
 		if err = r.validateForPublication(ctx, post); err != nil {
 			return models.BlogPost{}, err
@@ -298,8 +288,15 @@ func validatePublishedAtChange(post models.BlogPost, publishedAt, now time.Time)
 	return nil
 }
 
+func validateScheduleChange(scheduledFor *time.Time, now time.Time) error {
+	if scheduledFor == nil || !scheduledFor.After(now) {
+		return fmt.Errorf("%w: scheduled time must be in the future", ErrInvalidPublish)
+	}
+	return nil
+}
+
 func (r *BlogRepository) ReconcileScheduled(ctx context.Context) (int64, error) {
-	result, err := r.pool.Exec(ctx, `UPDATE blog_posts SET status='published',published_at=COALESCE(published_at,scheduled_for),scheduled_for=NULL,updated_at=NOW()
+	result, err := r.pool.Exec(ctx, `UPDATE blog_posts SET status='published',published_at=scheduled_for,scheduled_for=NULL,updated_at=NOW()
 		WHERE status='scheduled' AND scheduled_for IS NOT NULL AND scheduled_for <= NOW()`)
 	if err != nil {
 		return 0, err
@@ -566,8 +563,7 @@ func validateBlog(post models.BlogPost) error {
 }
 
 func isEffectivePublished(post models.BlogPost, now time.Time) bool {
-	return post.Status == "published" && post.PublishedAt != nil && !post.PublishedAt.After(now) ||
-		post.Status == "scheduled" && post.ScheduledFor != nil && !post.ScheduledFor.After(now)
+	return post.Status == "published" && post.PublishedAt != nil && !post.PublishedAt.After(now)
 }
 
 func normalizePagination(page, limit int) (int, int) {
@@ -598,10 +594,6 @@ func compactStrings(values []string) []string {
 }
 
 func normalizePublicBlogSummary(post *models.BlogPostSummary) {
-	if post.PublishedAt == nil && post.ScheduledFor != nil {
-		publishedAt := *post.ScheduledFor
-		post.PublishedAt = &publishedAt
-	}
 	post.Status = ""
 	post.ScheduledFor = nil
 }

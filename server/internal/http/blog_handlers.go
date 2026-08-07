@@ -404,7 +404,7 @@ func (h *Handler) StartBlogScheduler() {
 			}
 		}
 		reconcile()
-		ticker := time.NewTicker(time.Minute)
+		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		for range ticker.C {
 			reconcile()
