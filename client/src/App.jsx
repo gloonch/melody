@@ -29,6 +29,7 @@ import usageBlazerImage from "./assets/section-usage/blazer-flower.webp";
 import usageDressImage from "./assets/section-usage/dress-flower.webp";
 import usageHatImage from "./assets/section-usage/hat-flower.webp";
 import usageHairImage from "./assets/section-usage/hair-flower.webp";
+import { CoursePreviewCard } from "./components/courses/CoursePreviewCard";
 import { CourseSlider } from "./components/courses/CourseSlider";
 import { CourseVisual } from "./components/courses/CourseVisual";
 import { AppCard } from "./components/landing/AppCard";
