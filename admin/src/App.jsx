@@ -463,9 +463,15 @@ const emptyProductForm = {
   coverImageId: "",
   category: "گل پارچه‌ای",
   usageLabel: "",
-  materialsText: "",
-  colorsText: "",
+  useCases: [],
+  techniques: [],
+  materials: [],
+  colors: [],
+  diameterCm: "",
   isCustomizable: true,
+  customizableColor: false,
+  customizableSize: false,
+  customizableMaterial: false,
   priceLabel: "",
   basePriceToman: "",
   priceCurrency: "IRR",
@@ -492,6 +498,70 @@ const availabilityOptions = [
   { value: "out_of_stock", label: "ناموجود" },
 ];
 
+const productUseCaseOptions = [
+  { value: "evening_dress", label: "لباس مجلسی" },
+  { value: "wedding_dress", label: "لباس عروس و عقد" },
+  { value: "coat_manto", label: "کت و مانتو" },
+  { value: "hat", label: "کلاه" },
+  { value: "hair_accessory", label: "اکسسوری مو" },
+  { value: "multipurpose", label: "چندمنظوره" },
+];
+
+const productTechniqueOptions = [
+  { value: "kerisheh", label: "کریشه" },
+  { value: "fashion", label: "فشن" },
+  { value: "stumpwork", label: "استامپ‌ورک" },
+  { value: "classic", label: "کلاسیک" },
+  { value: "three_dimensional", label: "سه‌بعدی" },
+];
+
+const productMaterialOptions = [
+  { value: "chiffon", label: "حریر" },
+  { value: "satin", label: "ساتن" },
+  { value: "organza", label: "ارگانزا" },
+  { value: "velvet", label: "مخمل" },
+  { value: "tulle", label: "تور" },
+  { value: "crepe", label: "کرپ" },
+  { value: "mixed", label: "ترکیبی" },
+];
+
+const productColorOptions = [
+  { value: "white", label: "سفید", swatch: "#ffffff" },
+  { value: "black", label: "مشکی", swatch: "#1f1f1f" },
+  { value: "cream", label: "کرم", swatch: "#ead8b7" },
+  { value: "ivory", label: "شیری", swatch: "#f3ead8" },
+  { value: "pink", label: "صورتی", swatch: "#d996a8" },
+  { value: "red", label: "قرمز", swatch: "#a83d45" },
+  { value: "blue", label: "آبی", swatch: "#557d9d" },
+  { value: "green", label: "سبز", swatch: "#55735f" },
+  { value: "gold", label: "طلایی", swatch: "#b08a43" },
+  { value: "silver", label: "نقره‌ای", swatch: "#a7a7a4" },
+  { value: "purple", label: "بنفش", swatch: "#795b80" },
+  { value: "multicolor", label: "چندرنگ", swatch: "linear-gradient(135deg,#a83d45,#d9a34a,#557d9d)" },
+];
+
+const productTaxonomyFields = [
+  { field: "useCases", label: "کاربردهای محصول", options: productUseCaseOptions },
+  { field: "techniques", label: "تکنیک ساخت", options: productTechniqueOptions },
+  { field: "materials", label: "جنس پارچه", options: productMaterialOptions },
+  { field: "colors", label: "رنگ‌های محصول", options: productColorOptions },
+];
+
+const productTaxonomyValues = Object.fromEntries(
+  productTaxonomyFields.map(({ field, options }) => [field, new Set(options.map((option) => option.value))]),
+);
+
+function isProductMetadataIncomplete(product) {
+  return Number(product.basePriceRial) <= 0
+    || !product.usageLabel
+    || !(product.useCases || []).length
+    || !(product.techniques || []).length
+    || !(product.materials || []).length
+    || !(product.colors || []).length
+    || !(Number(product.diameterCm) > 0)
+    || /^نمونه[‌-]?کار\s*\d+$/u.test(product.title || "");
+}
+
 function productToForm(product) {
   if (!product) return { ...emptyProductForm };
   return {
@@ -501,13 +571,16 @@ function productToForm(product) {
     preparationDays: String(product.preparationDays ?? 1),
     featuredOrder: String(product.featuredOrder ?? 0),
     sortOrder: String(product.sortOrder ?? 0),
-    materialsText: (product.materials || []).join("\n"),
-    colorsText: (product.colors || []).join("\n"),
+    useCases: (product.useCases || []).filter((value) => productTaxonomyValues.useCases.has(value)),
+    techniques: (product.techniques || []).filter((value) => productTaxonomyValues.techniques.has(value)),
+    materials: (product.materials || []).filter((value) => productTaxonomyValues.materials.has(value)),
+    colors: (product.colors || []).filter((value) => productTaxonomyValues.colors.has(value)),
+    diameterCm: product.diameterCm == null ? "" : String(product.diameterCm),
   };
 }
 
 function productFromForm(form) {
-  const list = (value) => value.split("\n").map((item) => item.trim()).filter(Boolean);
+  const diameterValue = Number(latinDigits(form.diameterCm));
   return {
     id: form.id.trim(),
     slug: form.slug.trim(),
@@ -517,9 +590,15 @@ function productFromForm(form) {
     coverImageId: form.coverImageId,
     category: form.category.trim(),
     usageLabel: form.usageLabel.trim(),
-    materials: list(form.materialsText),
-    colors: list(form.colorsText),
+    useCases: form.useCases,
+    techniques: form.techniques,
+    materials: form.materials,
+    colors: form.colors,
+    diameterCm: Number.isFinite(diameterValue) && diameterValue > 0 ? diameterValue : null,
     isCustomizable: Boolean(form.isCustomizable),
+    customizableColor: Boolean(form.customizableColor),
+    customizableSize: Boolean(form.customizableSize),
+    customizableMaterial: Boolean(form.customizableMaterial),
     priceLabel: form.priceLabel.trim(),
     basePriceRial: tomanToRial(form.basePriceToman),
     priceCurrency: "IRR",
@@ -542,13 +621,23 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
   const [busy, setBusy] = useState(false);
   const selectedImage = projectImages.find((image) => image.id === form.coverImageId);
   const featuredCount = products.filter((product) => product.isFeatured && product.status === "active").length;
-  const incompleteCount = products.filter((product) => (
-    Number(product.basePriceRial) <= 0 || !product.usageLabel || /^نمونه[‌-]?کار\s*\d+$/u.test(product.title || "")
-  )).length;
+  const incompleteCount = products.filter(isProductMetadataIncomplete).length;
 
   const update = (field) => (event) => {
     const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const toggleTaxonomyValue = (field, value) => {
+    setForm((current) => {
+      const selected = current[field] || [];
+      return {
+        ...current,
+        [field]: selected.includes(value)
+          ? selected.filter((item) => item !== value)
+          : [...selected, value],
+      };
+    });
   };
 
   const handleNew = () => {
@@ -593,7 +682,7 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
           <h2 className="text-lg font-semibold text-[#3f352f]">مدیریت محصولات</h2>
           <p className="mt-1 text-sm leading-6 text-[#807269]">قیمت در این فرم به تومان وارد و در دیتابیس به ریال ذخیره می‌شود. محصولات ناقص را پیش‌نویس نگه دارید.</p>
           <p className="mt-1 text-xs text-[#9b696b]">محصولات منتخب صفحه اصلی: {featuredCount} از ۳</p>
-          {incompleteCount > 0 ? <p className="mt-1 text-xs font-medium text-[#b06d32]">{incompleteCount} محصول هنوز نام، کاربرد یا قیمت کامل ندارد.</p> : null}
+          {incompleteCount > 0 ? <p className="mt-1 text-xs font-medium text-[#b06d32]">{incompleteCount} محصول هنوز مشخصات ساختاری، نام یا قیمت کامل ندارد.</p> : null}
         </div>
         <button type="button" onClick={handleNew} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white shadow-sm">
           <Plus className="h-4 w-4" /> محصول جدید
@@ -602,7 +691,7 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
 
       <div className="grid gap-3 md:grid-cols-2">
         {products.map((product) => {
-          const isIncomplete = Number(product.basePriceRial) <= 0 || !product.usageLabel || /^نمونه[‌-]?کار\s*\d+$/u.test(product.title || "");
+          const isIncomplete = isProductMetadataIncomplete(product);
           return (
             <article key={product.id} className="flex items-center gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-3">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-[#eee7df]">
@@ -630,7 +719,7 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            {[["id", "شناسه"], ["slug", "آدرس"], ["title", "نام محصول"], ["category", "دسته‌بندی"], ["usageLabel", "کاربرد"], ["basePriceToman", "قیمت پایه (تومان)"], ["preparationDays", "آماده‌سازی (روز کاری)"], ["featuredOrder", "ترتیب منتخب"], ["sortOrder", "ترتیب کاتالوگ"]].map(([field, label]) => (
+            {[["id", "شناسه"], ["slug", "آدرس"], ["title", "نام محصول"], ["category", "دسته‌بندی"], ["usageLabel", "توضیح کوتاه کاربرد"], ["diameterCm", "قطر (سانتی‌متر)"], ["basePriceToman", "قیمت پایه (تومان)"], ["preparationDays", "آماده‌سازی (روز کاری)"], ["featuredOrder", "ترتیب منتخب"], ["sortOrder", "ترتیب کاتالوگ"]].map(([field, label]) => (
               <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
                 {label}
                 <input value={form[field]} onChange={update(field)} disabled={field === "id" && Boolean(selectedId)} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 outline-none focus:border-[#c08081] disabled:bg-[#f3f0ec]" />
@@ -656,14 +745,37 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
 
           {selectedImage ? <img src={selectedImage.url} alt={selectedImage.alt} className="h-28 w-28 rounded-md object-cover" /> : null}
 
-          {[["shortDescription", "توضیح کوتاه", 2], ["description", "توضیحات کامل و یکتا", 5], ["materialsText", "متریال‌ها، هر مورد در یک خط", 3], ["colorsText", "رنگ‌ها، هر مورد در یک خط", 3], ["seoTitle", "عنوان SEO اختیاری (حداکثر ۷۰ کاراکتر)", 2], ["seoDescription", "توضیح SEO اختیاری (حداکثر ۱۸۰ کاراکتر)", 3]].map(([field, label, rows]) => (
+          {[["shortDescription", "توضیح کوتاه", 2], ["description", "توضیحات کامل و یکتا", 5], ["seoTitle", "عنوان SEO اختیاری (حداکثر ۷۰ کاراکتر)", 2], ["seoDescription", "توضیح SEO اختیاری (حداکثر ۱۸۰ کاراکتر)", 3]].map(([field, label, rows]) => (
             <label key={field} className="grid gap-2 text-sm text-[#5f544d]">{label}
               <textarea value={form[field]} onChange={update(field)} rows={rows} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 outline-none focus:border-[#c08081]" />
             </label>
           ))}
 
+          <div className="grid gap-4 md:grid-cols-2">
+            {productTaxonomyFields.map(({ field, label, options }) => (
+              <fieldset key={field} className="rounded-lg border border-[#e5ddd4] p-4">
+                <legend className="px-2 text-sm font-medium text-[#5f544d]">{label}</legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {options.map((option) => {
+                    const checked = (form[field] || []).includes(option.value);
+                    return (
+                      <label key={option.value} className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm ${checked ? "border-[#a05f62] bg-[#f8eeee] text-[#824b4e]" : "border-[#ddd4ca] bg-white text-[#6f6259]"}`}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleTaxonomyValue(field, option.value)} className="accent-[#a05f62]" />
+                        {option.swatch ? <span aria-hidden="true" className="h-4 w-4 rounded-full border border-black/10" style={{ background: option.swatch }} /> : null}
+                        {option.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+
           <div className="flex flex-wrap gap-5 text-sm text-[#5f544d]">
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isCustomizable} onChange={update("isCustomizable")} /> قابل شخصی‌سازی</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.customizableColor} onChange={update("customizableColor")} /> رنگ قابل تغییر</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.customizableSize} onChange={update("customizableSize")} /> اندازه قابل تغییر</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.customizableMaterial} onChange={update("customizableMaterial")} /> جنس قابل تغییر</label>
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isFeatured} onChange={update("isFeatured")} /> نمایش در سه محصول منتخب</label>
           </div>
 

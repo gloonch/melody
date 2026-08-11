@@ -57,3 +57,54 @@ func TestValidateProductRejectsUnknownAvailability(t *testing.T) {
 		t.Fatal("expected unknown availability to be rejected")
 	}
 }
+
+func TestValidateProductAcceptsStructuredMetadata(t *testing.T) {
+	diameter := 14.5
+	product := validActiveProduct()
+	product.UseCases = []string{"evening_dress", "coat_manto"}
+	product.Techniques = []string{"kerisheh", "three_dimensional"}
+	product.Materials = []string{"satin", "organza"}
+	product.Colors = []string{"ivory", "pink"}
+	product.DiameterCM = &diameter
+	product.CustomizableColor = true
+	product.CustomizableSize = true
+	if err := ValidateProduct(product); err != nil {
+		t.Fatalf("expected structured product metadata to be valid, got %v", err)
+	}
+}
+
+func TestValidateProductRejectsUnknownControlledValue(t *testing.T) {
+	product := validActiveProduct()
+	product.UseCases = []string{"evening_dress"}
+	product.Techniques = []string{"unknown-technique"}
+	if err := ValidateProduct(product); err == nil {
+		t.Fatal("expected unknown technique to be rejected")
+	}
+}
+
+func TestValidateProductRejectsNonPositiveDiameter(t *testing.T) {
+	diameter := 0.0
+	product := validActiveProduct()
+	product.DiameterCM = &diameter
+	if err := ValidateProduct(product); err == nil {
+		t.Fatal("expected non-positive diameter to be rejected")
+	}
+}
+
+func TestNormalizeProductDeduplicatesControlledValues(t *testing.T) {
+	product := models.Product{
+		UseCases:  []string{"hat", "hat", ""},
+		Materials: []string{"satin", " satin ", ""},
+		Colors:    nil,
+	}
+	normalizeProduct(&product)
+	if len(product.UseCases) != 1 || product.UseCases[0] != "hat" {
+		t.Fatalf("expected duplicate use cases to be removed, got %#v", product.UseCases)
+	}
+	if len(product.Materials) != 1 || product.Materials[0] != "satin" {
+		t.Fatalf("expected duplicate materials to be removed, got %#v", product.Materials)
+	}
+	if product.Colors == nil {
+		t.Fatal("expected nil colors to be normalized to an empty slice")
+	}
+}

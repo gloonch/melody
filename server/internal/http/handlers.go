@@ -10,6 +10,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -1138,10 +1139,18 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	product, err := h.products.GetProduct(ctx, strings.TrimSpace(c.Param("id")), false)
+	idOrSlug := strings.TrimSpace(c.Param("id"))
+	product, err := h.products.GetProduct(ctx, idOrSlug, false)
 	if errors.Is(err, repository.ErrNotFound) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
-		return
+		product, err = h.products.GetProductByHistoricalSlug(ctx, idOrSlug, false)
+		if err == nil {
+			c.Redirect(http.StatusMovedPermanently, "/api/v1/products/"+url.PathEscape(product.Slug))
+			return
+		}
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+			return
+		}
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
@@ -1237,6 +1246,8 @@ func (h *Handler) productWriteError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
 	case errors.Is(err, repository.ErrFeaturedLimit):
 		c.JSON(http.StatusConflict, gin.H{"error": "حداکثر سه محصول می‌توانند در صفحه اصلی منتخب باشند."})
+	case errors.Is(err, repository.ErrProductSlugTaken):
+		c.JSON(http.StatusConflict, gin.H{"error": "آدرس محصول قبلاً استفاده شده است."})
 	case isUniqueViolation(err):
 		c.JSON(http.StatusConflict, gin.H{"error": "شناسه یا آدرس محصول تکراری است."})
 	default:

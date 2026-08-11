@@ -77,6 +77,30 @@ func TestProductSchemaUsesRealIRRPrice(t *testing.T) {
 	}
 }
 
+func TestProductSchemaIncludesVisibleStructuredSpecifications(t *testing.T) {
+	diameter := 18.0
+	schema := productSchema("https://golmelo.com", models.Product{
+		Slug:        "kerisheh-flower",
+		Title:       "گل کریشه ساتن",
+		Description: "گل پارچه‌ای برای لباس مجلسی",
+		UseCases:    []string{"evening_dress"},
+		Techniques:  []string{"kerisheh", "three_dimensional"},
+		Materials:   []string{"satin"},
+		Colors:      []string{"ivory"},
+		DiameterCM:  &diameter,
+	})
+	if schema["size"] != "قطر 18 سانتی‌متر" {
+		t.Fatalf("expected product diameter in schema, got %#v", schema["size"])
+	}
+	if _, ok := schema["material"].([]string); !ok {
+		t.Fatalf("expected controlled materials in schema, got %#v", schema["material"])
+	}
+	properties, ok := schema["additionalProperty"].([]map[string]any)
+	if !ok || len(properties) != 3 {
+		t.Fatalf("expected use case, technique and diameter properties, got %#v", schema["additionalProperty"])
+	}
+}
+
 func TestNotFoundMetadataIsNotIndexable(t *testing.T) {
 	meta := notFoundMetadata("https://golmelo.com", "https://golmelo.com/og-image.png")
 	if meta.Robots != "noindex, nofollow" || meta.Canonical != "https://golmelo.com/not-found" {

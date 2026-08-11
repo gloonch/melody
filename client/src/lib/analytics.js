@@ -12,6 +12,10 @@ const ALLOWED_PARAMETERS = new Set([
   "request_type",
   "source",
   "blog_id",
+  "filter_type",
+  "filter_value",
+  "query_length",
+  "result_count",
 ]);
 
 let initialized = false;

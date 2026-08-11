@@ -173,9 +173,15 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			cover_image_id TEXT NOT NULL DEFAULT '',
 			category TEXT NOT NULL DEFAULT '',
 			usage_label TEXT NOT NULL DEFAULT '',
+			use_cases JSONB NOT NULL DEFAULT '[]'::jsonb,
+			techniques JSONB NOT NULL DEFAULT '[]'::jsonb,
 			materials JSONB NOT NULL DEFAULT '[]'::jsonb,
 			colors JSONB NOT NULL DEFAULT '[]'::jsonb,
+			diameter_cm DOUBLE PRECISION,
 			is_customizable BOOLEAN NOT NULL DEFAULT TRUE,
+			customizable_color BOOLEAN NOT NULL DEFAULT FALSE,
+			customizable_size BOOLEAN NOT NULL DEFAULT FALSE,
+			customizable_material BOOLEAN NOT NULL DEFAULT FALSE,
 			price_label TEXT NOT NULL DEFAULT '',
 			base_price_rial BIGINT NOT NULL DEFAULT 0,
 			price_currency TEXT NOT NULL DEFAULT 'IRR',
@@ -199,6 +205,18 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS featured_order INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_title TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_description TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS use_cases JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS techniques JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS diameter_cm DOUBLE PRECISION`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_color BOOLEAN NOT NULL DEFAULT FALSE`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_size BOOLEAN NOT NULL DEFAULT FALSE`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_material BOOLEAN NOT NULL DEFAULT FALSE`,
+		`CREATE TABLE IF NOT EXISTS product_slug_history (
+			product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+			slug TEXT PRIMARY KEY,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_product_slug_history_product_id ON product_slug_history (product_id, created_at DESC)`,
 		`WITH initial_featured AS (
 			SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order ASC, created_at ASC) AS position
 			FROM products

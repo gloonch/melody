@@ -58,6 +58,13 @@ func (h *Handler) SiteShell(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+	if strings.HasPrefix(path, "/products/") {
+		slug := strings.TrimPrefix(path, "/products/")
+		if product, err := h.products.GetProductByHistoricalSlug(ctx, slug, false); err == nil {
+			c.Redirect(http.StatusMovedPermanently, "/products/"+url.PathEscape(product.Slug))
+			return
+		}
+	}
 	metadata, status := h.metadataForPath(ctx, path)
 	bodyHTML, bootstrapJSON, redirect, blogMeta, blogStatus, isBlog := h.blogSitePage(ctx, path)
 	if isBlog {
@@ -66,6 +73,9 @@ func (h *Handler) SiteShell(c *gin.Context) {
 			return
 		}
 		metadata, status = blogMeta, blogStatus
+	}
+	if path == "/products" && status == http.StatusOK {
+		bodyHTML = h.productListSiteHTML(ctx)
 	}
 	if status == http.StatusNotFound {
 		metadata.Robots = "noindex, nofollow"
@@ -184,7 +194,11 @@ func (h *Handler) LLMs(c *gin.Context) {
 	if len(products) > 0 {
 		builder.WriteString("## محصولات\n\n")
 		for _, product := range products {
-			builder.WriteString(fmt.Sprintf("- [%s](%s/products/%s): %s\n", product.Title, baseURL, url.PathEscape(product.Slug), product.ShortDescription))
+			details := product.ShortDescription
+			if values := productTaxonomyLabels(product); len(values) > 0 {
+				details += " — " + strings.Join(values, "، ")
+			}
+			builder.WriteString(fmt.Sprintf("- [%s](%s/products/%s): %s\n", product.Title, baseURL, url.PathEscape(product.Slug), details))
 		}
 		builder.WriteString("\n")
 	}
@@ -223,8 +237,8 @@ func (h *Handler) metadataForPath(ctx context.Context, path string) (siteMetadat
 		meta.JSONLD = []any{organizationGraph(baseURL, meta.Description)}
 		return meta, http.StatusOK
 	case path == "/products":
-		meta.Title = "محصولات گلملو | گل‌های پارچه‌ای دست‌ساز"
-		meta.Description = "مشاهده گل‌های پارچه‌ای دست‌ساز گلملو برای لباس و اکسسوری با قیمت پایه، موجودی و امکان سفارش اختصاصی."
+		meta.Title = "گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی"
+		meta.Description = "خرید و سفارش گل پارچه‌ای دست‌ساز برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو؛ با امکان انتخاب کاربرد، تکنیک، جنس، رنگ و اندازه."
 		meta.JSONLD = []any{breadcrumb(baseURL, []crumb{{"گلملو", "/"}, {"محصولات", "/products"}})}
 		return meta, http.StatusOK
 	case strings.HasPrefix(path, "/products/"):
@@ -498,6 +512,28 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 	if product.CoverImageURL != "" {
 		schema["image"] = []string{product.CoverImageURL}
 	}
+	if values := labelsForKeys(product.Materials, productMaterialLabels); len(values) > 0 {
+		schema["material"] = values
+	}
+	if values := labelsForKeys(product.Colors, productColorLabels); len(values) > 0 {
+		schema["color"] = values
+	}
+	if product.DiameterCM != nil {
+		schema["size"] = formatDiameter(*product.DiameterCM)
+	}
+	properties := make([]map[string]any, 0, 4)
+	if values := labelsForKeys(product.UseCases, productUseCaseLabels); len(values) > 0 {
+		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "کاربرد", "value": strings.Join(values, "، ")})
+	}
+	if values := labelsForKeys(product.Techniques, productTechniqueLabels); len(values) > 0 {
+		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "تکنیک", "value": strings.Join(values, "، ")})
+	}
+	if product.DiameterCM != nil {
+		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "قطر", "value": formatDiameter(*product.DiameterCM), "unitCode": "CMT"})
+	}
+	if len(properties) > 0 {
+		schema["additionalProperty"] = properties
+	}
 	if product.BasePriceRial > 0 {
 		schema["offers"] = map[string]any{
 			"@type": "Offer", "@id": productURL + "#offer", "price": product.BasePriceRial, "priceCurrency": firstNonEmpty(product.PriceCurrency, "IRR"),
@@ -505,6 +541,71 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 		}
 	}
 	return schema
+}
+
+var productUseCaseLabels = map[string]string{
+	"evening_dress": "لباس مجلسی", "wedding_dress": "لباس عروس و عقد", "coat_manto": "کت و مانتو",
+	"hat": "کلاه", "hair_accessory": "اکسسوری مو", "multipurpose": "چندمنظوره",
+}
+
+var productTechniqueLabels = map[string]string{
+	"kerisheh": "کریشه", "fashion": "فشن", "stumpwork": "استامپ‌ورک", "classic": "کلاسیک", "three_dimensional": "سه‌بعدی",
+}
+
+var productMaterialLabels = map[string]string{
+	"chiffon": "حریر", "satin": "ساتن", "organza": "ارگانزا", "velvet": "مخمل", "tulle": "تور", "crepe": "کرپ", "mixed": "ترکیبی",
+}
+
+var productColorLabels = map[string]string{
+	"white": "سفید", "black": "مشکی", "cream": "کرم", "ivory": "شیری", "pink": "صورتی", "red": "قرمز",
+	"blue": "آبی", "green": "سبز", "gold": "طلایی", "silver": "نقره‌ای", "purple": "بنفش", "multicolor": "چندرنگ",
+}
+
+func labelsForKeys(keys []string, labels map[string]string) []string {
+	values := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if label := labels[key]; label != "" {
+			values = append(values, label)
+		}
+	}
+	return values
+}
+
+func productTaxonomyLabels(product models.Product) []string {
+	values := make([]string, 0, 4)
+	values = append(values, labelsForKeys(product.UseCases, productUseCaseLabels)...)
+	values = append(values, labelsForKeys(product.Techniques, productTechniqueLabels)...)
+	values = append(values, labelsForKeys(product.Materials, productMaterialLabels)...)
+	if product.DiameterCM != nil {
+		values = append(values, formatDiameter(*product.DiameterCM))
+	}
+	return values
+}
+
+func formatDiameter(value float64) string {
+	return fmt.Sprintf("قطر %g سانتی‌متر", value)
+}
+
+func (h *Handler) productListSiteHTML(ctx context.Context) string {
+	products, err := h.products.ListProducts(ctx, false)
+	if err != nil {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString(`<main dir="rtl"><header><h1>گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1><p>گل‌های پارچه‌ای دست‌ساز گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو بر اساس کاربرد، تکنیک، جنس، رنگ و اندازه بررسی کنید.</p></header>`)
+	builder.WriteString(`<nav aria-label="فیلترهای محصولات"><p>فیلتر بر اساس کاربرد، تکنیک، جنس، رنگ و اندازه</p></nav><section aria-label="فهرست محصولات">`)
+	for _, product := range products {
+		builder.WriteString(`<article><h2><a href="/products/` + html.EscapeString(url.PathEscape(product.Slug)) + `">` + html.EscapeString(product.Title) + `</a></h2>`)
+		if product.ShortDescription != "" {
+			builder.WriteString(`<p>` + html.EscapeString(product.ShortDescription) + `</p>`)
+		}
+		if labels := productTaxonomyLabels(product); len(labels) > 0 {
+			builder.WriteString(`<p>` + html.EscapeString(strings.Join(labels, "، ")) + `</p>`)
+		}
+		builder.WriteString(`</article>`)
+	}
+	builder.WriteString(`</section></main>`)
+	return builder.String()
 }
 
 func courseSchema(baseURL string, course models.Course) map[string]any {

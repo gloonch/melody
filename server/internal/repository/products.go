@@ -27,11 +27,30 @@ const (
 )
 
 var ErrFeaturedLimit = errors.New("at most three products can be featured")
+var ErrProductSlugTaken = errors.New("product slug is already in use")
 
 const productColumns = `id, slug, title, short_description, description, cover_image_id, category, usage_label,
-	materials, colors, is_customizable, price_label, base_price_rial, price_currency, availability,
+	use_cases, techniques, materials, colors, diameter_cm, is_customizable, customizable_color,
+	customizable_size, customizable_material, price_label, base_price_rial, price_currency, availability,
 	preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
 	status, sort_order, created_at, updated_at`
+
+var validProductUseCases = map[string]struct{}{
+	"evening_dress": {}, "wedding_dress": {}, "coat_manto": {}, "hat": {}, "hair_accessory": {}, "multipurpose": {},
+}
+
+var validProductTechniques = map[string]struct{}{
+	"kerisheh": {}, "fashion": {}, "stumpwork": {}, "classic": {}, "three_dimensional": {},
+}
+
+var validProductMaterials = map[string]struct{}{
+	"chiffon": {}, "satin": {}, "organza": {}, "velvet": {}, "tulle": {}, "crepe": {}, "mixed": {},
+}
+
+var validProductColors = map[string]struct{}{
+	"white": {}, "black": {}, "cream": {}, "ivory": {}, "pink": {}, "red": {}, "blue": {}, "green": {},
+	"gold": {}, "silver": {}, "purple": {}, "multicolor": {},
+}
 
 type ProductRepository struct {
 	pool *pgxpool.Pool
@@ -151,6 +170,24 @@ func (r *ProductRepository) GetProduct(ctx context.Context, idOrSlug string, inc
 	return product, err
 }
 
+func (r *ProductRepository) GetProductByHistoricalSlug(ctx context.Context, slug string, includeDrafts bool) (models.Product, error) {
+	row := r.pool.QueryRow(
+		ctx,
+		`SELECT `+productColumns+`
+		 FROM products
+		 WHERE id = (SELECT product_id FROM product_slug_history WHERE slug = $1)
+		   AND ($2 OR status = 'active')
+		 LIMIT 1`,
+		strings.TrimSpace(slug),
+		includeDrafts,
+	)
+	product, err := scanProduct(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Product{}, ErrNotFound
+	}
+	return product, err
+}
+
 func (r *ProductRepository) CreateProduct(ctx context.Context, product models.Product) (models.Product, error) {
 	normalizeProduct(&product)
 	if product.ID == "" {
@@ -169,6 +206,9 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, product models.Pr
 		return models.Product{}, err
 	}
 	defer tx.Rollback(ctx)
+	if err := ensureProductSlugAvailable(ctx, tx, product.ID, product.Slug); err != nil {
+		return models.Product{}, err
+	}
 	if err := ensureFeaturedSlot(ctx, tx, product.ID, product.IsFeatured); err != nil {
 		return models.Product{}, err
 	}
@@ -177,13 +217,16 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, product models.Pr
 		ctx,
 		`INSERT INTO products (
 			id, slug, title, short_description, description, cover_image_id, category, usage_label,
-			materials, colors, is_customizable, price_label, base_price_rial, price_currency, availability,
+			use_cases, techniques, materials, colors, diameter_cm, is_customizable, customizable_color,
+			customizable_size, customizable_material, price_label, base_price_rial, price_currency, availability,
 			preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
 			status, sort_order, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)`,
 		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
-		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.Materials),
-		mustJSON(product.Colors), product.IsCustomizable, product.PriceLabel, product.BasePriceRial,
+		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.UseCases),
+		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM,
+		product.IsCustomizable, product.CustomizableColor, product.CustomizableSize, product.CustomizableMaterial,
+		product.PriceLabel, product.BasePriceRial,
 		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
 		product.IsFeatured, product.FeaturedOrder, product.SEOTitle, product.SEODescription,
 		product.Status, product.SortOrder, product.CreatedAt, product.UpdatedAt,
@@ -210,6 +253,23 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, id string, produc
 		return models.Product{}, err
 	}
 	defer tx.Rollback(ctx)
+	var currentSlug string
+	if err := tx.QueryRow(ctx, `SELECT slug FROM products WHERE id = $1 FOR UPDATE`, product.ID).Scan(&currentSlug); errors.Is(err, pgx.ErrNoRows) {
+		return models.Product{}, ErrNotFound
+	} else if err != nil {
+		return models.Product{}, err
+	}
+	if err := ensureProductSlugAvailable(ctx, tx, product.ID, product.Slug); err != nil {
+		return models.Product{}, err
+	}
+	if currentSlug != product.Slug {
+		if _, err := tx.Exec(ctx, `DELETE FROM product_slug_history WHERE product_id = $1 AND slug = $2`, product.ID, product.Slug); err != nil {
+			return models.Product{}, err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO product_slug_history (product_id, slug) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING`, product.ID, currentSlug); err != nil {
+			return models.Product{}, err
+		}
+	}
 	if err := ensureFeaturedSlot(ctx, tx, product.ID, product.IsFeatured); err != nil {
 		return models.Product{}, err
 	}
@@ -218,15 +278,18 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, id string, produc
 		ctx,
 		`UPDATE products SET
 			slug=$2, title=$3, short_description=$4, description=$5, cover_image_id=$6,
-			category=$7, usage_label=$8, materials=$9, colors=$10, is_customizable=$11,
-			price_label=$12, base_price_rial=$13, price_currency=$14, availability=$15,
-			preparation_time=$16, preparation_days=$17, is_featured=$18, featured_order=$19,
-			seo_title=$20, seo_description=$21, status=$22, sort_order=$23, updated_at=$24
+			category=$7, usage_label=$8, use_cases=$9, techniques=$10, materials=$11, colors=$12,
+			diameter_cm=$13, is_customizable=$14, customizable_color=$15, customizable_size=$16,
+			customizable_material=$17, price_label=$18, base_price_rial=$19, price_currency=$20,
+			availability=$21, preparation_time=$22, preparation_days=$23, is_featured=$24,
+			featured_order=$25, seo_title=$26, seo_description=$27, status=$28, sort_order=$29, updated_at=$30
 		 WHERE id=$1
 		 RETURNING `+productColumns,
 		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
-		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.Materials),
-		mustJSON(product.Colors), product.IsCustomizable, product.PriceLabel, product.BasePriceRial,
+		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.UseCases),
+		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM,
+		product.IsCustomizable, product.CustomizableColor, product.CustomizableSize, product.CustomizableMaterial,
+		product.PriceLabel, product.BasePriceRial,
 		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
 		product.IsFeatured, product.FeaturedOrder, product.SEOTitle, product.SEODescription,
 		product.Status, product.SortOrder, product.UpdatedAt,
@@ -268,6 +331,21 @@ func ValidateProduct(product models.Product) error {
 	}
 	if product.PreparationDays < 0 {
 		return errors.New("زمان آماده‌سازی نمی‌تواند منفی باشد")
+	}
+	if product.DiameterCM != nil && *product.DiameterCM <= 0 {
+		return errors.New("قطر محصول باید بیشتر از صفر باشد")
+	}
+	if err := validateControlledValues(product.UseCases, validProductUseCases, "کاربرد"); err != nil {
+		return err
+	}
+	if err := validateControlledValues(product.Techniques, validProductTechniques, "تکنیک"); err != nil {
+		return err
+	}
+	if err := validateControlledValues(product.Materials, validProductMaterials, "جنس"); err != nil {
+		return err
+	}
+	if err := validateControlledValues(product.Colors, validProductColors, "رنگ"); err != nil {
+		return err
 	}
 	if product.PriceCurrency != "IRR" {
 		return errors.New("واحد قیمت محصول باید ریال باشد")
@@ -319,15 +397,33 @@ func ensureFeaturedSlot(ctx context.Context, tx pgx.Tx, productID string, featur
 	return nil
 }
 
+func ensureProductSlugAvailable(ctx context.Context, tx pgx.Tx, productID, slug string) error {
+	var exists bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (
+		SELECT 1 FROM products WHERE slug = $1 AND id <> $2
+		UNION ALL
+		SELECT 1 FROM product_slug_history WHERE slug = $1 AND product_id <> $2
+	)`, slug, productID).Scan(&exists); err != nil {
+		return err
+	}
+	if exists {
+		return ErrProductSlugTaken
+	}
+	return nil
+}
+
 func scanProduct(scanner interface{ Scan(dest ...any) error }) (models.Product, error) {
 	var product models.Product
 	var materialsJSON []byte
 	var colorsJSON []byte
+	var useCasesJSON []byte
+	var techniquesJSON []byte
 
 	err := scanner.Scan(
 		&product.ID, &product.Slug, &product.Title, &product.ShortDescription, &product.Description,
-		&product.CoverImageID, &product.Category, &product.UsageLabel, &materialsJSON, &colorsJSON,
-		&product.IsCustomizable, &product.PriceLabel, &product.BasePriceRial, &product.PriceCurrency,
+		&product.CoverImageID, &product.Category, &product.UsageLabel, &useCasesJSON, &techniquesJSON,
+		&materialsJSON, &colorsJSON, &product.DiameterCM, &product.IsCustomizable, &product.CustomizableColor,
+		&product.CustomizableSize, &product.CustomizableMaterial, &product.PriceLabel, &product.BasePriceRial, &product.PriceCurrency,
 		&product.Availability, &product.PreparationTime, &product.PreparationDays, &product.IsFeatured,
 		&product.FeaturedOrder, &product.SEOTitle, &product.SEODescription, &product.Status,
 		&product.SortOrder, &product.CreatedAt, &product.UpdatedAt,
@@ -336,6 +432,12 @@ func scanProduct(scanner interface{ Scan(dest ...any) error }) (models.Product, 
 		return models.Product{}, err
 	}
 	if err := json.Unmarshal(materialsJSON, &product.Materials); err != nil {
+		return models.Product{}, err
+	}
+	if err := json.Unmarshal(useCasesJSON, &product.UseCases); err != nil {
+		return models.Product{}, err
+	}
+	if err := json.Unmarshal(techniquesJSON, &product.Techniques); err != nil {
 		return models.Product{}, err
 	}
 	if err := json.Unmarshal(colorsJSON, &product.Colors); err != nil {
@@ -388,6 +490,45 @@ func normalizeProduct(product *models.Product) {
 	if product.Colors == nil {
 		product.Colors = []string{}
 	}
+	if product.UseCases == nil {
+		product.UseCases = []string{}
+	}
+	if product.Techniques == nil {
+		product.Techniques = []string{}
+	}
+	product.UseCases = uniqueStrings(product.UseCases)
+	product.Techniques = uniqueStrings(product.Techniques)
+	product.Materials = uniqueStrings(product.Materials)
+	product.Colors = uniqueStrings(product.Colors)
+	if product.CustomizableColor || product.CustomizableSize || product.CustomizableMaterial {
+		product.IsCustomizable = true
+	}
+}
+
+func validateControlledValues(values []string, allowed map[string]struct{}, label string) error {
+	for _, value := range values {
+		if _, ok := allowed[value]; !ok {
+			return fmt.Errorf("%s محصول معتبر نیست", label)
+		}
+	}
+	return nil
+}
+
+func uniqueStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 func isUniqueViolationCode(err error) bool {

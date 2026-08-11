@@ -2210,15 +2210,15 @@ export default function PanelRoutes({ authStatus, user, onLogout, isLoggingOut, 
 
   return (
     <Routes>
-      <Route path="/panel" element={<Navigate to="/panel/orders" replace />} />
-      <Route path="/panel/login" element={<Navigate to="/auth" replace />} />
-      <Route path="/panel/profile" element={renderPanel(<PanelProfilePage user={user} onProfileUpdate={onProfileUpdate} />)} />
-      <Route path="/panel/orders" element={renderPanel(<PanelOrdersPage />)} />
-      <Route path="/panel/orders/new" element={renderPanel(<PanelNewOrderPage />)} />
-      <Route path="/panel/orders/drafts/:id" element={renderPanel(<PanelDraftOrderPage />)} />
-      <Route path="/panel/orders/:id" element={renderPanel(<PanelOrderDetailPage />)} />
-      <Route path="/panel/courses" element={renderPanel(<PanelCoursesPage user={user} />)} />
-      <Route path="/panel/courses/:id" element={renderPanel(<PanelCourseDetailPage user={user} />)} />
+      <Route index element={<Navigate to="/panel/orders" replace />} />
+      <Route path="login" element={<Navigate to="/auth" replace />} />
+      <Route path="profile" element={renderPanel(<PanelProfilePage user={user} onProfileUpdate={onProfileUpdate} />)} />
+      <Route path="orders" element={renderPanel(<PanelOrdersPage />)} />
+      <Route path="orders/new" element={renderPanel(<PanelNewOrderPage />)} />
+      <Route path="orders/drafts/:id" element={renderPanel(<PanelDraftOrderPage />)} />
+      <Route path="orders/:id" element={renderPanel(<PanelOrderDetailPage />)} />
+      <Route path="courses" element={renderPanel(<PanelCoursesPage user={user} />)} />
+      <Route path="courses/:id" element={renderPanel(<PanelCourseDetailPage user={user} />)} />
       <Route path="*" element={<Navigate to="/panel/orders" replace />} />
     </Routes>
   );

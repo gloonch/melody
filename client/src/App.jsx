@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
@@ -35,11 +35,20 @@ import { CourseVisual } from "./components/courses/CourseVisual";
 import { AppCard } from "./components/landing/AppCard";
 import { SiteNavbar } from "./components/layout/SiteNavbar";
 import { ProductCard } from "./components/product/ProductCard";
+import { ProductFilters } from "./components/product/ProductFilters";
 import { MaterialPill } from "./components/ui/Badge";
 import { Button, ButtonLink } from "./components/ui/Button";
 import { SuccessToast } from "./components/ui/SuccessToast";
 import { responsiveSrcSet } from "./components/ui/ResponsiveImage";
 import { initAnalytics, trackEvent, trackPageView } from "./lib/analytics";
+import {
+  EMPTY_PRODUCT_FILTERS,
+  formatProductDiameter,
+  parseProductFilterHash,
+  productLabels,
+  productMatchesFilters,
+  serializeProductFilterHash,
+} from "./lib/productCatalog";
 
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const PanelRoutes = lazy(() => import("./pages/PanelRoutes"));
@@ -1568,11 +1577,18 @@ function NotFoundPage({ authStatus, user }) {
 function ProductsPage({ authStatus = "guest", user = null }) {
   const [products, setProducts] = useState([]);
   const [status, setStatus] = useState({ type: "loading", message: "" });
+  const location = useLocation();
+  const navigate = useNavigate();
+  const filters = useMemo(() => parseProductFilterHash(location.hash), [location.hash]);
+  const filteredProducts = useMemo(
+    () => products.filter((product) => productMatchesFilters(product, filters)),
+    [filters, products],
+  );
   useRestoreScrollPosition(status.type !== "loading");
 
   usePageSEO({
-    title: "محصولات قابل سفارش گلملو | گل‌های پارچه‌ای دست‌ساز",
-    description: "محصولات قابل سفارش گلملو برای لباس، کلاه، سنجاق سینه و اکسسوری با امکان ثبت درخواست از پنل مشتری.",
+    title: "گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی",
+    description: "خرید و سفارش گل پارچه‌ای دست‌ساز برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو؛ با امکان انتخاب کاربرد، تکنیک، جنس، رنگ و اندازه.",
     url: `${SITE_URL}/products`,
   });
   useJsonLd("golmelo-breadcrumb-jsonld", {
@@ -1612,14 +1628,55 @@ function ProductsPage({ authStatus = "guest", user = null }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!filters.query.trim() || status.type !== "idle") return undefined;
+    const timeout = window.setTimeout(() => {
+      trackEvent("product_search_used", {
+        query_length: filters.query.trim().length,
+        result_count: filteredProducts.length,
+        source: "catalog",
+      });
+    }, 600);
+    return () => window.clearTimeout(timeout);
+  }, [filteredProducts.length, filters.query, status.type]);
+
+  const setFilters = useCallback((nextFilters, replace = false) => {
+    navigate(
+      { pathname: "/products", hash: serializeProductFilterHash(nextFilters) },
+      { replace, state: location.state },
+    );
+  }, [location.state, navigate]);
+
+  const handleQueryChange = useCallback((query) => {
+    setFilters({ ...filters, query }, true);
+  }, [filters, setFilters]);
+
+  const handleFilterToggle = useCallback((field, value) => {
+    const selected = filters[field] || [];
+    const nextValues = selected.includes(value)
+      ? selected.filter((item) => item !== value)
+      : [...selected, value];
+    setFilters({ ...filters, [field]: nextValues });
+    trackEvent("product_filter_applied", {
+      filter_type: field,
+      filter_value: value,
+      source: "catalog",
+    });
+  }, [filters, setFilters]);
+
+  const handleFilterReset = useCallback(() => {
+    setFilters({ ...EMPTY_PRODUCT_FILTERS });
+    trackEvent("product_filters_cleared", { source: "catalog" });
+  }, [setFilters]);
+
   return (
     <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-8 lg:px-12">
-        <div className="mb-10 text-right">
-          <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">محصولات قابل سفارش</h1>
-          <p className="mt-4 max-w-2xl text-base leading-8 text-[#75655a]">
-            جزئیات هر محصول را ببینید و درخواست سفارش را از پنل مشتری ثبت کنید.
+        <div className="mx-auto mb-10 max-w-4xl text-center">
+          <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1>
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#75655a]">
+            گل‌های پارچه‌ای گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو ببینید و بر اساس کاربرد، تکنیک، جنس، رنگ و اندازه انتخاب کنید.
           </p>
         </div>
 
@@ -1635,11 +1692,36 @@ function ProductsPage({ authStatus = "guest", user = null }) {
           </div>
         ) : null}
 
+        {status.type === "idle" && products.length > 0 ? (
+          <ProductFilters
+            products={products}
+            filters={filters}
+            resultCount={filteredProducts.length}
+            onQueryChange={handleQueryChange}
+            onToggle={handleFilterToggle}
+            onReset={handleFilterReset}
+          />
+        ) : null}
+
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-          {products.map((product, index) => (
+          {filteredProducts.map((product, index) => (
             <ProductCard key={product.id} product={product} index={index} showOverlay={false} />
           ))}
         </div>
+        {status.type === "idle" && products.length > 0 && filteredProducts.length === 0 ? (
+          <div className="py-14 text-center text-[#75655a]">
+            <p className="text-lg font-bold text-[#4f433b]">محصولی با این مشخصات پیدا نشد.</p>
+            <button type="button" onClick={handleFilterReset} className="mt-4 text-sm font-bold text-[#8d5558]">نمایش همه محصولات</button>
+          </div>
+        ) : null}
+
+        <section className="mx-auto mt-20 max-w-3xl border-t border-[#ddd3c9] pt-10 text-center">
+          <h2 className="text-2xl text-[#51645a] md:text-3xl">انتخاب گل پارچه‌ای مناسب لباس</h2>
+          <p className="mt-4 text-sm leading-8 text-[#75655a] md:text-base">
+            گل لباس می‌تواند بر اساس فرم لباس، محل نصب و جنس پارچه به‌صورت آماده یا اختصاصی انتخاب شود. مدل‌های کریشه، فشن، استامپ‌ورک و گل‌های سه‌بعدی هرکدام ظاهر متفاوتی ایجاد می‌کنند و امکان شخصی‌سازی رنگ، اندازه و متریال برای محصولات مشخص‌شده وجود دارد.
+          </p>
+          <ButtonLink to="/custom-order" variant="primary" size="md" className="mt-6">شروع سفارش اختصاصی</ButtonLink>
+        </section>
       </main>
     </div>
   );
@@ -1733,10 +1815,20 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
   const authPath = `/auth?mode=login&redirect=${encodeURIComponent(orderPath)}`;
   const productBackTarget = getProductBackTarget(location.state);
   const productBackState = getProductBackState(location.state);
+  const detailUseCases = productLabels(product, "useCases");
+  const detailTechniques = productLabels(product, "techniques");
+  const detailMaterials = productLabels(product, "materials");
+  const detailColors = productLabels(product, "colors");
+  const detailDiameter = formatProductDiameter(product?.diameterCm);
+  const customizationLabels = product ? [
+    product.customizableColor ? "رنگ" : "",
+    product.customizableSize ? "اندازه" : "",
+    product.customizableMaterial ? "جنس" : "",
+  ].filter(Boolean) : [];
 
   usePageSEO({
-    title: product ? `${product.title} | محصول قابل سفارش گلملو` : "محصول قابل سفارش گلملو",
-    description: product?.shortDescription || "جزئیات محصول قابل سفارش گلملو و ثبت درخواست سفارش از پنل مشتری.",
+    title: product ? product.seoTitle || `${product.title} | محصول قابل سفارش گلملو` : "محصول قابل سفارش گلملو",
+    description: product?.seoDescription || product?.shortDescription || "جزئیات محصول قابل سفارش گلملو و ثبت درخواست سفارش از پنل مشتری.",
     url: `${SITE_URL}/products/${product?.slug || id}`,
     image: product?.coverImageUrl || DEFAULT_SEO.image,
     type: "product",
@@ -1762,15 +1854,21 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
     image: product.coverImageUrl ? [product.coverImageUrl] : [DEFAULT_SEO.image],
     url: `${SITE_URL}/products/${product.slug || id}`,
     category: product.category || "گل پارچه‌ای دست‌ساز",
+    material: detailMaterials.length ? detailMaterials : undefined,
+    color: detailColors.length ? detailColors : undefined,
+    size: detailDiameter || undefined,
     brand: {
       "@type": "Brand",
       name: "گلملو",
     },
     offers: productOffer,
     additionalProperty: [
-      product.usageLabel ? { "@type": "PropertyValue", name: "کاربرد", value: product.usageLabel } : null,
+      !detailUseCases.length && product.usageLabel ? { "@type": "PropertyValue", name: "کاربرد", value: product.usageLabel } : null,
+      detailUseCases.length ? { "@type": "PropertyValue", name: "کاربردهای پیشنهادی", value: detailUseCases.join("، ") } : null,
+      detailTechniques.length ? { "@type": "PropertyValue", name: "تکنیک", value: detailTechniques.join("، ") } : null,
+      detailDiameter ? { "@type": "PropertyValue", name: "قطر", value: detailDiameter, unitCode: "CMT" } : null,
       product.preparationTime ? { "@type": "PropertyValue", name: "زمان آماده‌سازی", value: normalizePreparationTimeLabel(product.preparationTime) } : null,
-      { "@type": "PropertyValue", name: "سفارشی‌سازی", value: product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت" },
+      { "@type": "PropertyValue", name: "سفارشی‌سازی", value: customizationLabels.length ? customizationLabels.join("، ") : product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت" },
     ].filter(Boolean),
   } : null);
   useJsonLd(product ? "golmelo-breadcrumb-jsonld" : "golmelo-breadcrumb-jsonld-empty", product ? {
@@ -1878,8 +1976,12 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
                 ["قیمت پایه", productPriceLabel(product)],
                 ["موجودی", PRODUCT_AVAILABILITY_LABELS[product.availability] || "در حال بررسی"],
                 ["زمان آماده‌سازی", product.preparationDays > 0 ? `${toPersianDigits(product.preparationDays)} روز کاری` : normalizePreparationTimeLabel(product.preparationTime)],
-                ["کاربرد", product.usageLabel || "سفارشی"],
-                ["سفارشی‌سازی", product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت"],
+                ["کاربرد", detailUseCases.join("، ") || product.usageLabel || "سفارشی"],
+                ["تکنیک", detailTechniques.join("، ") || "در حال تکمیل"],
+                ["جنس", detailMaterials.join("، ") || "در حال تکمیل"],
+                ["رنگ", detailColors.join("، ") || "در حال تکمیل"],
+                ["اندازه", detailDiameter || "در حال تکمیل"],
+                ["سفارشی‌سازی", customizationLabels.length ? customizationLabels.join("، ") : product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت"],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-start justify-between gap-4 border-b border-[#f0e7de] pb-2 last:border-b-0 last:pb-0 sm:[&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-last-child(-n+2)]:pb-0">
                   <dt className="shrink-0 text-xs text-[#a18f83]">{label}</dt>
@@ -2554,10 +2656,48 @@ function PublicPageLoader() {
   return <div dir="rtl" className="grid min-h-screen place-items-center bg-[#fffdfb] text-[#807269]">در حال بارگذاری...</div>;
 }
 
+class PanelErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Panel rendering failed", error, info);
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f3f7fb] px-5 text-center text-[#40516a]">
+        <div className="w-full max-w-md rounded-[28px] bg-white p-7 shadow-[0_24px_64px_rgba(70,88,116,0.1)]">
+          <h1 className="text-xl font-black text-[#27364d]">پنل به‌درستی بارگذاری نشد</h1>
+          <p className="mt-3 text-sm leading-7 text-[#708097]">صفحه را دوباره بارگذاری کنید. اگر مشکل ادامه داشت، از حساب خارج شوید و دوباره وارد شوید.</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <button type="button" onClick={() => window.location.reload()} className="h-11 rounded-xl bg-[#a05f62] px-5 text-sm font-bold text-white">
+              بارگذاری دوباره
+            </button>
+            <a href="/" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] px-5 text-sm font-bold text-[#617088]">
+              بازگشت به سایت
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <PanelErrorBoundary>
+        <AppRoutes />
+      </PanelErrorBoundary>
     </BrowserRouter>
   );
 }
