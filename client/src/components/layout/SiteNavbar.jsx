@@ -57,7 +57,7 @@ export function SiteNavbar({
     <Link
       to="/panel/profile"
       onClick={() => setIsMenuOpen(false)}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-[#8f5558] text-white backdrop-blur transition hover:bg-[#824b4e]"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#874b4f] text-white shadow-sm transition hover:bg-[#783f43]"
       aria-label="پنل کاربری"
       title={userDisplayName}
     >
@@ -67,15 +67,15 @@ export function SiteNavbar({
     <Link
       to="/auth?mode=login"
       onClick={() => setIsMenuOpen(false)}
-      className="inline-flex h-10 items-center justify-center rounded-full border border-white/70 bg-[#8f5558] px-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(75,55,45,0.12)] backdrop-blur transition hover:bg-[#824b4e]"
+      className="inline-flex h-10 items-center justify-center rounded-full bg-[#874b4f] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#783f43]"
     >
       ورود | ثبت‌نام
     </Link>
   );
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-50 bg-[#a96568]/95 text-[#fff8f3] shadow-[0_10px_30px_rgba(70,40,42,0.2)] backdrop-blur-xl backdrop-saturate-150">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 md:px-8 lg:px-12">
         {onLogoClick ? (
           <button
             type="button"
@@ -105,11 +105,11 @@ export function SiteNavbar({
           </Link>
         )}
 
-        <nav className="hidden items-center gap-1 rounded-full bg-[#9b5e61] p-1 text-sm lg:flex">
+        <nav className="hidden items-center gap-1 text-sm lg:flex">
           {navItems.map((item) =>
             renderNavLink(
               item,
-              "rounded-full px-3 py-2 text-[#fff8f3] transition hover:bg-white/14 hover:text-white lg:px-4",
+              "rounded-full px-3 py-2 text-[#fff8f3] transition hover:bg-white/12 hover:text-white lg:px-4",
             ),
           )}
         </nav>
@@ -119,7 +119,7 @@ export function SiteNavbar({
         <button
           type="button"
           onClick={() => setIsMenuOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-[#8f5558] text-white backdrop-blur lg:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#874b4f] text-white shadow-sm transition hover:bg-[#783f43] lg:hidden"
           aria-label="باز کردن منو"
         >
           <Menu className="h-5 w-5" />
@@ -152,6 +152,6 @@ export function SiteNavbar({
           </div>
         ) : null}
       </div>
-    </div>
+    </header>
   );
 }

@@ -1,18 +1,5 @@
 export const PRODUCT_FILTER_GROUPS = [
   {
-    key: "useCases",
-    hashKey: "use",
-    label: "کاربرد",
-    options: [
-      { value: "evening_dress", hashValue: "evening-dress", label: "لباس مجلسی" },
-      { value: "wedding_dress", hashValue: "wedding-dress", label: "لباس عروس و عقد" },
-      { value: "coat_manto", hashValue: "coat-manto", label: "کت و مانتو" },
-      { value: "hat", label: "کلاه" },
-      { value: "hair_accessory", hashValue: "hair-accessory", label: "اکسسوری مو" },
-      { value: "multipurpose", label: "چندمنظوره" },
-    ],
-  },
-  {
     key: "techniques",
     hashKey: "technique",
     label: "تکنیک",
@@ -39,25 +26,6 @@ export const PRODUCT_FILTER_GROUPS = [
     ],
   },
   {
-    key: "colors",
-    hashKey: "color",
-    label: "رنگ",
-    options: [
-      { value: "white", label: "سفید", swatch: "#ffffff" },
-      { value: "black", label: "مشکی", swatch: "#1f1f1f" },
-      { value: "cream", label: "کرم", swatch: "#ead8b7" },
-      { value: "ivory", label: "شیری", swatch: "#f3ead8" },
-      { value: "pink", label: "صورتی", swatch: "#d996a8" },
-      { value: "red", label: "قرمز", swatch: "#a83d45" },
-      { value: "blue", label: "آبی", swatch: "#557d9d" },
-      { value: "green", label: "سبز", swatch: "#55735f" },
-      { value: "gold", label: "طلایی", swatch: "#b08a43" },
-      { value: "silver", label: "نقره‌ای", swatch: "#a7a7a4" },
-      { value: "purple", label: "بنفش", swatch: "#795b80" },
-      { value: "multicolor", label: "چندرنگ", swatch: "linear-gradient(135deg,#a83d45,#d9a34a,#557d9d)" },
-    ],
-  },
-  {
     key: "sizes",
     hashKey: "size",
     label: "اندازه",
@@ -68,14 +36,45 @@ export const PRODUCT_FILTER_GROUPS = [
       { value: "extra_large", hashValue: "extra-large", label: "خیلی بزرگ" },
     ],
   },
+  {
+    key: "useCases",
+    hashKey: "use",
+    label: "کاربرد",
+    options: [
+      { value: "evening_dress", hashValue: "evening-dress", label: "لباس مجلسی" },
+      { value: "wedding_dress", hashValue: "wedding-dress", label: "لباس عروس و عقد" },
+      { value: "coat_manto", hashValue: "coat-manto", label: "کت و مانتو" },
+      { value: "hat", label: "کلاه" },
+      { value: "hair_accessory", hashValue: "hair-accessory", label: "اکسسوری مو" },
+      { value: "multipurpose", label: "چندمنظوره" },
+    ],
+  },
 ];
 
-export const PRODUCT_LABELS = Object.fromEntries(
-  PRODUCT_FILTER_GROUPS.map((group) => [
-    group.key,
-    Object.fromEntries(group.options.map((option) => [option.value, option.label])),
-  ]),
-);
+const PRODUCT_COLOR_LABELS = {
+  white: "سفید",
+  black: "مشکی",
+  cream: "کرم",
+  ivory: "شیری",
+  pink: "صورتی",
+  red: "قرمز",
+  blue: "آبی",
+  green: "سبز",
+  gold: "طلایی",
+  silver: "نقره‌ای",
+  purple: "بنفش",
+  multicolor: "چندرنگ",
+};
+
+export const PRODUCT_LABELS = {
+  ...Object.fromEntries(
+    PRODUCT_FILTER_GROUPS.map((group) => [
+      group.key,
+      Object.fromEntries(group.options.map((option) => [option.value, option.label])),
+    ]),
+  ),
+  colors: PRODUCT_COLOR_LABELS,
+};
 
 const PRODUCT_SEARCH_ALIASES = {
   evening_dress: "لباس مجلسی لباس شب مهمانی",
@@ -96,7 +95,6 @@ export const EMPTY_PRODUCT_FILTERS = {
   useCases: [],
   techniques: [],
   materials: [],
-  colors: [],
   sizes: [],
 };
 

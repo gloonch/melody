@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { PRODUCT_FILTER_GROUPS, productMatchesFilters, productSizeBucket } from "../../lib/productCatalog";
 
 function FilterOptions({ group, filters, products, onToggle }) {
@@ -24,7 +24,6 @@ function FilterOptions({ group, filters, products, onToggle }) {
             className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-[#a05f62] bg-[#a05f62] text-white" : "border-[#d8cdc3] bg-white/70 text-[#6d5d53] hover:border-[#c08081]"}`}
           >
             <span>{option.label}</span>
-            {option.swatch ? <span aria-hidden="true" className="h-4 w-4 rounded-full border border-black/10" style={{ background: option.swatch }} /> : null}
             <span className={selected ? "text-white/75" : "text-[#9b8b80]"}>{new Intl.NumberFormat("fa-IR").format(count)}</span>
           </button>
         );
@@ -34,8 +33,6 @@ function FilterOptions({ group, filters, products, onToggle }) {
 }
 
 export function ProductFilters({ products, filters, resultCount, onQueryChange, onToggle, onReset }) {
-  const useCaseGroup = PRODUCT_FILTER_GROUPS[0];
-  const advancedGroups = PRODUCT_FILTER_GROUPS.slice(1);
   const hasFilters = filters.query || PRODUCT_FILTER_GROUPS.some((group) => filters[group.key].length);
 
   return (
@@ -54,32 +51,15 @@ export function ProductFilters({ products, filters, resultCount, onQueryChange, 
         </label>
       </div>
 
-      <div className="mt-6">
-        <p className="mb-3 text-center text-sm font-bold text-[#62534b] md:text-right">کاربرد</p>
-        <FilterOptions group={useCaseGroup} filters={filters} products={products} onToggle={onToggle} />
-      </div>
-
-      <details className="mt-5 md:hidden">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-[#d8cdc3] bg-white/60 px-4 text-sm font-bold text-[#62534b]">
-          <SlidersHorizontal className="h-4 w-4" /> فیلترهای بیشتر
-        </summary>
-        <div className="mt-5 grid gap-5">
-          {advancedGroups.map((group) => (
-            <div key={group.key}>
-              <p className="mb-3 text-center text-sm font-bold text-[#62534b]">{group.label}</p>
+      <div className="mt-6 overflow-x-auto pb-2">
+        <div className="grid min-w-[900px] grid-cols-4 gap-5">
+          {PRODUCT_FILTER_GROUPS.map((group) => (
+            <fieldset key={group.key} className="min-w-0">
+              <legend className="mb-3 text-sm font-bold text-[#62534b]">{group.label}</legend>
               <FilterOptions group={group} filters={filters} products={products} onToggle={onToggle} />
-            </div>
+            </fieldset>
           ))}
         </div>
-      </details>
-
-      <div className="mt-6 hidden gap-5 md:grid md:grid-cols-2 lg:grid-cols-4">
-        {advancedGroups.map((group) => (
-          <fieldset key={group.key} className="min-w-0">
-            <legend className="mb-3 text-sm font-bold text-[#62534b]">{group.label}</legend>
-            <FilterOptions group={group} filters={filters} products={products} onToggle={onToggle} />
-          </fieldset>
-        ))}
       </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-[#75655a] md:justify-between">

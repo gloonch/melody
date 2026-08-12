@@ -956,13 +956,12 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             coverImageUrl: resolveApiURL(item.coverImageUrl),
             coverImageSources: normalizeImageSources(item.coverImageSources),
           }));
-        const supportsFeaturedSelection = normalizedProducts.some((item) => Object.prototype.hasOwnProperty.call(item, "isFeatured"));
-        const landingProducts = supportsFeaturedSelection
-          ? normalizedProducts.filter((item) => item.isFeatured)
-          : normalizedProducts.slice(0, 3);
-
-        setProducts(landingProducts
-          .sort((a, b) => Number(a.featuredOrder || 0) - Number(b.featuredOrder || 0))
+        setProducts([...normalizedProducts]
+          .sort((a, b) => {
+            const createdAtDifference = (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0);
+            if (createdAtDifference !== 0) return createdAtDifference;
+            return Number(b.sortOrder || 0) - Number(a.sortOrder || 0);
+          })
           .slice(0, 3));
       } catch (error) {
         console.error(error);
@@ -1232,7 +1231,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
       <main className="relative z-10 -mt-1">
         <section id="products" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
           <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#7c6558]">READY TO ORDER</p>
-          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">گل‌های منتخب گلملو</h2>
+          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">جدیدترین گل‌های گلملو</h2>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
             محصولاتی آماده ارسال که می‌توانند متناسب با لباس، رنگ و سلیقه شما شخصی‌سازی شوند.
           </p>
