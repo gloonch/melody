@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { Menu, User } from "lucide-react";
+import { Menu, User, X } from "lucide-react";
 import logoImage from "../../assets/Logo.webp";
 
 export function SiteNavbar({
@@ -19,9 +20,14 @@ export function SiteNavbar({
 
     const originalBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setIsMenuOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
 
     return () => {
       document.body.style.overflow = originalBodyOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
     };
   }, [isMenuOpen]);
 
@@ -57,7 +63,7 @@ export function SiteNavbar({
     <Link
       to="/panel/profile"
       onClick={() => setIsMenuOpen(false)}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#874b4f] text-white shadow-sm transition hover:bg-[#783f43]"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-[#8f5558] text-white backdrop-blur transition hover:bg-[#824b4e]"
       aria-label="پنل کاربری"
       title={userDisplayName}
     >
@@ -67,15 +73,57 @@ export function SiteNavbar({
     <Link
       to="/auth?mode=login"
       onClick={() => setIsMenuOpen(false)}
-      className="inline-flex h-10 items-center justify-center rounded-full bg-[#874b4f] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#783f43]"
+      className="inline-flex h-10 items-center justify-center rounded-full border border-white/70 bg-[#8f5558] px-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(75,55,45,0.12)] backdrop-blur transition hover:bg-[#824b4e]"
     >
       ورود | ثبت‌نام
     </Link>
   );
 
+  const mobileMenu = isMenuOpen && typeof document !== "undefined" ? createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex min-h-dvh items-center justify-center overflow-y-auto bg-[#6f4145]/90 px-6 py-8 text-center backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="منوی اصلی"
+      onClick={() => setIsMenuOpen(false)}
+    >
+      <button
+        type="button"
+        className="absolute left-5 top-5 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white transition hover:bg-white/20"
+        onClick={() => setIsMenuOpen(false)}
+        aria-label="بستن منو"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <aside
+        className="mobile-menu-content relative flex min-h-full w-full flex-col items-center justify-center py-16 text-center text-white"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex w-full max-w-xs flex-col items-center">
+          <Link to="/" className="mb-8 inline-flex items-center justify-center gap-3" onClick={() => setIsMenuOpen(false)}>
+            <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-9 w-auto object-contain brightness-110" />
+            <span className="text-sm font-bold">Golmelo</span>
+          </Link>
+          <nav className="flex w-full flex-col items-center gap-3">
+            {navItems.map((item) =>
+              renderNavLink(
+                item,
+                "flex w-full items-center justify-center rounded-2xl bg-[#c08081] px-4 py-3 text-center text-sm font-bold text-white shadow-[0_14px_34px_rgba(45,24,27,0.2)] transition hover:bg-[#ad7274]",
+              ),
+            )}
+          </nav>
+          <div className="mt-8 flex justify-center">{authAction}</div>
+        </div>
+      </aside>
+    </div>,
+    document.body,
+  ) : null;
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-[#a96568]/95 text-[#fff8f3] shadow-[0_10px_30px_rgba(70,40,42,0.2)] backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 md:px-8 lg:px-12">
+    <>
+      <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 lg:px-12">
+        <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full bg-[#c08081] px-5 py-3 text-[#fff8f3] shadow-[0_14px_32px_rgba(192,128,129,0.25)] backdrop-blur-md">
         {onLogoClick ? (
           <button
             type="button"
@@ -105,11 +153,11 @@ export function SiteNavbar({
           </Link>
         )}
 
-        <nav className="hidden items-center gap-1 text-sm lg:flex">
+        <nav className="hidden items-center gap-1 rounded-full bg-[#9b5e61] p-1 text-sm lg:flex">
           {navItems.map((item) =>
             renderNavLink(
               item,
-              "rounded-full px-3 py-2 text-[#fff8f3] transition hover:bg-white/12 hover:text-white lg:px-4",
+              "rounded-full px-3 py-2 text-[#fff8f3] transition hover:bg-white/14 hover:text-white lg:px-4",
             ),
           )}
         </nav>
@@ -119,39 +167,14 @@ export function SiteNavbar({
         <button
           type="button"
           onClick={() => setIsMenuOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#874b4f] text-white shadow-sm transition hover:bg-[#783f43] lg:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-[#8f5558] text-white backdrop-blur lg:hidden"
           aria-label="باز کردن منو"
         >
           <Menu className="h-5 w-5" />
         </button>
-
-        {isMenuOpen ? (
-          <div
-            className="fixed inset-0 z-[90] flex min-h-dvh items-center justify-center bg-[#1f2a24]/60 p-6 text-center backdrop-blur-[6px] lg:hidden"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <aside
-              className="mobile-menu-content relative flex h-full w-full flex-col items-center justify-center px-2 py-16 text-center text-white"
-            >
-              <div className="flex w-full max-w-xs flex-col items-center">
-                <Link to="/" className="mb-8 inline-flex items-center justify-center gap-3" onClick={() => setIsMenuOpen(false)}>
-                  <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-9 w-auto object-contain brightness-110" />
-                  <span className="text-sm font-bold">Golmelo</span>
-                </Link>
-                <nav className="flex w-full flex-col items-center gap-3">
-                  {navItems.map((item) =>
-                    renderNavLink(
-                      item,
-                      "flex w-full items-center justify-center rounded-2xl bg-[#c08081] px-4 py-3 text-center text-sm font-bold text-white shadow-[0_14px_34px_rgba(73,55,48,0.16)] transition hover:bg-[#ad7274]",
-                    ),
-                  )}
-                </nav>
-                <div className="mt-8 flex justify-center">{authAction}</div>
-              </div>
-            </aside>
-          </div>
-        ) : null}
+        </div>
       </div>
-    </header>
+      {mobileMenu}
+    </>
   );
 }
