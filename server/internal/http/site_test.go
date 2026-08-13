@@ -96,8 +96,41 @@ func TestProductSchemaIncludesVisibleStructuredSpecifications(t *testing.T) {
 		t.Fatalf("expected controlled materials in schema, got %#v", schema["material"])
 	}
 	properties, ok := schema["additionalProperty"].([]map[string]any)
-	if !ok || len(properties) != 3 {
-		t.Fatalf("expected use case, technique and diameter properties, got %#v", schema["additionalProperty"])
+	if !ok || len(properties) != 4 {
+		t.Fatalf("expected use case, technique, diameter and jewelry embroidery properties, got %#v", schema["additionalProperty"])
+	}
+}
+
+func TestProductSchemaIncludesJewelryEmbroideryStatus(t *testing.T) {
+	schema := productSchema("https://golmelo.com", models.Product{
+		Slug:                 "embellished-flower",
+		Title:                "گل جواهردوزی‌شده",
+		HasJewelryEmbroidery: true,
+	})
+	properties, ok := schema["additionalProperty"].([]map[string]any)
+	if !ok {
+		t.Fatalf("expected product properties, got %#v", schema["additionalProperty"])
+	}
+	for _, property := range properties {
+		if property["name"] == "جواهردوزی" && property["value"] == "دارد" {
+			return
+		}
+	}
+	t.Fatalf("expected jewelry embroidery status in schema, got %#v", properties)
+}
+
+func TestProductSchemaIncludesAllGalleryImages(t *testing.T) {
+	schema := productSchema("https://golmelo.com", models.Product{
+		Slug:  "gallery-flower",
+		Title: "گل چندتصویری",
+		Images: []models.ProductImage{
+			{ID: "cover", URL: "https://golmelo.com/cover.webp"},
+			{ID: "detail", URL: "https://golmelo.com/detail.webp"},
+		},
+	})
+	images, ok := schema["image"].([]string)
+	if !ok || len(images) != 2 || images[0] != "https://golmelo.com/cover.webp" || images[1] != "https://golmelo.com/detail.webp" {
+		t.Fatalf("expected all product gallery images in schema, got %#v", schema["image"])
 	}
 }
 

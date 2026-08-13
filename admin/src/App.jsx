@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
+  ChevronDown,
+  ChevronUp,
   ImagePlus,
   LayoutDashboard,
   Loader2,
@@ -468,6 +470,7 @@ const emptyProductForm = {
   materials: [],
   colors: [],
   diameterCm: "",
+  hasJewelryEmbroidery: false,
   isCustomizable: true,
   customizableColor: false,
   customizableSize: false,
@@ -595,6 +598,7 @@ function productFromForm(form) {
     materials: form.materials,
     colors: form.colors,
     diameterCm: Number.isFinite(diameterValue) && diameterValue > 0 ? diameterValue : null,
+    hasJewelryEmbroidery: Boolean(form.hasJewelryEmbroidery),
     isCustomizable: Boolean(form.isCustomizable),
     customizableColor: Boolean(form.customizableColor),
     customizableSize: Boolean(form.customizableSize),
@@ -619,7 +623,9 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
   const [form, setForm] = useState(() => productToForm(null));
   const [isOpen, setIsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [imageBusy, setImageBusy] = useState("");
   const [saveStatus, setSaveStatus] = useState({ type: "idle", message: "" });
+  const [galleryImages, setGalleryImages] = useState([]);
   const selectedImage = projectImages.find((image) => image.id === form.coverImageId);
   const featuredCount = products.filter((product) => product.isFeatured && product.status === "active").length;
   const incompleteCount = products.filter(isProductMetadataIncomplete).length;
@@ -628,6 +634,11 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
     const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
     setSaveStatus({ type: "idle", message: "" });
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const selectCoverImage = (imageID) => {
+    setSaveStatus({ type: "idle", message: "" });
+    setForm((current) => ({ ...current, coverImageId: imageID }));
   };
 
   const toggleTaxonomyValue = (field, value) => {
@@ -648,6 +659,7 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
     setSelectedId("");
     setForm({ ...emptyProductForm, id: `product-${timestamp}`, slug: `fabric-flower-${timestamp}` });
     setSaveStatus({ type: "idle", message: "" });
+    setGalleryImages([]);
     setIsOpen(true);
   };
 
@@ -655,7 +667,79 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
     setSelectedId(product.id);
     setForm(productToForm(product));
     setSaveStatus({ type: "idle", message: "" });
+    setGalleryImages(product.images || []);
     setIsOpen(true);
+  };
+
+  const reloadSelectedProduct = async () => {
+    if (!selectedId) return null;
+    const data = await apiRequest(`admin/products/${selectedId}`, { token });
+    setForm(productToForm(data.product));
+    setGalleryImages(data.product.images || []);
+    await onReload();
+    return data.product;
+  };
+
+  const handleProductImageUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+    if (!selectedId) {
+      setSaveStatus({ type: "error", message: "ابتدا محصول را ذخیره کنید، سپس تصاویر گالری را اضافه کنید." });
+      return;
+    }
+    setImageBusy("upload");
+    setSaveStatus({ type: "idle", message: "" });
+    try {
+      const body = new FormData();
+      files.forEach((file) => body.append("images", file));
+      await apiRequest(`admin/products/${selectedId}/images`, { method: "POST", token, body });
+      await reloadSelectedProduct();
+      setSaveStatus({ type: "success", message: `${files.length} تصویر به گالری محصول اضافه شد.` });
+    } catch (error) {
+      setSaveStatus({ type: "error", message: error.message });
+    } finally {
+      setImageBusy("");
+    }
+  };
+
+  const handleDeleteProductImage = async (image) => {
+    if (!selectedId || !image.filename) return;
+    if (!window.confirm("این تصویر از گالری محصول حذف شود؟")) return;
+    setImageBusy(`delete-${image.id}`);
+    try {
+      await apiRequest(`admin/products/${selectedId}/images/${image.id}`, { method: "DELETE", token });
+      await reloadSelectedProduct();
+      setSaveStatus({ type: "success", message: "تصویر از گالری محصول حذف شد." });
+    } catch (error) {
+      setSaveStatus({ type: "error", message: error.message });
+    } finally {
+      setImageBusy("");
+    }
+  };
+
+  const moveProductImage = async (imageID, direction) => {
+    const reorderable = galleryImages.filter((image) => image.filename);
+    const currentIndex = reorderable.findIndex((image) => image.id === imageID);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= reorderable.length) return;
+    const nextImages = [...reorderable];
+    [nextImages[currentIndex], nextImages[nextIndex]] = [nextImages[nextIndex], nextImages[currentIndex]];
+    setImageBusy("order");
+    try {
+      await apiRequest(`admin/products/${selectedId}/images/order`, {
+        method: "PATCH",
+        token,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageIds: nextImages.map((image) => image.id) }),
+      });
+      await reloadSelectedProduct();
+      setSaveStatus({ type: "success", message: "ترتیب تصاویر ذخیره شد." });
+    } catch (error) {
+      setSaveStatus({ type: "error", message: error.message });
+    } finally {
+      setImageBusy("");
+    }
   };
 
   const handleSave = async (event) => {
@@ -747,11 +831,55 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
               <select value={form.coverImageId} onChange={update("coverImageId")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
                 <option value="">انتخاب تصویر</option>
                 {projectImages.map((image) => <option key={image.id} value={image.id}>{image.alt} · {image.filename}</option>)}
+                {galleryImages.filter((image) => image.filename).map((image, index) => <option key={image.id} value={image.id}>تصویر {index + 1} گالری محصول</option>)}
               </select>
             </label>
           </div>
 
           {selectedImage ? <img src={selectedImage.url} alt={selectedImage.alt} className="h-28 w-28 rounded-md object-cover" /> : null}
+
+          <section className="rounded-lg border border-[#e5ddd4] bg-[#fbf9f6] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 className="font-medium text-[#4f433b]">گالری تصاویر محصول</h4>
+                <p className="mt-1 text-xs leading-6 text-[#807269]">چند تصویر را هم‌زمان انتخاب کنید. تصویر اصلی روی کارت محصول نمایش داده می‌شود.</p>
+              </div>
+              <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white ${imageBusy === "upload" || !selectedId ? "cursor-not-allowed opacity-60" : ""}`}>
+                {imageBusy === "upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                افزودن تصاویر
+                <input type="file" accept="image/*" multiple disabled={imageBusy === "upload" || !selectedId} onChange={handleProductImageUpload} className="sr-only" />
+              </label>
+            </div>
+            {!selectedId ? <p className="mt-3 text-xs text-[#a9632d]">برای آپلود تصویر، ابتدا محصول را ذخیره کنید.</p> : null}
+            {galleryImages.length > 0 ? (
+              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+                {galleryImages.map((image, index) => {
+                  const isCover = form.coverImageId === image.id;
+                  const reorderable = galleryImages.filter((item) => item.filename);
+                  const reorderIndex = reorderable.findIndex((item) => item.id === image.id);
+                  return (
+                    <article key={image.id} className={`overflow-hidden rounded-lg border bg-white ${isCover ? "border-[#a05f62] ring-1 ring-[#a05f62]" : "border-[#e5ddd4]"}`}>
+                      <img src={image.sources?.[0]?.url || image.url} alt={image.alt || form.title} width="240" height="240" className="aspect-square w-full object-cover" />
+                      <div className="grid gap-2 p-2">
+                        <button type="button" onClick={() => selectCoverImage(image.id)} className={`h-8 rounded-md px-2 text-xs ${isCover ? "bg-[#edf2ec] text-[#51645a]" : "border border-[#d9cfc5] text-[#6f6259]"}`}>
+                          {isCover ? "تصویر اصلی" : "انتخاب به‌عنوان اصلی"}
+                        </button>
+                        {image.filename ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <button type="button" disabled={imageBusy === "order" || reorderIndex <= 0} onClick={() => moveProductImage(image.id, -1)} className="grid h-8 w-8 place-items-center rounded-md border border-[#ddd4ca] disabled:opacity-30" title="یک جایگاه به قبل"><ChevronUp className="h-4 w-4" /></button>
+                            <button type="button" disabled={imageBusy === "order" || reorderIndex < 0 || reorderIndex >= reorderable.length - 1} onClick={() => moveProductImage(image.id, 1)} className="grid h-8 w-8 place-items-center rounded-md border border-[#ddd4ca] disabled:opacity-30" title="یک جایگاه به بعد"><ChevronDown className="h-4 w-4" /></button>
+                            <button type="button" disabled={imageBusy === `delete-${image.id}`} onClick={() => handleDeleteProductImage(image)} className="grid h-8 w-8 place-items-center rounded-md text-[#b85d60] disabled:opacity-40" aria-label={`حذف تصویر ${index + 1}`}>
+                              {imageBusy === `delete-${image.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        ) : <span className="text-center text-[11px] text-[#8b7a70]">تصویر فعلی محصول</span>}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : <p className="mt-4 text-sm text-[#807269]">هنوز تصویری در گالری این محصول نیست.</p>}
+          </section>
 
           {[["shortDescription", "توضیح کوتاه", 2], ["description", "توضیحات کامل و یکتا", 5], ["seoTitle", "عنوان SEO اختیاری (حداکثر ۷۰ کاراکتر)", 2], ["seoDescription", "توضیح SEO اختیاری (حداکثر ۱۸۰ کاراکتر)", 3]].map(([field, label, rows]) => (
             <label key={field} className="grid gap-2 text-sm text-[#5f544d]">{label}
@@ -777,6 +905,13 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
                 </div>
               </fieldset>
             ))}
+            <fieldset className="rounded-lg border border-[#e5ddd4] p-4">
+              <legend className="px-2 text-sm font-medium text-[#5f544d]">جواهردوزی</legend>
+              <label className={`mt-2 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm ${form.hasJewelryEmbroidery ? "border-[#a05f62] bg-[#f8eeee] text-[#824b4e]" : "border-[#ddd4ca] bg-white text-[#6f6259]"}`}>
+                <input type="checkbox" checked={form.hasJewelryEmbroidery} onChange={update("hasJewelryEmbroidery")} className="accent-[#a05f62]" />
+                این محصول جواهردوزی دارد
+              </label>
+            </fieldset>
           </div>
 
           <div className="flex flex-wrap gap-5 text-sm text-[#5f544d]">

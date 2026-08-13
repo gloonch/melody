@@ -178,6 +178,7 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			materials JSONB NOT NULL DEFAULT '[]'::jsonb,
 			colors JSONB NOT NULL DEFAULT '[]'::jsonb,
 			diameter_cm DOUBLE PRECISION,
+			has_jewelry_embroidery BOOLEAN NOT NULL DEFAULT FALSE,
 			is_customizable BOOLEAN NOT NULL DEFAULT TRUE,
 			customizable_color BOOLEAN NOT NULL DEFAULT FALSE,
 			customizable_size BOOLEAN NOT NULL DEFAULT FALSE,
@@ -208,6 +209,7 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS use_cases JSONB NOT NULL DEFAULT '[]'::jsonb`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS techniques JSONB NOT NULL DEFAULT '[]'::jsonb`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS diameter_cm DOUBLE PRECISION`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS has_jewelry_embroidery BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_color BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_size BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_material BOOLEAN NOT NULL DEFAULT FALSE`,
@@ -232,6 +234,18 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 		`CREATE INDEX IF NOT EXISTS idx_products_status_sort_order ON products (status, sort_order, slug)`,
 		`CREATE INDEX IF NOT EXISTS idx_products_featured ON products (is_featured, featured_order) WHERE status = 'active'`,
 		`CREATE INDEX IF NOT EXISTS idx_products_cover_image_id ON products (cover_image_id)`,
+		`CREATE TABLE IF NOT EXISTS product_images (
+			id TEXT PRIMARY KEY,
+			product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+			filename TEXT NOT NULL,
+			alt TEXT NOT NULL,
+			content_type TEXT NOT NULL,
+			data BYTEA NOT NULL,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`ALTER TABLE product_images DROP CONSTRAINT IF EXISTS product_images_product_id_filename_key`,
+		`CREATE INDEX IF NOT EXISTS idx_product_images_product_sort_order ON product_images (product_id, sort_order, filename)`,
 		`CREATE TABLE IF NOT EXISTS orders (
 			id TEXT PRIMARY KEY,
 			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -445,6 +459,8 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 
 func (p *PostgresDB) VerifyBlogSchema(ctx context.Context) error {
 	objects := []string{
+		"product_images",
+		"idx_product_images_product_sort_order",
 		"blog_posts",
 		"blog_categories",
 		"blog_images",
@@ -464,6 +480,7 @@ func (p *PostgresDB) VerifyBlogSchema(ctx context.Context) error {
 		}
 	}
 	columns := []struct{ table, column string }{
+		{"products", "has_jewelry_embroidery"},
 		{"blog_posts", "body_html_source"},
 		{"blog_posts", "body_json"},
 		{"blog_images", "width"},

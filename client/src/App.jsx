@@ -36,6 +36,7 @@ import { AppCard } from "./components/landing/AppCard";
 import { SiteNavbar } from "./components/layout/SiteNavbar";
 import { ProductCard } from "./components/product/ProductCard";
 import { ProductFilters } from "./components/product/ProductFilters";
+import { ProductGallery } from "./components/product/ProductGallery";
 import { MaterialPill } from "./components/ui/Badge";
 import { Button, ButtonLink } from "./components/ui/Button";
 import { SuccessToast } from "./components/ui/SuccessToast";
@@ -1824,6 +1825,11 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
     product.customizableSize ? "اندازه" : "",
     product.customizableMaterial ? "جنس" : "",
   ].filter(Boolean) : [];
+  const productImages = product?.images?.length
+    ? product.images
+    : product?.coverImageUrl
+      ? [{ id: product.coverImageId || "cover", url: product.coverImageUrl, sources: product.coverImageSources, alt: product.title }]
+      : [];
 
   usePageSEO({
     title: product ? product.seoTitle || `${product.title} | محصول قابل سفارش گلملو` : "محصول قابل سفارش گلملو",
@@ -1850,7 +1856,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
     "@id": `${SITE_URL}/products/${product.slug || id}#product`,
     name: product.title,
     description: product.description || product.shortDescription,
-    image: product.coverImageUrl ? [product.coverImageUrl] : [DEFAULT_SEO.image],
+    image: productImages.length ? productImages.map((image) => image.url) : [DEFAULT_SEO.image],
     url: `${SITE_URL}/products/${product.slug || id}`,
     category: product.category || "گل پارچه‌ای دست‌ساز",
     material: detailMaterials.length ? detailMaterials : undefined,
@@ -1866,6 +1872,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
       detailUseCases.length ? { "@type": "PropertyValue", name: "کاربردهای پیشنهادی", value: detailUseCases.join("، ") } : null,
       detailTechniques.length ? { "@type": "PropertyValue", name: "تکنیک", value: detailTechniques.join("، ") } : null,
       detailDiameter ? { "@type": "PropertyValue", name: "قطر", value: detailDiameter, unitCode: "CMT" } : null,
+      { "@type": "PropertyValue", name: "جواهردوزی", value: product.hasJewelryEmbroidery ? "دارد" : "ندارد" },
       product.preparationTime ? { "@type": "PropertyValue", name: "زمان آماده‌سازی", value: normalizePreparationTimeLabel(product.preparationTime) } : null,
       { "@type": "PropertyValue", name: "سفارشی‌سازی", value: customizationLabels.length ? customizationLabels.join("، ") : product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت" },
     ].filter(Boolean),
@@ -1895,6 +1902,11 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
           ...data.product,
           coverImageUrl: resolveApiURL(data.product?.coverImageUrl),
           coverImageSources: normalizeImageSources(data.product?.coverImageSources),
+          images: (data.product?.images || []).map((image) => ({
+            ...image,
+            url: resolveApiURL(image.url),
+            sources: normalizeImageSources(image.sources),
+          })),
         };
         setProduct(nextProduct);
         setRelatedProducts((listData.products || [])
@@ -1959,12 +1971,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
           <span aria-current="page">{product.title}</span>
         </nav>
         <section className="grid gap-8 rounded-[34px] border border-[#e8dfd5] bg-[#faf7f3] p-5 shadow-[0_24px_60px_rgba(85,63,45,0.06)] md:grid-cols-[0.95fr_1.05fr] md:p-8">
-          <div className="overflow-hidden rounded-[28px] bg-[#f2e9df]">
-            <picture>
-              {product.coverImageSources?.length ? <source type="image/webp" srcSet={responsiveSrcSet(product.coverImageSources)} sizes="(min-width: 768px) 48vw, 100vw" /> : null}
-              <img src={product.coverImageUrl} alt={product.title} className="aspect-square h-full w-full object-cover" />
-            </picture>
-          </div>
+          <ProductGallery images={productImages} title={product.title} />
           <div className="flex flex-col justify-center text-right">
             <p className="text-sm font-bold text-[#c08081]">{product.category || "محصول قابل سفارش"}</p>
             <h1 className="mt-3 text-4xl leading-tight text-[#4f433b] md:text-5xl">{product.title}</h1>
@@ -1978,6 +1985,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
                 ["کاربرد", detailUseCases.join("، ") || product.usageLabel || "سفارشی"],
                 ["تکنیک", detailTechniques.join("، ") || "در حال تکمیل"],
                 ["جنس", detailMaterials.join("، ") || "در حال تکمیل"],
+                ["جواهردوزی", product.hasJewelryEmbroidery ? "دارد" : "ندارد"],
                 ["رنگ", detailColors.join("، ") || "در حال تکمیل"],
                 ["اندازه", detailDiameter || "در حال تکمیل"],
                 ["سفارشی‌سازی", customizationLabels.length ? customizationLabels.join("، ") : product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت"],

@@ -250,7 +250,9 @@ func (h *Handler) metadataForPath(ctx context.Context, path string) (siteMetadat
 		if err != nil {
 			return serverErrorMetadata(baseURL, defaultImage), http.StatusInternalServerError
 		}
-		h.attachProductImage(ctx, &product)
+		if err := h.attachProductGallery(ctx, &product); err != nil {
+			return serverErrorMetadata(baseURL, defaultImage), http.StatusInternalServerError
+		}
 		meta.Title = firstNonEmpty(product.SEOTitle, product.Title+" | گلملو")
 		meta.Description = firstNonEmpty(product.SEODescription, product.ShortDescription, product.Description)
 		meta.Canonical = baseURL + "/products/" + url.PathEscape(product.Slug)
@@ -509,7 +511,17 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 		"url":         productURL, "category": product.Category,
 		"brand": map[string]any{"@type": "Brand", "name": "گلملو"},
 	}
-	if product.CoverImageURL != "" {
+	if len(product.Images) > 0 {
+		images := make([]string, 0, len(product.Images))
+		for _, image := range product.Images {
+			if image.URL != "" {
+				images = append(images, image.URL)
+			}
+		}
+		if len(images) > 0 {
+			schema["image"] = images
+		}
+	} else if product.CoverImageURL != "" {
 		schema["image"] = []string{product.CoverImageURL}
 	}
 	if values := labelsForKeys(product.Materials, productMaterialLabels); len(values) > 0 {
@@ -531,6 +543,11 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 	if product.DiameterCM != nil {
 		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "قطر", "value": formatDiameter(*product.DiameterCM), "unitCode": "CMT"})
 	}
+	jewelryEmbroideryLabel := "ندارد"
+	if product.HasJewelryEmbroidery {
+		jewelryEmbroideryLabel = "دارد"
+	}
+	properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "جواهردوزی", "value": jewelryEmbroideryLabel})
 	if len(properties) > 0 {
 		schema["additionalProperty"] = properties
 	}
@@ -576,6 +593,9 @@ func productTaxonomyLabels(product models.Product) []string {
 	values = append(values, labelsForKeys(product.UseCases, productUseCaseLabels)...)
 	values = append(values, labelsForKeys(product.Techniques, productTechniqueLabels)...)
 	values = append(values, labelsForKeys(product.Materials, productMaterialLabels)...)
+	if product.HasJewelryEmbroidery {
+		values = append(values, "دارای جواهردوزی")
+	}
 	if product.DiameterCM != nil {
 		values = append(values, formatDiameter(*product.DiameterCM))
 	}

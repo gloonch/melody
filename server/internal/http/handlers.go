@@ -50,6 +50,7 @@ const (
 	contactMessageMaxLength = 2000
 
 	projectImagesTable = "project_images"
+	productImagesTable = "product_images"
 	heroSlidesTable    = "hero_slides"
 	blogImagesTable    = "blog_images"
 )
@@ -109,6 +110,10 @@ type updateOrderStatusBody struct {
 
 type updateProductStatusBody struct {
 	Status string `json:"status" binding:"required,max=40"`
+}
+
+type reorderProductImagesBody struct {
+	ImageIDs []string `json:"imageIds" binding:"required"`
 }
 
 type addressBody struct {
@@ -1156,7 +1161,10 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
 		return
 	}
-	h.attachProductImage(ctx, &product)
+	if err := h.attachProductGallery(ctx, &product); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"product": product})
 }
@@ -1169,7 +1177,12 @@ func (h *Handler) ListAdminProducts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات انجام نشد."})
 		return
 	}
-	h.attachProductImages(ctx, products)
+	for index := range products {
+		if err := h.attachProductGallery(ctx, &products[index]); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصولات انجام نشد."})
+			return
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{"products": products})
 }
 
@@ -1185,8 +1198,180 @@ func (h *Handler) GetAdminProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
 		return
 	}
-	h.attachProductImage(ctx, &product)
+	if err := h.attachProductGallery(ctx, &product); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"product": product})
+}
+
+func (h *Handler) ListProductImages(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	product, err := h.products.GetProduct(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
+		return
+	}
+	if err := h.attachProductGallery(ctx, &product); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"images": product.Images, "coverImageId": product.CoverImageID})
+}
+
+func (h *Handler) UploadProductImages(c *gin.Context) {
+	if err := c.Request.ParseMultipartForm(128 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "فایل‌های تصویر معتبر نیستند."})
+		return
+	}
+	files := uploadedFiles(c.Request.MultipartForm)
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "حداقل یک تصویر انتخاب کنید."})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Minute)
+	defer cancel()
+	product, err := h.products.GetProduct(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
+		return
+	}
+	product, err = h.ensureProductCoverInGallery(ctx, product)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "آماده‌سازی تصویر فعلی محصول انجام نشد."})
+		return
+	}
+	existing, err := h.products.ListImages(ctx, product.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "آماده‌سازی آپلود انجام نشد."})
+		return
+	}
+	nextSortOrder := 0
+	for _, image := range existing {
+		if image.SortOrder >= nextSortOrder {
+			nextSortOrder = image.SortOrder + 1
+		}
+	}
+
+	uploaded := make([]models.ProductImage, 0, len(files))
+	for index, header := range files {
+		imageDoc, err := imageFromUploadHeader(header, fmt.Sprintf("%s - تصویر %d", product.Title, len(existing)+index+1), nextSortOrder+index, time.Now().UTC())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		image, err := h.products.CreateImage(ctx, models.ProductImage{
+			ID: imageDoc.ID, ProductID: product.ID, Filename: imageDoc.Filename, Alt: imageDoc.Alt,
+			ContentType: imageDoc.ContentType, Data: imageDoc.Data, SortOrder: imageDoc.SortOrder, CreatedAt: imageDoc.CreatedAt,
+		})
+		if err != nil {
+			if isUniqueViolation(err) {
+				c.JSON(http.StatusConflict, gin.H{"error": "تصویر تکراری است."})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ذخیره تصاویر محصول انجام نشد."})
+			return
+		}
+		image.URL = h.productImageURL(product.ID, image.ID)
+		variants, err := h.variants.Replace(ctx, productImagesTable, image.ID, image.ContentType, image.Data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "تصویر ذخیره شد اما ساخت نسخه‌های بهینه انجام نشد."})
+			return
+		}
+		image.Sources = h.variantSources(variants)
+		uploaded = append(uploaded, image)
+	}
+	if product.CoverImageID == "" && len(uploaded) > 0 {
+		product.CoverImageID = uploaded[0].ID
+		if _, err := h.products.UpdateProduct(ctx, product.ID, product); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "انتخاب تصویر اصلی انجام نشد."})
+			return
+		}
+	}
+	c.JSON(http.StatusCreated, gin.H{"images": uploaded, "coverImageId": product.CoverImageID})
+}
+
+func (h *Handler) ReorderProductImages(c *gin.Context) {
+	var body reorderProductImagesBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ترتیب تصاویر معتبر نیست."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	productID := strings.TrimSpace(c.Param("id"))
+	if _, err := h.products.GetProduct(ctx, productID, true); errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
+		return
+	}
+	if err := h.products.ReorderImages(ctx, productID, body.ImageIDs); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "تصویر محصول پیدا نشد."})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) DeleteProductImage(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	productID := strings.TrimSpace(c.Param("id"))
+	imageID := strings.TrimSpace(c.Param("imageId"))
+	if err := h.variants.DeleteForSource(ctx, productImagesTable, imageID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف نسخه‌های تصویر محصول انجام نشد."})
+		return
+	}
+	if err := h.products.DeleteImage(ctx, productID, imageID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "تصویر محصول پیدا نشد."})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف تصویر محصول انجام نشد."})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) GetProductImageContent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+	product, err := h.products.GetProduct(ctx, strings.TrimSpace(c.Param("id")), true)
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصول انجام نشد."})
+		return
+	}
+	image, err := h.products.GetImageContent(ctx, product.ID, strings.TrimSpace(c.Param("imageId")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "تصویر محصول پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصویر محصول انجام نشد."})
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", image.Filename))
+	c.Data(http.StatusOK, image.ContentType, image.Data)
 }
 
 func (h *Handler) CreateAdminProduct(c *gin.Context) {
@@ -1202,7 +1387,10 @@ func (h *Handler) CreateAdminProduct(c *gin.Context) {
 		h.productWriteError(c, err)
 		return
 	}
-	h.attachProductImage(ctx, &created)
+	if err := h.attachProductGallery(ctx, &created); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{"product": created})
 }
 
@@ -1219,7 +1407,10 @@ func (h *Handler) UpdateAdminProduct(c *gin.Context) {
 		h.productWriteError(c, err)
 		return
 	}
-	h.attachProductImage(ctx, &updated)
+	if err := h.attachProductGallery(ctx, &updated); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"product": updated})
 }
 
@@ -2158,7 +2349,7 @@ func (h *Handler) GetImageVariantContent(c *gin.Context) {
 func (h *Handler) RebuildImageVariants(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
 	defer cancel()
-	tables := []string{projectImagesTable, heroSlidesTable, "course_images", blogImagesTable}
+	tables := []string{projectImagesTable, productImagesTable, heroSlidesTable, "course_images", blogImagesTable}
 	count := 0
 	for _, table := range tables {
 		rows, err := h.db.Pool().Query(ctx, fmt.Sprintf("SELECT id, content_type, data FROM %s ORDER BY created_at ASC", table))
@@ -2210,16 +2401,38 @@ func (h *Handler) attachProductImages(ctx context.Context, products []models.Pro
 			imageIDs = append(imageIDs, product.CoverImageID)
 		}
 	}
-	variantsByImage, err := h.variants.ListForSources(ctx, projectImagesTable, imageIDs)
+	productImageOwners := make(map[string]string, len(imageIDs))
+	if len(imageIDs) > 0 {
+		rows, err := h.db.Pool().Query(ctx, `SELECT id, product_id FROM product_images WHERE id = ANY($1)`, imageIDs)
+		if err == nil {
+			for rows.Next() {
+				var imageID, productID string
+				if rows.Scan(&imageID, &productID) == nil {
+					productImageOwners[imageID] = productID
+				}
+			}
+			rows.Close()
+		}
+	}
+	projectVariants, err := h.variants.ListForSources(ctx, projectImagesTable, imageIDs)
 	if err != nil {
-		variantsByImage = map[string][]models.ImageVariant{}
+		projectVariants = map[string][]models.ImageVariant{}
+	}
+	productVariants, err := h.variants.ListForSources(ctx, productImagesTable, imageIDs)
+	if err != nil {
+		productVariants = map[string][]models.ImageVariant{}
 	}
 	for index := range products {
 		if products[index].CoverImageID == "" {
 			continue
 		}
-		products[index].CoverImageURL = h.projectImageURL(products[index].CoverImageID)
-		products[index].CoverImageSources = h.variantSources(variantsByImage[products[index].CoverImageID])
+		if ownerID, ok := productImageOwners[products[index].CoverImageID]; ok && ownerID == products[index].ID {
+			products[index].CoverImageURL = h.productImageURL(products[index].ID, products[index].CoverImageID)
+			products[index].CoverImageSources = h.variantSources(productVariants[products[index].CoverImageID])
+		} else {
+			products[index].CoverImageURL = h.projectImageURL(products[index].CoverImageID)
+			products[index].CoverImageSources = h.variantSources(projectVariants[products[index].CoverImageID])
+		}
 	}
 }
 
@@ -2227,8 +2440,112 @@ func (h *Handler) attachProductImage(ctx context.Context, product *models.Produc
 	if product.CoverImageID == "" {
 		return
 	}
+	images, err := h.products.ListImages(ctx, product.ID)
+	if err == nil {
+		for _, image := range images {
+			if image.ID == product.CoverImageID {
+				product.CoverImageURL = h.productImageURL(product.ID, image.ID)
+				product.CoverImageSources = h.imageSources(ctx, productImagesTable, image.ID)
+				return
+			}
+		}
+	}
 	product.CoverImageURL = h.projectImageURL(product.CoverImageID)
 	product.CoverImageSources = h.imageSources(ctx, projectImagesTable, product.CoverImageID)
+}
+
+func (h *Handler) ensureProductCoverInGallery(ctx context.Context, product models.Product) (models.Product, error) {
+	if product.CoverImageID == "" {
+		return product, nil
+	}
+	images, err := h.products.ListImages(ctx, product.ID)
+	if err != nil {
+		return models.Product{}, err
+	}
+	nextSortOrder := 0
+	for _, image := range images {
+		if image.ID == product.CoverImageID {
+			return product, nil
+		}
+		if image.SortOrder >= nextSortOrder {
+			nextSortOrder = image.SortOrder + 1
+		}
+	}
+
+	var legacy models.ProductImage
+	err = h.db.Pool().QueryRow(ctx,
+		`SELECT filename, alt, content_type, data FROM project_images WHERE id = $1`,
+		product.CoverImageID,
+	).Scan(&legacy.Filename, &legacy.Alt, &legacy.ContentType, &legacy.Data)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return product, nil
+	}
+	if err != nil {
+		return models.Product{}, err
+	}
+	legacy.ID = generateID()
+	legacy.ProductID = product.ID
+	legacy.SortOrder = nextSortOrder
+	legacy.CreatedAt = time.Now().UTC()
+	if strings.TrimSpace(legacy.Alt) == "" {
+		legacy.Alt = product.Title
+	}
+	legacy, err = h.products.CreateImage(ctx, legacy)
+	if err != nil {
+		return models.Product{}, err
+	}
+	if _, err = h.variants.Replace(ctx, productImagesTable, legacy.ID, legacy.ContentType, legacy.Data); err != nil {
+		_ = h.products.DeleteImage(ctx, product.ID, legacy.ID)
+		return models.Product{}, err
+	}
+
+	product.CoverImageID = legacy.ID
+	updated, err := h.products.UpdateProduct(ctx, product.ID, product)
+	if err != nil {
+		_ = h.variants.DeleteForSource(ctx, productImagesTable, legacy.ID)
+		_ = h.products.DeleteImage(ctx, product.ID, legacy.ID)
+		return models.Product{}, err
+	}
+	return updated, nil
+}
+
+func (h *Handler) attachProductGallery(ctx context.Context, product *models.Product) error {
+	images, err := h.products.ListImages(ctx, product.ID)
+	if err != nil {
+		return err
+	}
+	for index := range images {
+		images[index].URL = h.productImageURL(product.ID, images[index].ID)
+		images[index].Sources = h.imageSources(ctx, productImagesTable, images[index].ID)
+	}
+	h.attachProductImage(ctx, product)
+
+	ordered := make([]models.ProductImage, 0, len(images)+1)
+	coverInGallery := false
+	for _, image := range images {
+		if image.ID == product.CoverImageID {
+			ordered = append(ordered, image)
+			coverInGallery = true
+			break
+		}
+	}
+	if !coverInGallery && product.CoverImageURL != "" {
+		ordered = append(ordered, models.ProductImage{
+			ID: product.CoverImageID, ProductID: product.ID, Alt: product.Title,
+			URL: product.CoverImageURL, Sources: product.CoverImageSources, SortOrder: -1,
+		})
+	}
+	for _, image := range images {
+		if image.ID != product.CoverImageID {
+			ordered = append(ordered, image)
+		}
+	}
+	product.Images = ordered
+	return nil
+}
+
+func (h *Handler) productImageURL(productID, imageID string) string {
+	return fmt.Sprintf("%s/api/v1/products/%s/images/%s/content", strings.TrimRight(h.cfg.App.BaseURL, "/"), url.PathEscape(productID), url.PathEscape(imageID))
 }
 
 func productSnapshot(product models.Product) models.ProductSnapshot {

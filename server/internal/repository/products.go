@@ -30,7 +30,7 @@ var ErrFeaturedLimit = errors.New("at most three products can be featured")
 var ErrProductSlugTaken = errors.New("product slug is already in use")
 
 const productColumns = `id, slug, title, short_description, description, cover_image_id, category, usage_label,
-	use_cases, techniques, materials, colors, diameter_cm, is_customizable, customizable_color,
+	use_cases, techniques, materials, colors, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
 	customizable_size, customizable_material, price_label, base_price_rial, price_currency, availability,
 	preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
 	status, sort_order, created_at, updated_at`
@@ -217,14 +217,14 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, product models.Pr
 		ctx,
 		`INSERT INTO products (
 			id, slug, title, short_description, description, cover_image_id, category, usage_label,
-			use_cases, techniques, materials, colors, diameter_cm, is_customizable, customizable_color,
+			use_cases, techniques, materials, colors, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
 			customizable_size, customizable_material, price_label, base_price_rial, price_currency, availability,
 			preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
 			status, sort_order, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)`,
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)`,
 		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
 		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.UseCases),
-		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM,
+		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM, product.HasJewelryEmbroidery,
 		product.IsCustomizable, product.CustomizableColor, product.CustomizableSize, product.CustomizableMaterial,
 		product.PriceLabel, product.BasePriceRial,
 		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
@@ -279,15 +279,15 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, id string, produc
 		`UPDATE products SET
 			slug=$2, title=$3, short_description=$4, description=$5, cover_image_id=$6,
 			category=$7, usage_label=$8, use_cases=$9, techniques=$10, materials=$11, colors=$12,
-			diameter_cm=$13, is_customizable=$14, customizable_color=$15, customizable_size=$16,
-			customizable_material=$17, price_label=$18, base_price_rial=$19, price_currency=$20,
-			availability=$21, preparation_time=$22, preparation_days=$23, is_featured=$24,
-			featured_order=$25, seo_title=$26, seo_description=$27, status=$28, sort_order=$29, updated_at=$30
+			diameter_cm=$13, has_jewelry_embroidery=$14, is_customizable=$15, customizable_color=$16, customizable_size=$17,
+			customizable_material=$18, price_label=$19, base_price_rial=$20, price_currency=$21,
+			availability=$22, preparation_time=$23, preparation_days=$24, is_featured=$25,
+			featured_order=$26, seo_title=$27, seo_description=$28, status=$29, sort_order=$30, updated_at=$31
 		 WHERE id=$1
 		 RETURNING `+productColumns,
 		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
 		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.UseCases),
-		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM,
+		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM, product.HasJewelryEmbroidery,
 		product.IsCustomizable, product.CustomizableColor, product.CustomizableSize, product.CustomizableMaterial,
 		product.PriceLabel, product.BasePriceRial,
 		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
@@ -317,6 +317,122 @@ func (r *ProductRepository) UpdateStatus(ctx context.Context, id, status string)
 		product.IsFeatured = false
 	}
 	return r.UpdateProduct(ctx, id, product)
+}
+
+func (r *ProductRepository) ListImages(ctx context.Context, productID string) ([]models.ProductImage, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, product_id, filename, alt, content_type, sort_order, created_at
+		 FROM product_images
+		 WHERE product_id = $1
+		 ORDER BY sort_order ASC, created_at ASC, filename ASC`,
+		strings.TrimSpace(productID),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	images := make([]models.ProductImage, 0)
+	for rows.Next() {
+		var image models.ProductImage
+		if err := rows.Scan(&image.ID, &image.ProductID, &image.Filename, &image.Alt, &image.ContentType, &image.SortOrder, &image.CreatedAt); err != nil {
+			return nil, err
+		}
+		images = append(images, image)
+	}
+	return images, rows.Err()
+}
+
+func (r *ProductRepository) CreateImage(ctx context.Context, image models.ProductImage) (models.ProductImage, error) {
+	if image.ID == "" {
+		image.ID = generateID()
+	}
+	if image.CreatedAt.IsZero() {
+		image.CreatedAt = time.Now().UTC()
+	}
+	if image.SortOrder < 0 {
+		image.SortOrder = 0
+	}
+	_, err := r.pool.Exec(ctx,
+		`INSERT INTO product_images (id, product_id, filename, alt, content_type, data, sort_order, created_at)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+		image.ID, image.ProductID, image.Filename, image.Alt, image.ContentType, image.Data, image.SortOrder, image.CreatedAt,
+	)
+	return image, err
+}
+
+func (r *ProductRepository) GetImageContent(ctx context.Context, productID, imageID string) (models.ProductImage, error) {
+	var image models.ProductImage
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, product_id, filename, alt, content_type, data, sort_order, created_at
+		 FROM product_images WHERE product_id = $1 AND id = $2`,
+		strings.TrimSpace(productID), strings.TrimSpace(imageID),
+	).Scan(&image.ID, &image.ProductID, &image.Filename, &image.Alt, &image.ContentType, &image.Data, &image.SortOrder, &image.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.ProductImage{}, ErrNotFound
+	}
+	return image, err
+}
+
+func (r *ProductRepository) DeleteImage(ctx context.Context, productID, imageID string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, `DELETE FROM product_images WHERE product_id = $1 AND id = $2`, strings.TrimSpace(productID), strings.TrimSpace(imageID))
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	if _, err := tx.Exec(ctx,
+		`UPDATE products SET cover_image_id = COALESCE((
+			SELECT id FROM product_images WHERE product_id = $1 ORDER BY sort_order ASC, created_at ASC LIMIT 1
+		), ''), updated_at = NOW()
+		WHERE id = $1 AND cover_image_id = $2`,
+		strings.TrimSpace(productID), strings.TrimSpace(imageID),
+	); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func (r *ProductRepository) ReorderImages(ctx context.Context, productID string, imageIDs []string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var count int
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*) FROM product_images WHERE product_id = $1`, strings.TrimSpace(productID)).Scan(&count); err != nil {
+		return err
+	}
+	if count != len(imageIDs) {
+		return errors.New("ترتیب تصاویر با گالری محصول هماهنگ نیست")
+	}
+	seen := make(map[string]struct{}, len(imageIDs))
+	for index, imageID := range imageIDs {
+		imageID = strings.TrimSpace(imageID)
+		if imageID == "" {
+			return errors.New("شناسه تصویر معتبر نیست")
+		}
+		if _, exists := seen[imageID]; exists {
+			return errors.New("تصویر تکراری در ترتیب گالری وجود دارد")
+		}
+		seen[imageID] = struct{}{}
+		result, err := tx.Exec(ctx, `UPDATE product_images SET sort_order = $3 WHERE product_id = $1 AND id = $2`, strings.TrimSpace(productID), imageID, index)
+		if err != nil {
+			return err
+		}
+		if result.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+	}
+	return tx.Commit(ctx)
 }
 
 func ValidateProduct(product models.Product) error {
@@ -419,7 +535,7 @@ func scanProduct(scanner interface{ Scan(dest ...any) error }) (models.Product, 
 	err := scanner.Scan(
 		&product.ID, &product.Slug, &product.Title, &product.ShortDescription, &product.Description,
 		&product.CoverImageID, &product.Category, &product.UsageLabel, &useCasesJSON, &techniquesJSON,
-		&materialsJSON, &colorsJSON, &product.DiameterCM, &product.IsCustomizable, &product.CustomizableColor,
+		&materialsJSON, &colorsJSON, &product.DiameterCM, &product.HasJewelryEmbroidery, &product.IsCustomizable, &product.CustomizableColor,
 		&product.CustomizableSize, &product.CustomizableMaterial, &product.PriceLabel, &product.BasePriceRial, &product.PriceCurrency,
 		&product.Availability, &product.PreparationTime, &product.PreparationDays, &product.IsFeatured,
 		&product.FeaturedOrder, &product.SEOTitle, &product.SEODescription, &product.Status,
