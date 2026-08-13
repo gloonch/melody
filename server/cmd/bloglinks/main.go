@@ -104,14 +104,14 @@ func main() {
 		if len(sourceRewrites) == 0 {
 			bodySource = blog.BodyHTMLSource
 		}
-		if len(bodyRewrites) == 0 && len(sourceRewrites) == 0 && ctaURL == blog.CTAURL {
-			continue
-		}
 		validations, err := blogcontent.ValidateProductLinks(bodyHTML, products)
 		if err != nil {
 			log.Fatalf("validate %s body links: %v", blog.Slug, err)
 		}
 		filteredLinkCount += len(validations)
+		if len(bodyRewrites) == 0 && len(sourceRewrites) == 0 && ctaURL == blog.CTAURL {
+			continue
+		}
 
 		result, err := tx.Exec(ctx, `UPDATE blog_posts
 			SET body_html=$2, body_html_source=$3, body_json='{}'::jsonb, cta_url=$4
