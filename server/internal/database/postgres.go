@@ -154,6 +154,10 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_project_images_sort_order ON project_images (sort_order, filename)`,
+		`CREATE TABLE IF NOT EXISTS product_seed_tombstones (
+			project_image_id TEXT PRIMARY KEY REFERENCES project_images(id) ON DELETE CASCADE,
+			deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
 		`CREATE TABLE IF NOT EXISTS hero_slides (
 			id TEXT PRIMARY KEY,
 			filename TEXT NOT NULL UNIQUE,
@@ -473,6 +477,7 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 
 func (p *PostgresDB) VerifyBlogSchema(ctx context.Context) error {
 	objects := []string{
+		"product_seed_tombstones",
 		"product_images",
 		"idx_product_images_product_sort_order",
 		"blog_posts",

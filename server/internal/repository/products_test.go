@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"testing"
 
 	"melody-server/internal/models"
@@ -111,6 +112,12 @@ func TestValidateProductRejectsNonPositiveDiameter(t *testing.T) {
 	product.DiameterCM = &diameter
 	if err := ValidateProduct(product); err == nil {
 		t.Fatal("expected non-positive diameter to be rejected")
+	}
+}
+
+func TestSeedQueryExcludesDeletedProjectImages(t *testing.T) {
+	if !strings.Contains(seedProductsQuery, "product_seed_tombstones") {
+		t.Fatal("product seed query must exclude intentionally deleted project images")
 	}
 }
 

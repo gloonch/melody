@@ -65,6 +65,12 @@ type ProductRepository struct {
 	pool *pgxpool.Pool
 }
 
+const seedProductsQuery = `SELECT id, alt, sort_order
+	FROM project_images
+	WHERE id NOT IN (SELECT cover_image_id FROM products WHERE cover_image_id <> '')
+	  AND id NOT IN (SELECT project_image_id FROM product_seed_tombstones)
+	ORDER BY sort_order ASC, filename ASC`
+
 func NewProductRepository(pool *pgxpool.Pool) *ProductRepository {
 	return &ProductRepository{pool: pool}
 }
@@ -72,10 +78,7 @@ func NewProductRepository(pool *pgxpool.Pool) *ProductRepository {
 func (r *ProductRepository) SeedFromProjectImages(ctx context.Context) error {
 	rows, err := r.pool.Query(
 		ctx,
-		`SELECT id, alt, sort_order
-		 FROM project_images
-		 WHERE id NOT IN (SELECT cover_image_id FROM products WHERE cover_image_id <> '')
-		 ORDER BY sort_order ASC, filename ASC`,
+		seedProductsQuery,
 	)
 	if err != nil {
 		return err
@@ -336,8 +339,8 @@ func (r *ProductRepository) DeleteProduct(ctx context.Context, id string) error 
 	}
 	defer tx.Rollback(ctx)
 
-	var productID string
-	if err := tx.QueryRow(ctx, `SELECT id FROM products WHERE id = $1 FOR UPDATE`, id).Scan(&productID); errors.Is(err, pgx.ErrNoRows) {
+	var productID, coverImageID string
+	if err := tx.QueryRow(ctx, `SELECT id, cover_image_id FROM products WHERE id = $1 FOR UPDATE`, id).Scan(&productID, &coverImageID); errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	} else if err != nil {
 		return err
@@ -349,6 +352,15 @@ func (r *ProductRepository) DeleteProduct(ctx context.Context, id string) error 
 	}
 	if hasOrders {
 		return ErrProductHasOrders
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO product_seed_tombstones (project_image_id)
+		SELECT image.id
+		FROM project_images image
+		WHERE image.id = $2 OR ('product-' || image.id) = $1
+		ON CONFLICT (project_image_id) DO NOTHING`, productID, coverImageID); err != nil {
+		return err
 	}
 
 	if _, err := tx.Exec(ctx, `
