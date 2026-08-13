@@ -31,7 +31,7 @@ var ErrProductSlugTaken = errors.New("product slug is already in use")
 var ErrProductHasOrders = errors.New("product has existing orders")
 
 const productColumns = `id, slug, title, short_description, description, cover_image_id, category, usage_label,
-	use_cases, techniques, materials, colors, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
+	use_cases, techniques, materials, colors, features, attachment_types, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
 	customizable_size, customizable_material, price_label, base_price_rial, price_currency, availability,
 	preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
 	status, sort_order, created_at, updated_at`
@@ -51,6 +51,14 @@ var validProductMaterials = map[string]struct{}{
 var validProductColors = map[string]struct{}{
 	"white": {}, "black": {}, "cream": {}, "ivory": {}, "pink": {}, "red": {}, "blue": {}, "green": {},
 	"gold": {}, "silver": {}, "purple": {}, "multicolor": {},
+}
+
+var validProductFeatures = map[string]struct{}{
+	"lightweight": {}, "detachable": {},
+}
+
+var validProductAttachmentTypes = map[string]struct{}{
+	"pin": {}, "clip": {}, "sewn": {},
 }
 
 type ProductRepository struct {
@@ -218,14 +226,14 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, product models.Pr
 		ctx,
 		`INSERT INTO products (
 			id, slug, title, short_description, description, cover_image_id, category, usage_label,
-			use_cases, techniques, materials, colors, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
+			use_cases, techniques, materials, colors, features, attachment_types, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
 			customizable_size, customizable_material, price_label, base_price_rial, price_currency, availability,
 			preparation_time, preparation_days, is_featured, featured_order, seo_title, seo_description,
 			status, sort_order, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)`,
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34)`,
 		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
 		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.UseCases),
-		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM, product.HasJewelryEmbroidery,
+		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), mustJSON(product.Features), mustJSON(product.AttachmentTypes), product.DiameterCM, product.HasJewelryEmbroidery,
 		product.IsCustomizable, product.CustomizableColor, product.CustomizableSize, product.CustomizableMaterial,
 		product.PriceLabel, product.BasePriceRial,
 		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
@@ -280,15 +288,15 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, id string, produc
 		`UPDATE products SET
 			slug=$2, title=$3, short_description=$4, description=$5, cover_image_id=$6,
 			category=$7, usage_label=$8, use_cases=$9, techniques=$10, materials=$11, colors=$12,
-			diameter_cm=$13, has_jewelry_embroidery=$14, is_customizable=$15, customizable_color=$16, customizable_size=$17,
-			customizable_material=$18, price_label=$19, base_price_rial=$20, price_currency=$21,
-			availability=$22, preparation_time=$23, preparation_days=$24, is_featured=$25,
-			featured_order=$26, seo_title=$27, seo_description=$28, status=$29, sort_order=$30, updated_at=$31
+			features=$13, attachment_types=$14, diameter_cm=$15, has_jewelry_embroidery=$16, is_customizable=$17,
+			customizable_color=$18, customizable_size=$19, customizable_material=$20, price_label=$21,
+			base_price_rial=$22, price_currency=$23, availability=$24, preparation_time=$25, preparation_days=$26,
+			is_featured=$27, featured_order=$28, seo_title=$29, seo_description=$30, status=$31, sort_order=$32, updated_at=$33
 		 WHERE id=$1
 		 RETURNING `+productColumns,
 		product.ID, product.Slug, product.Title, product.ShortDescription, product.Description,
 		product.CoverImageID, product.Category, product.UsageLabel, mustJSON(product.UseCases),
-		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), product.DiameterCM, product.HasJewelryEmbroidery,
+		mustJSON(product.Techniques), mustJSON(product.Materials), mustJSON(product.Colors), mustJSON(product.Features), mustJSON(product.AttachmentTypes), product.DiameterCM, product.HasJewelryEmbroidery,
 		product.IsCustomizable, product.CustomizableColor, product.CustomizableSize, product.CustomizableMaterial,
 		product.PriceLabel, product.BasePriceRial,
 		product.PriceCurrency, product.Availability, product.PreparationTime, product.PreparationDays,
@@ -500,6 +508,12 @@ func ValidateProduct(product models.Product) error {
 	if err := validateControlledValues(product.Colors, validProductColors, "رنگ"); err != nil {
 		return err
 	}
+	if err := validateControlledValues(product.Features, validProductFeatures, "ویژگی"); err != nil {
+		return err
+	}
+	if err := validateControlledValues(product.AttachmentTypes, validProductAttachmentTypes, "نوع اتصال"); err != nil {
+		return err
+	}
 	if product.PriceCurrency != "IRR" {
 		return errors.New("واحد قیمت محصول باید ریال باشد")
 	}
@@ -568,11 +582,13 @@ func scanProduct(scanner interface{ Scan(dest ...any) error }) (models.Product, 
 	var colorsJSON []byte
 	var useCasesJSON []byte
 	var techniquesJSON []byte
+	var featuresJSON []byte
+	var attachmentTypesJSON []byte
 
 	err := scanner.Scan(
 		&product.ID, &product.Slug, &product.Title, &product.ShortDescription, &product.Description,
 		&product.CoverImageID, &product.Category, &product.UsageLabel, &useCasesJSON, &techniquesJSON,
-		&materialsJSON, &colorsJSON, &product.DiameterCM, &product.HasJewelryEmbroidery, &product.IsCustomizable, &product.CustomizableColor,
+		&materialsJSON, &colorsJSON, &featuresJSON, &attachmentTypesJSON, &product.DiameterCM, &product.HasJewelryEmbroidery, &product.IsCustomizable, &product.CustomizableColor,
 		&product.CustomizableSize, &product.CustomizableMaterial, &product.PriceLabel, &product.BasePriceRial, &product.PriceCurrency,
 		&product.Availability, &product.PreparationTime, &product.PreparationDays, &product.IsFeatured,
 		&product.FeaturedOrder, &product.SEOTitle, &product.SEODescription, &product.Status,
@@ -591,6 +607,12 @@ func scanProduct(scanner interface{ Scan(dest ...any) error }) (models.Product, 
 		return models.Product{}, err
 	}
 	if err := json.Unmarshal(colorsJSON, &product.Colors); err != nil {
+		return models.Product{}, err
+	}
+	if err := json.Unmarshal(featuresJSON, &product.Features); err != nil {
+		return models.Product{}, err
+	}
+	if err := json.Unmarshal(attachmentTypesJSON, &product.AttachmentTypes); err != nil {
 		return models.Product{}, err
 	}
 	return product, nil
@@ -646,10 +668,18 @@ func normalizeProduct(product *models.Product) {
 	if product.Techniques == nil {
 		product.Techniques = []string{}
 	}
+	if product.Features == nil {
+		product.Features = []string{}
+	}
+	if product.AttachmentTypes == nil {
+		product.AttachmentTypes = []string{}
+	}
 	product.UseCases = uniqueStrings(product.UseCases)
 	product.Techniques = uniqueStrings(product.Techniques)
 	product.Materials = uniqueStrings(product.Materials)
 	product.Colors = uniqueStrings(product.Colors)
+	product.Features = uniqueStrings(product.Features)
+	product.AttachmentTypes = uniqueStrings(product.AttachmentTypes)
 	if product.CustomizableColor || product.CustomizableSize || product.CustomizableMaterial {
 		product.IsCustomizable = true
 	}

@@ -73,6 +73,8 @@ type Product struct {
 	Techniques           []string       `json:"techniques" db:"techniques"`
 	Materials            []string       `json:"materials" db:"materials"`
 	Colors               []string       `json:"colors" db:"colors"`
+	Features             []string       `json:"features" db:"features"`
+	AttachmentTypes      []string       `json:"attachmentTypes" db:"attachment_types"`
 	DiameterCM           *float64       `json:"diameterCm,omitempty" db:"diameter_cm"`
 	HasJewelryEmbroidery bool           `json:"hasJewelryEmbroidery" db:"has_jewelry_embroidery"`
 	IsCustomizable       bool           `json:"isCustomizable" db:"is_customizable"`

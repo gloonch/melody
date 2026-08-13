@@ -177,6 +177,8 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			techniques JSONB NOT NULL DEFAULT '[]'::jsonb,
 			materials JSONB NOT NULL DEFAULT '[]'::jsonb,
 			colors JSONB NOT NULL DEFAULT '[]'::jsonb,
+			features JSONB NOT NULL DEFAULT '[]'::jsonb,
+			attachment_types JSONB NOT NULL DEFAULT '[]'::jsonb,
 			diameter_cm DOUBLE PRECISION,
 			has_jewelry_embroidery BOOLEAN NOT NULL DEFAULT FALSE,
 			is_customizable BOOLEAN NOT NULL DEFAULT TRUE,
@@ -208,11 +210,23 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_description TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS use_cases JSONB NOT NULL DEFAULT '[]'::jsonb`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS techniques JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS features JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE products ADD COLUMN IF NOT EXISTS attachment_types JSONB NOT NULL DEFAULT '[]'::jsonb`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS diameter_cm DOUBLE PRECISION`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS has_jewelry_embroidery BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_color BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_size BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE products ADD COLUMN IF NOT EXISTS customizable_material BOOLEAN NOT NULL DEFAULT FALSE`,
+		`WITH migration AS (
+			INSERT INTO schema_migrations(version) VALUES ('20260813_product_filters_v1')
+			ON CONFLICT (version) DO NOTHING
+			RETURNING version
+		)
+		UPDATE products
+		SET attachment_types='["pin"]'::jsonb
+		WHERE EXISTS (SELECT 1 FROM migration)
+		  AND attachment_types='[]'::jsonb
+		  AND (title LIKE '%گل سینه%' OR title LIKE '%گل‌سینه%')`,
 		`CREATE TABLE IF NOT EXISTS product_slug_history (
 			product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
 			slug TEXT PRIMARY KEY,
@@ -481,6 +495,8 @@ func (p *PostgresDB) VerifyBlogSchema(ctx context.Context) error {
 	}
 	columns := []struct{ table, column string }{
 		{"products", "has_jewelry_embroidery"},
+		{"products", "features"},
+		{"products", "attachment_types"},
 		{"blog_posts", "body_html_source"},
 		{"blog_posts", "body_json"},
 		{"blog_images", "width"},

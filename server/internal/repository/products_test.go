@@ -73,11 +73,26 @@ func TestValidateProductAcceptsStructuredMetadata(t *testing.T) {
 	product.Techniques = []string{"kerisheh", "three_dimensional"}
 	product.Materials = []string{"satin", "organza"}
 	product.Colors = []string{"ivory", "pink"}
+	product.Features = []string{"lightweight", "detachable"}
+	product.AttachmentTypes = []string{"pin", "sewn"}
 	product.DiameterCM = &diameter
 	product.CustomizableColor = true
 	product.CustomizableSize = true
 	if err := ValidateProduct(product); err != nil {
 		t.Fatalf("expected structured product metadata to be valid, got %v", err)
+	}
+}
+
+func TestValidateProductRejectsUnknownFeatureAndAttachment(t *testing.T) {
+	product := validActiveProduct()
+	product.Features = []string{"washable"}
+	if err := ValidateProduct(product); err == nil {
+		t.Fatal("expected an unknown product feature to be rejected")
+	}
+	product.Features = nil
+	product.AttachmentTypes = []string{"magnet"}
+	if err := ValidateProduct(product); err == nil {
+		t.Fatal("expected an unknown attachment type to be rejected")
 	}
 }
 

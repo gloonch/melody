@@ -1588,7 +1588,7 @@ function ProductsPage({ authStatus = "guest", user = null }) {
 
   usePageSEO({
     title: "گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی",
-    description: "خرید و سفارش گل پارچه‌ای دست‌ساز برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو؛ با امکان انتخاب کاربرد، تکنیک، جنس، رنگ و اندازه.",
+    description: "خرید و سفارش گل پارچه‌ای دست‌ساز برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو؛ با فیلتر کاربرد، تکنیک، جنس، اندازه، ویژگی و نوع اتصال.",
     url: `${SITE_URL}/products`,
   });
   useJsonLd("golmelo-breadcrumb-jsonld", {
@@ -1676,7 +1676,7 @@ function ProductsPage({ authStatus = "guest", user = null }) {
         <div className="mx-auto mb-10 max-w-4xl text-center">
           <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1>
           <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#75655a]">
-            گل‌های پارچه‌ای گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو ببینید و بر اساس کاربرد، تکنیک، جنس، رنگ و اندازه انتخاب کنید.
+            گل‌های پارچه‌ای گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو ببینید و بر اساس کاربرد، تکنیک، جنس، اندازه، ویژگی و نوع اتصال انتخاب کنید.
           </p>
         </div>
 
@@ -1819,6 +1819,8 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
   const detailTechniques = productLabels(product, "techniques");
   const detailMaterials = productLabels(product, "materials");
   const detailColors = productLabels(product, "colors");
+  const detailFeatures = productLabels(product, "features");
+  const detailAttachmentTypes = productLabels(product, "attachmentTypes");
   const detailDiameter = formatProductDiameter(product?.diameterCm);
   const customizationLabels = product ? [
     product.customizableColor ? "رنگ" : "",
@@ -1871,6 +1873,8 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
       !detailUseCases.length && product.usageLabel ? { "@type": "PropertyValue", name: "کاربرد", value: product.usageLabel } : null,
       detailUseCases.length ? { "@type": "PropertyValue", name: "کاربردهای پیشنهادی", value: detailUseCases.join("، ") } : null,
       detailTechniques.length ? { "@type": "PropertyValue", name: "تکنیک", value: detailTechniques.join("، ") } : null,
+      detailFeatures.length ? { "@type": "PropertyValue", name: "ویژگی", value: detailFeatures.join("، ") } : null,
+      detailAttachmentTypes.length ? { "@type": "PropertyValue", name: "نوع اتصال", value: detailAttachmentTypes.join("، ") } : null,
       detailDiameter ? { "@type": "PropertyValue", name: "قطر", value: detailDiameter, unitCode: "CMT" } : null,
       { "@type": "PropertyValue", name: "جواهردوزی", value: product.hasJewelryEmbroidery ? "دارد" : "ندارد" },
       product.preparationTime ? { "@type": "PropertyValue", name: "زمان آماده‌سازی", value: normalizePreparationTimeLabel(product.preparationTime) } : null,
@@ -1985,6 +1989,8 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
                 ["کاربرد", detailUseCases.join("، ") || product.usageLabel || "سفارشی"],
                 ["تکنیک", detailTechniques.join("، ") || "در حال تکمیل"],
                 ["جنس", detailMaterials.join("، ") || "در حال تکمیل"],
+                ["ویژگی", detailFeatures.join("، ") || "در حال تکمیل"],
+                ["نوع اتصال", detailAttachmentTypes.join("، ") || "در حال تکمیل"],
                 ["جواهردوزی", product.hasJewelryEmbroidery ? "دارد" : "ندارد"],
                 ["رنگ", detailColors.join("، ") || "در حال تکمیل"],
                 ["اندازه", detailDiameter || "در حال تکمیل"],

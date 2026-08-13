@@ -498,6 +498,8 @@ const emptyProductForm = {
   techniques: [],
   materials: [],
   colors: [],
+  features: [],
+  attachmentTypes: [],
   diameterCm: "",
   hasJewelryEmbroidery: false,
   isCustomizable: true,
@@ -572,11 +574,24 @@ const productColorOptions = [
   { value: "multicolor", label: "چندرنگ", swatch: "linear-gradient(135deg,#a83d45,#d9a34a,#557d9d)" },
 ];
 
+const productFeatureOptions = [
+  { value: "lightweight", label: "سبک" },
+  { value: "detachable", label: "جداشونده" },
+];
+
+const productAttachmentOptions = [
+  { value: "pin", label: "سنجاق" },
+  { value: "clip", label: "گیره" },
+  { value: "sewn", label: "دوخت" },
+];
+
 const productTaxonomyFields = [
   { field: "useCases", label: "کاربردهای محصول", options: productUseCaseOptions },
   { field: "techniques", label: "تکنیک ساخت", options: productTechniqueOptions },
   { field: "materials", label: "جنس پارچه", options: productMaterialOptions },
   { field: "colors", label: "رنگ‌های محصول", options: productColorOptions },
+  { field: "features", label: "ویژگی محصول", options: productFeatureOptions },
+  { field: "attachmentTypes", label: "نوع اتصال", options: productAttachmentOptions },
 ];
 
 const productTaxonomyValues = Object.fromEntries(
@@ -607,6 +622,8 @@ function productToForm(product) {
     techniques: (product.techniques || []).filter((value) => productTaxonomyValues.techniques.has(value)),
     materials: (product.materials || []).filter((value) => productTaxonomyValues.materials.has(value)),
     colors: (product.colors || []).filter((value) => productTaxonomyValues.colors.has(value)),
+    features: (product.features || []).filter((value) => productTaxonomyValues.features.has(value)),
+    attachmentTypes: (product.attachmentTypes || []).filter((value) => productTaxonomyValues.attachmentTypes.has(value)),
     diameterCm: product.diameterCm == null ? "" : String(product.diameterCm),
   };
 }
@@ -626,6 +643,8 @@ function productFromForm(form) {
     techniques: form.techniques,
     materials: form.materials,
     colors: form.colors,
+    features: form.features,
+    attachmentTypes: form.attachmentTypes,
     diameterCm: Number.isFinite(diameterValue) && diameterValue > 0 ? diameterValue : null,
     hasJewelryEmbroidery: Boolean(form.hasJewelryEmbroidery),
     isCustomizable: Boolean(form.isCustomizable),

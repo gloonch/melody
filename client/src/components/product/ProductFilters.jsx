@@ -52,7 +52,7 @@ export function ProductFilters({ products, filters, resultCount, onQueryChange, 
       </div>
 
       <div className="mt-6 overflow-x-auto pb-2">
-        <div className="grid min-w-[900px] grid-cols-4 gap-5">
+        <div className="grid min-w-[1320px] grid-cols-6 gap-5">
           {PRODUCT_FILTER_GROUPS.map((group) => (
             <fieldset key={group.key} className="min-w-0">
               <legend className="mb-3 text-sm font-bold text-[#62534b]">{group.label}</legend>

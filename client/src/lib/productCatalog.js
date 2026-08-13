@@ -49,6 +49,25 @@ export const PRODUCT_FILTER_GROUPS = [
       { value: "multipurpose", label: "چندمنظوره" },
     ],
   },
+  {
+    key: "features",
+    hashKey: "feature",
+    label: "ویژگی",
+    options: [
+      { value: "lightweight", label: "سبک" },
+      { value: "detachable", label: "جداشونده" },
+    ],
+  },
+  {
+    key: "attachmentTypes",
+    hashKey: "attachment",
+    label: "نوع اتصال",
+    options: [
+      { value: "pin", label: "سنجاق" },
+      { value: "clip", label: "گیره" },
+      { value: "sewn", label: "دوخت" },
+    ],
+  },
 ];
 
 const PRODUCT_COLOR_LABELS = {
@@ -88,6 +107,23 @@ const PRODUCT_SEARCH_ALIASES = {
   stumpwork: "استامپ ورک گلدوزی برجسته",
   classic: "کلاسیک",
   three_dimensional: "سه بعدی سه‌بعدی برجسته",
+  lightweight: "سبک کم وزن",
+  detachable: "جداشونده جدا شونده",
+  pin: "سنجاق گل سینه گل‌سینه",
+  clip: "گیره کلیپس",
+  sewn: "دوخت دوخته شده",
+  white: "سفید",
+  black: "مشکی سیاه",
+  cream: "کرم",
+  ivory: "شیری",
+  pink: "صورتی",
+  red: "قرمز",
+  blue: "آبی",
+  green: "سبز",
+  gold: "طلایی",
+  silver: "نقره ای نقره‌ای",
+  purple: "بنفش",
+  multicolor: "چندرنگ چند رنگ",
 };
 
 export const EMPTY_PRODUCT_FILTERS = {
@@ -96,6 +132,8 @@ export const EMPTY_PRODUCT_FILTERS = {
   techniques: [],
   materials: [],
   sizes: [],
+  features: [],
+  attachmentTypes: [],
 };
 
 export function productSizeBucket(diameterCm) {
@@ -149,8 +187,9 @@ export function productMatchesFilters(product, filters, ignoredGroup = "") {
       product.category,
       ...(product.materials || []),
       ...(product.colors || []),
+      ...(product.colors || []).map((value) => PRODUCT_COLOR_LABELS[value] || ""),
       ...labels,
-      ...taxonomyValues.map((value) => PRODUCT_SEARCH_ALIASES[value] || ""),
+      ...[...taxonomyValues, ...(product.colors || [])].map((value) => PRODUCT_SEARCH_ALIASES[value] || ""),
     ].join(" "));
     const terms = normalizePersianSearch(filters.query).split(" ").filter(Boolean);
     if (!terms.every((term) => haystack.includes(term))) return false;

@@ -238,7 +238,7 @@ func (h *Handler) metadataForPath(ctx context.Context, path string) (siteMetadat
 		return meta, http.StatusOK
 	case path == "/products":
 		meta.Title = "گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی"
-		meta.Description = "خرید و سفارش گل پارچه‌ای دست‌ساز برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو؛ با امکان انتخاب کاربرد، تکنیک، جنس، رنگ و اندازه."
+		meta.Description = "خرید و سفارش گل پارچه‌ای دست‌ساز برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو؛ با فیلتر کاربرد، تکنیک، جنس، اندازه، ویژگی و نوع اتصال."
 		meta.JSONLD = []any{breadcrumb(baseURL, []crumb{{"گلملو", "/"}, {"محصولات", "/products"}})}
 		return meta, http.StatusOK
 	case strings.HasPrefix(path, "/products/"):
@@ -533,12 +533,18 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 	if product.DiameterCM != nil {
 		schema["size"] = formatDiameter(*product.DiameterCM)
 	}
-	properties := make([]map[string]any, 0, 4)
+	properties := make([]map[string]any, 0, 6)
 	if values := labelsForKeys(product.UseCases, productUseCaseLabels); len(values) > 0 {
 		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "کاربرد", "value": strings.Join(values, "، ")})
 	}
 	if values := labelsForKeys(product.Techniques, productTechniqueLabels); len(values) > 0 {
 		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "تکنیک", "value": strings.Join(values, "، ")})
+	}
+	if values := labelsForKeys(product.Features, productFeatureLabels); len(values) > 0 {
+		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "ویژگی", "value": strings.Join(values, "، ")})
+	}
+	if values := labelsForKeys(product.AttachmentTypes, productAttachmentTypeLabels); len(values) > 0 {
+		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "نوع اتصال", "value": strings.Join(values, "، ")})
 	}
 	if product.DiameterCM != nil {
 		properties = append(properties, map[string]any{"@type": "PropertyValue", "name": "قطر", "value": formatDiameter(*product.DiameterCM), "unitCode": "CMT"})
@@ -578,6 +584,14 @@ var productColorLabels = map[string]string{
 	"blue": "آبی", "green": "سبز", "gold": "طلایی", "silver": "نقره‌ای", "purple": "بنفش", "multicolor": "چندرنگ",
 }
 
+var productFeatureLabels = map[string]string{
+	"lightweight": "سبک", "detachable": "جداشونده",
+}
+
+var productAttachmentTypeLabels = map[string]string{
+	"pin": "سنجاق", "clip": "گیره", "sewn": "دوخت",
+}
+
 func labelsForKeys(keys []string, labels map[string]string) []string {
 	values := make([]string, 0, len(keys))
 	for _, key := range keys {
@@ -593,6 +607,8 @@ func productTaxonomyLabels(product models.Product) []string {
 	values = append(values, labelsForKeys(product.UseCases, productUseCaseLabels)...)
 	values = append(values, labelsForKeys(product.Techniques, productTechniqueLabels)...)
 	values = append(values, labelsForKeys(product.Materials, productMaterialLabels)...)
+	values = append(values, labelsForKeys(product.Features, productFeatureLabels)...)
+	values = append(values, labelsForKeys(product.AttachmentTypes, productAttachmentTypeLabels)...)
 	if product.HasJewelryEmbroidery {
 		values = append(values, "دارای جواهردوزی")
 	}
@@ -612,8 +628,8 @@ func (h *Handler) productListSiteHTML(ctx context.Context) string {
 		return ""
 	}
 	var builder strings.Builder
-	builder.WriteString(`<main dir="rtl"><header><h1>گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1><p>گل‌های پارچه‌ای دست‌ساز گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو بر اساس کاربرد، تکنیک، جنس، رنگ و اندازه بررسی کنید.</p></header>`)
-	builder.WriteString(`<nav aria-label="فیلترهای محصولات"><p>فیلتر بر اساس کاربرد، تکنیک، جنس، رنگ و اندازه</p></nav><section aria-label="فهرست محصولات">`)
+	builder.WriteString(`<main dir="rtl"><header><h1>گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1><p>گل‌های پارچه‌ای دست‌ساز گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو بر اساس کاربرد، تکنیک، جنس، اندازه، ویژگی و نوع اتصال بررسی کنید.</p></header>`)
+	builder.WriteString(`<nav aria-label="فیلترهای محصولات"><p>فیلتر بر اساس کاربرد، تکنیک، جنس، اندازه، ویژگی و نوع اتصال</p></nav><section aria-label="فهرست محصولات">`)
 	for _, product := range products {
 		builder.WriteString(`<article><h2><a href="/products/` + html.EscapeString(url.PathEscape(product.Slug)) + `">` + html.EscapeString(product.Title) + `</a></h2>`)
 		if product.ShortDescription != "" {
