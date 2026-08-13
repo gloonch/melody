@@ -370,9 +370,6 @@ func ValidateProduct(product models.Product) error {
 		if product.CoverImageID == "" || product.Description == "" || product.UsageLabel == "" {
 			return errors.New("برای انتشار محصول، تصویر، توضیحات و کاربرد الزامی است")
 		}
-		if product.BasePriceRial <= 0 {
-			return errors.New("برای انتشار محصول، قیمت پایه واقعی را وارد کنید")
-		}
 	}
 	if product.IsFeatured && product.Status != ProductStatusActive {
 		return errors.New("فقط محصول منتشرشده می‌تواند منتخب باشد")

@@ -22,11 +22,19 @@ func validActiveProduct() models.Product {
 	}
 }
 
-func TestValidateProductRejectsActiveProductWithoutPrice(t *testing.T) {
+func TestValidateProductAllowsActiveProductWithoutPrice(t *testing.T) {
 	product := validActiveProduct()
 	product.BasePriceRial = 0
+	if err := ValidateProduct(product); err != nil {
+		t.Fatalf("expected an active product without a price to remain editable, got %v", err)
+	}
+}
+
+func TestValidateProductRejectsNegativePrice(t *testing.T) {
+	product := validActiveProduct()
+	product.BasePriceRial = -1
 	if err := ValidateProduct(product); err == nil {
-		t.Fatal("expected active product without a real base price to be rejected")
+		t.Fatal("expected a negative base price to be rejected")
 	}
 }
 

@@ -619,16 +619,19 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
   const [form, setForm] = useState(() => productToForm(null));
   const [isOpen, setIsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saveStatus, setSaveStatus] = useState({ type: "idle", message: "" });
   const selectedImage = projectImages.find((image) => image.id === form.coverImageId);
   const featuredCount = products.filter((product) => product.isFeatured && product.status === "active").length;
   const incompleteCount = products.filter(isProductMetadataIncomplete).length;
 
   const update = (field) => (event) => {
     const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+    setSaveStatus({ type: "idle", message: "" });
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const toggleTaxonomyValue = (field, value) => {
+    setSaveStatus({ type: "idle", message: "" });
     setForm((current) => {
       const selected = current[field] || [];
       return {
@@ -644,18 +647,21 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
     const timestamp = Date.now();
     setSelectedId("");
     setForm({ ...emptyProductForm, id: `product-${timestamp}`, slug: `fabric-flower-${timestamp}` });
+    setSaveStatus({ type: "idle", message: "" });
     setIsOpen(true);
   };
 
   const handleEdit = (product) => {
     setSelectedId(product.id);
     setForm(productToForm(product));
+    setSaveStatus({ type: "idle", message: "" });
     setIsOpen(true);
   };
 
   const handleSave = async (event) => {
     event.preventDefault();
     setBusy(true);
+    setSaveStatus({ type: "idle", message: "" });
     try {
       const path = selectedId ? `admin/products/${selectedId}` : "admin/products";
       const data = await apiRequest(path, {
@@ -667,8 +673,10 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
       setSelectedId(data.product.id);
       setForm(productToForm(data.product));
       await onReload();
+      setSaveStatus({ type: "success", message: "تغییرات محصول ذخیره شد." });
       onStatus({ type: "idle", message: "" });
     } catch (error) {
+      setSaveStatus({ type: "error", message: error.message });
       onStatus({ type: "error", message: error.message });
     } finally {
       setBusy(false);
@@ -779,9 +787,19 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isFeatured} onChange={update("isFeatured")} /> نمایش در سه محصول منتخب</label>
           </div>
 
-          <button type="submit" disabled={busy} className="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} ذخیره محصول
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={busy} className="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} ذخیره محصول
+            </button>
+            {saveStatus.message ? (
+              <p
+                role="status"
+                className={`text-sm ${saveStatus.type === "error" ? "text-[#b85d60]" : "text-[#4f7659]"}`}
+              >
+                {saveStatus.message}
+              </p>
+            ) : null}
+          </div>
         </form>
       ) : null}
     </section>
