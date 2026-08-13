@@ -28,6 +28,7 @@ const (
 
 var ErrFeaturedLimit = errors.New("at most three products can be featured")
 var ErrProductSlugTaken = errors.New("product slug is already in use")
+var ErrProductHasOrders = errors.New("product has existing orders")
 
 const productColumns = `id, slug, title, short_description, description, cover_image_id, category, usage_label,
 	use_cases, techniques, materials, colors, diameter_cm, has_jewelry_embroidery, is_customizable, customizable_color,
@@ -317,6 +318,42 @@ func (r *ProductRepository) UpdateStatus(ctx context.Context, id, status string)
 		product.IsFeatured = false
 	}
 	return r.UpdateProduct(ctx, id, product)
+}
+
+func (r *ProductRepository) DeleteProduct(ctx context.Context, id string) error {
+	id = strings.TrimSpace(id)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var productID string
+	if err := tx.QueryRow(ctx, `SELECT id FROM products WHERE id = $1 FOR UPDATE`, id).Scan(&productID); errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	} else if err != nil {
+		return err
+	}
+
+	var hasOrders bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM orders WHERE product_id = $1)`, productID).Scan(&hasOrders); err != nil {
+		return err
+	}
+	if hasOrders {
+		return ErrProductHasOrders
+	}
+
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM image_variants
+		WHERE source_table = 'product_images'
+		  AND source_id IN (SELECT id FROM product_images WHERE product_id = $1)`, productID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM products WHERE id = $1`, productID); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *ProductRepository) ListImages(ctx context.Context, productID string) ([]models.ProductImage, error) {

@@ -50,7 +50,7 @@ const emptyPost = () => ({
 
 const fieldClass = "w-full rounded-md border border-[#d9cfc5] bg-white px-3 py-2.5 text-sm text-[#3f352f] outline-none transition focus:border-[#c08081]";
 
-export function BlogManager({ token, onStatus }) {
+export function BlogManager({ token, onStatus, onCountChange }) {
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
@@ -72,7 +72,9 @@ export function BlogManager({ token, onStatus }) {
       apiRequest(`admin/blogs?search=${encodeURIComponent(search)}&status=${encodeURIComponent(statusFilter)}`, { token }),
       apiRequest("admin/blog-categories", { token }),
     ]);
-    setPosts(postData.posts || []);
+    const nextPosts = postData.posts || [];
+    setPosts(nextPosts);
+    if (!search.trim() && !statusFilter) onCountChange?.(nextPosts.length);
     setCategories(categoryData.categories || []);
   };
 

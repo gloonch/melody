@@ -1414,6 +1414,23 @@ func (h *Handler) UpdateAdminProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"product": updated})
 }
 
+func (h *Handler) DeleteAdminProduct(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := h.products.DeleteProduct(ctx, strings.TrimSpace(c.Param("id")))
+	switch {
+	case errors.Is(err, repository.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
+	case errors.Is(err, repository.ErrProductHasOrders):
+		c.JSON(http.StatusConflict, gin.H{"error": "این محصول در سفارش‌های ثبت‌شده استفاده شده و قابل حذف نیست؛ وضعیت آن را به آرشیو تغییر دهید."})
+	case err != nil:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف محصول انجام نشد."})
+	default:
+		c.Status(http.StatusNoContent)
+	}
+}
+
 func (h *Handler) UpdateAdminProductStatus(c *gin.Context) {
 	var body updateProductStatusBody
 	if err := c.ShouldBindJSON(&body); err != nil {

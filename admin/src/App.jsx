@@ -9,6 +9,7 @@ import {
   Lock,
   LogOut,
   MessageSquareText,
+  Newspaper,
   PackageSearch,
   Plus,
   RefreshCw,
@@ -140,14 +141,30 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-function StatBox({ label, value, icon: Icon }) {
+function StatBox({ label, value, icon: Icon, active, controls, onClick }) {
   return (
-    <div className="rounded-lg border border-[#e0d7cd] bg-white p-4 shadow-sm">
-      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-md bg-[#f0ebe5] text-[#c08081]">
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      aria-expanded={active}
+      aria-controls={controls}
+      onClick={onClick}
+      className={`w-full rounded-lg border p-4 text-right shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#c08081]/40 ${active ? "border-[#c08081] bg-[#fbf1f1]" : "border-[#e0d7cd] bg-white hover:border-[#d2b4b5] hover:bg-[#fdfafa]"}`}
+    >
+      <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-md ${active ? "bg-[#c08081] text-white" : "bg-[#f0ebe5] text-[#c08081]"}`}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="text-2xl font-semibold text-[#3f352f]">{value}</div>
       <div className="mt-1 text-sm text-[#807269]">{label}</div>
+    </button>
+  );
+}
+
+function DashboardPanel({ id, active, children }) {
+  return (
+    <div id={id} role="tabpanel" hidden={!active}>
+      {children}
     </div>
   );
 }
@@ -623,6 +640,7 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
   const [form, setForm] = useState(() => productToForm(null));
   const [isOpen, setIsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState("");
   const [imageBusy, setImageBusy] = useState("");
   const [saveStatus, setSaveStatus] = useState({ type: "idle", message: "" });
   const [galleryImages, setGalleryImages] = useState([]);
@@ -767,6 +785,28 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
     }
   };
 
+  const handleDeleteProduct = async (product) => {
+    if (!window.confirm(`محصول «${product.title}» برای همیشه حذف شود؟ این عملیات قابل بازگشت نیست.`)) return;
+    setDeletingId(product.id);
+    setSaveStatus({ type: "idle", message: "" });
+    try {
+      await apiRequest(`admin/products/${product.id}`, { method: "DELETE", token });
+      if (selectedId === product.id) {
+        setSelectedId("");
+        setForm(productToForm(null));
+        setGalleryImages([]);
+        setIsOpen(false);
+      }
+      await onReload();
+      onStatus({ type: "success", message: `محصول «${product.title}» حذف شد.` });
+    } catch (error) {
+      setSaveStatus({ type: "error", message: error.message });
+      onStatus({ type: "error", message: error.message });
+    } finally {
+      setDeletingId("");
+    }
+  };
+
   return (
     <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -797,7 +837,19 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
                 </div>
                 <p className="mt-1 text-xs text-[#807269]">{formatToman(product.basePriceRial)} · {productStatusOptions.find((item) => item.value === product.status)?.label}</p>
               </div>
-              <button type="button" onClick={() => handleEdit(product)} className="h-9 rounded-full bg-[#a05f62] px-4 text-sm text-white">ویرایش</button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button type="button" onClick={() => handleEdit(product)} className="h-9 rounded-full bg-[#a05f62] px-4 text-sm text-white">ویرایش</button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProduct(product)}
+                  disabled={deletingId === product.id}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d9a5a7] text-[#a44f53] transition hover:bg-[#fff1f1] disabled:opacity-50"
+                  title={`حذف ${product.title}`}
+                  aria-label={`حذف ${product.title}`}
+                >
+                  {deletingId === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                </button>
+              </div>
             </article>
           );
         })}
@@ -1708,6 +1760,7 @@ function Dashboard({ token, onLogout }) {
   const [courses, setCourses] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [blogCount, setBlogCount] = useState(0);
   const [projectImages, setProjectImages] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [status, setStatus] = useState({ type: "loading", message: "" });
@@ -1715,18 +1768,20 @@ function Dashboard({ token, onLogout }) {
   const [deleting, setDeleting] = useState("");
   const [updatingOrderId, setUpdatingOrderId] = useState("");
   const [optimizingImages, setOptimizingImages] = useState(false);
+  const [activeSection, setActiveSection] = useState(null);
 
   const headers = useMemo(() => ({ token }), [token]);
 
   const loadData = async () => {
     setStatus({ type: "loading", message: "" });
     try {
-      const [contactsData, courseData, coursesData, productsData, ordersData, projectData, heroData] = await Promise.all([
+      const [contactsData, courseData, coursesData, productsData, ordersData, blogsData, projectData, heroData] = await Promise.all([
         apiRequest("admin/contact-requests", headers),
         apiRequest("admin/course-signups", headers),
         apiRequest("admin/courses", headers),
         apiRequest("admin/products", headers),
         apiRequest("admin/orders", headers),
+        apiRequest("admin/blogs", headers),
         apiRequest("admin/project-images", headers),
         apiRequest("admin/hero-slides", headers),
       ]);
@@ -1736,6 +1791,7 @@ function Dashboard({ token, onLogout }) {
       setCourses(coursesData.courses || []);
       setProducts(productsData.products || []);
       setOrders(ordersData.orders || []);
+      setBlogCount((blogsData.posts || []).length);
       setProjectImages(projectData.images || []);
       setHeroSlides(heroData.images || []);
       setStatus({ type: "idle", message: "" });
@@ -1832,6 +1888,10 @@ function Dashboard({ token, onLogout }) {
     }
   };
 
+  const toggleSection = (section) => {
+    setActiveSection((current) => current === section ? null : section);
+  };
+
   return (
     <main dir="rtl" className="min-h-screen bg-[#f6f3ef]">
       <header className="sticky top-0 z-20 border-b border-[#e0d7cd] bg-white/90 backdrop-blur">
@@ -1883,55 +1943,59 @@ function Dashboard({ token, onLogout }) {
           <div className="rounded-lg border border-[#bfd7c5] bg-[#f4faf5] px-4 py-3 text-sm text-[#4f7659]">{status.message}</div>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
-          <StatBox label="پیام ثبت‌شده" value={contactRequests.length} icon={MessageSquareText} />
-          <StatBox label="درخواست دوره" value={courseSignups.length} icon={Send} />
-          <StatBox label="دوره آموزشی" value={courses.length} icon={BookOpen} />
-          <StatBox label="محصول" value={products.length} icon={PackageSearch} />
-          <StatBox label="سفارش مشتری" value={orders.length} icon={Save} />
-          <StatBox label="تصویر محصول" value={projectImages.length} icon={ImagePlus} />
-          <StatBox label="اسلاید بخش اول" value={heroSlides.length} icon={LayoutDashboard} />
+        <section role="tablist" aria-label="بخش‌های پنل مدیریت" className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
+          <StatBox label="مقالات" value={blogCount} icon={Newspaper} active={activeSection === "blogs"} controls="dashboard-blogs" onClick={() => toggleSection("blogs")} />
+          <StatBox label="سفارش مشتری" value={orders.length} icon={Save} active={activeSection === "orders"} controls="dashboard-orders" onClick={() => toggleSection("orders")} />
+          <StatBox label="محصول" value={products.length} icon={PackageSearch} active={activeSection === "products"} controls="dashboard-products" onClick={() => toggleSection("products")} />
+          <StatBox label="دوره آموزشی" value={courses.length} icon={BookOpen} active={activeSection === "courses"} controls="dashboard-courses" onClick={() => toggleSection("courses")} />
+          <StatBox label="پیام ثبت‌شده" value={contactRequests.length} icon={MessageSquareText} active={activeSection === "contacts"} controls="dashboard-contacts" onClick={() => toggleSection("contacts")} />
+          <StatBox label="درخواست دوره" value={courseSignups.length} icon={Send} active={activeSection === "course-signups"} controls="dashboard-course-signups" onClick={() => toggleSection("course-signups")} />
+          <StatBox label="اسلاید بخش اول" value={heroSlides.length} icon={LayoutDashboard} active={activeSection === "hero-slides"} controls="dashboard-hero-slides" onClick={() => toggleSection("hero-slides")} />
         </section>
 
-        <BlogManager token={token} onStatus={setStatus} />
+        <DashboardPanel id="dashboard-blogs" active={activeSection === "blogs"}>
+          <BlogManager token={token} onStatus={setStatus} onCountChange={setBlogCount} />
+        </DashboardPanel>
 
-        <OrdersTable orders={orders} onUpdateStatus={updateOrderStatus} updatingId={updatingOrderId} />
+        <DashboardPanel id="dashboard-orders" active={activeSection === "orders"}>
+          <OrdersTable orders={orders} onUpdateStatus={updateOrderStatus} updatingId={updatingOrderId} />
+        </DashboardPanel>
 
-        <ProductManager products={products} projectImages={projectImages} token={token} onReload={loadData} onStatus={setStatus} />
+        <DashboardPanel id="dashboard-products" active={activeSection === "products"}>
+          <ProductManager products={products} projectImages={projectImages} token={token} onReload={loadData} onStatus={setStatus} />
+        </DashboardPanel>
 
-        <CourseManager courses={courses} token={token} onReload={loadData} onStatus={setStatus} />
+        <DashboardPanel id="dashboard-courses" active={activeSection === "courses"}>
+          <CourseManager courses={courses} token={token} onReload={loadData} onStatus={setStatus} />
+        </DashboardPanel>
 
-        <ContactRequestsTable
-          requests={contactRequests}
-          deletingId={deleting.startsWith("contact-") ? deleting.replace("contact-", "") : ""}
-          onDelete={(id) => deleteAdminItem("admin/contact-requests", id, "این پیام حذف شود؟", "contact")}
-        />
+        <DashboardPanel id="dashboard-contacts" active={activeSection === "contacts"}>
+          <ContactRequestsTable
+            requests={contactRequests}
+            deletingId={deleting.startsWith("contact-") ? deleting.replace("contact-", "") : ""}
+            onDelete={(id) => deleteAdminItem("admin/contact-requests", id, "این پیام حذف شود؟", "contact")}
+          />
+        </DashboardPanel>
 
-        <CourseSignupsTable
-          signups={courseSignups}
-          deletingId={deleting.startsWith("signup-") ? deleting.replace("signup-", "") : ""}
-          onDelete={(id) => deleteAdminItem("admin/course-signups", id, "این ثبت‌نام حذف شود؟", "signup")}
-        />
+        <DashboardPanel id="dashboard-course-signups" active={activeSection === "course-signups"}>
+          <CourseSignupsTable
+            signups={courseSignups}
+            deletingId={deleting.startsWith("signup-") ? deleting.replace("signup-", "") : ""}
+            onDelete={(id) => deleteAdminItem("admin/course-signups", id, "این ثبت‌نام حذف شود؟", "signup")}
+          />
+        </DashboardPanel>
 
-        <ImageManager
-          title="تصاویر محصولات"
-          description="تصاویر کاتالوگ را اینجا بارگذاری کنید و سپس در فرم هر محصول انتخاب کنید."
-          images={projectImages}
-          uploadLabel="افزودن تصویر محصول"
-          busy={uploading === "project"}
-          onUpload={(files) => uploadImages("admin/project-images", files, "project")}
-          onDelete={(id) => deleteImage("admin/project-images", id)}
-        />
-
-        <ImageManager
-          title="اسلایدشو بخش اول"
-          description="این تصاویر در hero/اولین section سایت به صورت اسلایدشو نمایش داده می‌شوند."
-          images={heroSlides}
-          uploadLabel="افزودن اسلاید"
-          busy={uploading === "hero"}
-          onUpload={(files) => uploadImages("admin/hero-slides", files, "hero")}
-          onDelete={(id) => deleteImage("admin/hero-slides", id)}
-        />
+        <DashboardPanel id="dashboard-hero-slides" active={activeSection === "hero-slides"}>
+          <ImageManager
+            title="اسلایدشو بخش اول"
+            description="این تصاویر در hero/اولین section سایت به صورت اسلایدشو نمایش داده می‌شوند."
+            images={heroSlides}
+            uploadLabel="افزودن اسلاید"
+            busy={uploading === "hero"}
+            onUpload={(files) => uploadImages("admin/hero-slides", files, "hero")}
+            onDelete={(id) => deleteImage("admin/hero-slides", id)}
+          />
+        </DashboardPanel>
       </div>
     </main>
   );
