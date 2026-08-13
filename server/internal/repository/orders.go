@@ -278,6 +278,17 @@ func (r *OrderRepository) DeleteDraft(ctx context.Context, userID string, orderI
 	return nil
 }
 
+func (r *OrderRepository) DeleteOrder(ctx context.Context, orderID string) error {
+	result, err := r.pool.Exec(ctx, `DELETE FROM orders WHERE id = $1`, strings.TrimSpace(orderID))
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (r *OrderRepository) ListReferenceImages(ctx context.Context, orderID string) ([]models.OrderReferenceImage, error) {
 	rows, err := r.pool.Query(
 		ctx,

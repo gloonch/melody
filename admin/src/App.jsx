@@ -372,7 +372,7 @@ function OrderStatusBadge({ status }) {
   return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${tone}`}>{label}</span>;
 }
 
-function OrdersTable({ orders, onUpdateStatus, updatingId }) {
+function OrdersTable({ orders, onUpdateStatus, onDelete, updatingId, deletingId }) {
   const [drafts, setDrafts] = useState({});
 
   const draftFor = (order) => drafts[order.id] || { status: order.status || "pending_review", adminNote: order.adminNote || "" };
@@ -430,7 +430,19 @@ function OrdersTable({ orders, onUpdateStatus, updatingId }) {
                     {order.customerNote ? <p className="mt-2 rounded-md bg-white px-3 py-2 text-sm leading-6 text-[#5f544d]">{order.customerNote}</p> : null}
                     <p className="mt-2 text-xs text-[#9a8a80]">ثبت: {formatDate(order.createdAt)}</p>
                   </div>
-                  <div className="text-xs text-[#807269]">#{order.id}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#807269]">#{order.id}</span>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(order)}
+                      disabled={deletingId === order.id}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d9a5a7] text-[#a44f53] transition hover:bg-[#fff1f1] disabled:opacity-50"
+                      title={`حذف سفارش ${order.id}`}
+                      aria-label={`حذف سفارش ${order.id}`}
+                    >
+                      {deletingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <form className="grid gap-3 border-t border-[#eee7df] pt-4 lg:grid-cols-[220px_1fr_auto] lg:items-end" onSubmit={(event) => handleSubmit(event, order)}>
@@ -1958,7 +1970,18 @@ function Dashboard({ token, onLogout }) {
         </DashboardPanel>
 
         <DashboardPanel id="dashboard-orders" active={activeSection === "orders"}>
-          <OrdersTable orders={orders} onUpdateStatus={updateOrderStatus} updatingId={updatingOrderId} />
+          <OrdersTable
+            orders={orders}
+            onUpdateStatus={updateOrderStatus}
+            updatingId={updatingOrderId}
+            deletingId={deleting.startsWith("order-") ? deleting.replace("order-", "") : ""}
+            onDelete={(order) => deleteAdminItem(
+              "admin/orders",
+              order.id,
+              `سفارش «${order.productSnapshot?.title || order.id}» برای همیشه حذف شود؟ تاریخچه وضعیت و تصاویر مرجع آن نیز پاک می‌شوند.`,
+              "order",
+            )}
+          />
         </DashboardPanel>
 
         <DashboardPanel id="dashboard-products" active={activeSection === "products"}>

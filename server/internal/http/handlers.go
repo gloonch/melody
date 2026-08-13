@@ -1806,6 +1806,23 @@ func (h *Handler) GetAdminOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"order": order})
 }
 
+func (h *Handler) DeleteAdminOrder(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := h.orders.DeleteOrder(ctx, strings.TrimSpace(c.Param("id")))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "سفارش پیدا نشد."})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "حذف سفارش انجام نشد."})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (h *Handler) UpdateAdminOrderStatus(c *gin.Context) {
 	var body updateOrderStatusBody
 	if err := c.ShouldBindJSON(&body); err != nil {
