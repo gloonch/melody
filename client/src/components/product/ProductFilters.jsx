@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { PRODUCT_FILTER_GROUPS, productMatchesFilters, productSizeBucket } from "../../lib/productCatalog";
 
-const COLLAPSED_OPTION_COUNT = 3;
+const COLLAPSED_OPTION_COUNT = 4;
 
 function FilterOptions({ group, filters, products, onToggle, expanded, onExpandedChange }) {
   const selectedValues = filters[group.key];
@@ -17,7 +17,7 @@ function FilterOptions({ group, filters, products, onToggle, expanded, onExpande
 
   return (
     <div>
-      <div className="flex flex-col items-stretch gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {orderedOptions.map((option) => {
           const selected = filters[group.key].includes(option.value);
           const count = products.filter((product) => {
@@ -34,7 +34,7 @@ function FilterOptions({ group, filters, products, onToggle, expanded, onExpande
               aria-pressed={selected}
               disabled={disabled}
               onClick={() => onToggle(group.key, option.value)}
-              className={`flex min-h-9 w-full items-center justify-between gap-1 rounded-full border px-2 text-xs transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-sm ${selected ? "border-[#a05f62] bg-[#a05f62] text-white" : "border-[#d8cdc3] bg-white/70 text-[#6d5d53] hover:border-[#c08081]"}`}
+              className={`flex min-h-9 min-w-0 items-center justify-between gap-1 rounded-full border px-1.5 text-[10px] transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-2 sm:text-xs lg:px-3 lg:text-sm ${selected ? "border-[#a05f62] bg-[#a05f62] text-white" : "border-[#d8cdc3] bg-white/70 text-[#6d5d53] hover:border-[#c08081]"}`}
             >
               <span className="min-w-0 leading-5">{option.label}</span>
               <span className={`shrink-0 ${selected ? "text-white/75" : "text-[#9b8b80]"}`}>{new Intl.NumberFormat("fa-IR").format(count)}</span>
