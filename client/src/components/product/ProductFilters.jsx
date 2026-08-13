@@ -1,38 +1,72 @@
-import React from "react";
-import { Search, X } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { PRODUCT_FILTER_GROUPS, productMatchesFilters, productSizeBucket } from "../../lib/productCatalog";
 
-function FilterOptions({ group, filters, products, onToggle }) {
+const COLLAPSED_OPTION_COUNT = 3;
+
+function FilterOptions({ group, filters, products, onToggle, expanded, onExpandedChange }) {
+  const selectedValues = filters[group.key];
+  const orderedOptions = expanded
+    ? group.options
+    : [
+        ...group.options.filter((option) => selectedValues.includes(option.value)),
+        ...group.options.filter((option) => !selectedValues.includes(option.value)),
+      ].slice(0, COLLAPSED_OPTION_COUNT);
+  const hiddenOptions = group.options.filter((option) => !orderedOptions.includes(option));
+  const canExpand = group.options.length > COLLAPSED_OPTION_COUNT;
+
   return (
-    <div className="flex flex-wrap justify-center gap-2 md:justify-start">
-      {group.options.map((option) => {
-        const selected = filters[group.key].includes(option.value);
-        const count = products.filter((product) => {
-          const optionMatches = group.key === "sizes"
-            ? productSizeBucket(product.diameterCm) === option.value
-            : (product[group.key] || []).includes(option.value);
-          return optionMatches && productMatchesFilters(product, filters, group.key);
-        }).length;
-        const disabled = count === 0 && !selected;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={selected}
-            disabled={disabled}
-            onClick={() => onToggle(group.key, option.value)}
-            className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-[#a05f62] bg-[#a05f62] text-white" : "border-[#d8cdc3] bg-white/70 text-[#6d5d53] hover:border-[#c08081]"}`}
-          >
-            <span>{option.label}</span>
-            <span className={selected ? "text-white/75" : "text-[#9b8b80]"}>{new Intl.NumberFormat("fa-IR").format(count)}</span>
-          </button>
-        );
-      })}
+    <div>
+      <div className="flex flex-col items-stretch gap-1.5">
+        {orderedOptions.map((option) => {
+          const selected = filters[group.key].includes(option.value);
+          const count = products.filter((product) => {
+            const optionMatches = group.key === "sizes"
+              ? productSizeBucket(product.diameterCm) === option.value
+              : (product[group.key] || []).includes(option.value);
+            return optionMatches && productMatchesFilters(product, filters, group.key);
+          }).length;
+          const disabled = count === 0 && !selected;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={selected}
+              disabled={disabled}
+              onClick={() => onToggle(group.key, option.value)}
+              className={`flex min-h-9 w-full items-center justify-between gap-1 rounded-full border px-2 text-xs transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-sm ${selected ? "border-[#a05f62] bg-[#a05f62] text-white" : "border-[#d8cdc3] bg-white/70 text-[#6d5d53] hover:border-[#c08081]"}`}
+            >
+              <span className="min-w-0 leading-5">{option.label}</span>
+              <span className={`shrink-0 ${selected ? "text-white/75" : "text-[#9b8b80]"}`}>{new Intl.NumberFormat("fa-IR").format(count)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {!expanded && hiddenOptions.length > 0 ? (
+        <div aria-hidden="true" className="relative mt-1 h-5 overflow-hidden text-center text-[11px] leading-5 text-[#9b8b80]/35">
+          {hiddenOptions.map((option) => option.label).join("، ")}
+          <span className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-[#f5f1eb] to-transparent" />
+        </div>
+      ) : null}
+
+      {canExpand ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => onExpandedChange(!expanded)}
+          className="mx-auto mt-1.5 flex min-h-8 items-center justify-center gap-1 text-[11px] font-bold text-[#8d5558] transition hover:text-[#713f42] sm:text-xs"
+        >
+          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {expanded ? "نمایش کمتر" : "مشاهده بیشتر"}
+        </button>
+      ) : null}
     </div>
   );
 }
 
 export function ProductFilters({ products, filters, resultCount, onQueryChange, onToggle, onReset }) {
+  const [expandedGroups, setExpandedGroups] = useState({});
   const hasFilters = filters.query || PRODUCT_FILTER_GROUPS.some((group) => filters[group.key].length);
 
   return (
@@ -51,12 +85,19 @@ export function ProductFilters({ products, filters, resultCount, onQueryChange, 
         </label>
       </div>
 
-      <div className="mt-6 overflow-x-auto pb-2">
-        <div className="grid min-w-[1320px] grid-cols-6 gap-5">
+      <div className="mt-6">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:gap-x-4 md:gap-x-7">
           {PRODUCT_FILTER_GROUPS.map((group) => (
             <fieldset key={group.key} className="min-w-0">
-              <legend className="mb-3 text-sm font-bold text-[#62534b]">{group.label}</legend>
-              <FilterOptions group={group} filters={filters} products={products} onToggle={onToggle} />
+              <legend className="mb-2 text-xs font-bold text-[#62534b] sm:text-sm">{group.label}</legend>
+              <FilterOptions
+                group={group}
+                filters={filters}
+                products={products}
+                onToggle={onToggle}
+                expanded={Boolean(expandedGroups[group.key])}
+                onExpandedChange={(expanded) => setExpandedGroups((current) => ({ ...current, [group.key]: expanded }))}
+              />
             </fieldset>
           ))}
         </div>
