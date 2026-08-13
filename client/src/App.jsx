@@ -1850,6 +1850,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
       : product.availability === "made_to_order"
         ? "https://schema.org/PreOrder"
         : "https://schema.org/InStock",
+    itemCondition: "https://schema.org/NewCondition",
     url: `${SITE_URL}/products/${product.slug || id}`,
   } : undefined;
   useJsonLd(product ? "golmelo-product-jsonld" : "golmelo-product-jsonld-empty", product ? {
@@ -1860,9 +1861,9 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
     description: product.description || product.shortDescription,
     image: productImages.length ? productImages.map((image) => image.url) : [DEFAULT_SEO.image],
     url: `${SITE_URL}/products/${product.slug || id}`,
-    category: product.category || "گل پارچه‌ای دست‌ساز",
-    material: detailMaterials.length ? detailMaterials : undefined,
-    color: detailColors.length ? detailColors : undefined,
+    sku: product.id,
+    material: detailMaterials.length ? detailMaterials.join("، ") : undefined,
+    color: detailColors.length ? detailColors.join("، ") : undefined,
     size: detailDiameter || undefined,
     brand: {
       "@type": "Brand",

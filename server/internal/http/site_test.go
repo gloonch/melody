@@ -92,12 +92,30 @@ func TestProductSchemaIncludesVisibleStructuredSpecifications(t *testing.T) {
 	if schema["size"] != "قطر 18 سانتی‌متر" {
 		t.Fatalf("expected product diameter in schema, got %#v", schema["size"])
 	}
-	if _, ok := schema["material"].([]string); !ok {
-		t.Fatalf("expected controlled materials in schema, got %#v", schema["material"])
+	if schema["material"] != "ساتن" || schema["color"] != "شیری" {
+		t.Fatalf("expected single merchant-listing values for material and color, got %#v / %#v", schema["material"], schema["color"])
+	}
+	if _, exists := schema["category"]; exists {
+		t.Fatalf("expected custom product category to be omitted from merchant listing, got %#v", schema["category"])
 	}
 	properties, ok := schema["additionalProperty"].([]map[string]any)
 	if !ok || len(properties) != 4 {
 		t.Fatalf("expected use case, technique, diameter and jewelry embroidery properties, got %#v", schema["additionalProperty"])
+	}
+}
+
+func TestProductSchemaJoinsMultipleMaterialsAndColors(t *testing.T) {
+	schema := productSchema("https://golmelo.com", models.Product{
+		ID: "product-flower", Slug: "flower", Title: "گل",
+		Materials: []string{"chiffon", "satin"}, Colors: []string{"white", "pink"},
+		BasePriceRial: 8_000_000,
+	})
+	if schema["material"] != "حریر، ساتن" || schema["color"] != "سفید، صورتی" {
+		t.Fatalf("expected joined merchant values, got %#v / %#v", schema["material"], schema["color"])
+	}
+	offer := schema["offers"].(map[string]any)
+	if offer["itemCondition"] != "https://schema.org/NewCondition" {
+		t.Fatalf("expected new product condition, got %#v", offer["itemCondition"])
 	}
 }
 

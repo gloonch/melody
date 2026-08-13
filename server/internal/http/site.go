@@ -508,7 +508,7 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 	schema := map[string]any{
 		"@context": "https://schema.org", "@type": "Product", "@id": productURL + "#product", "name": product.Title,
 		"description": firstNonEmpty(product.Description, product.ShortDescription),
-		"url":         productURL, "category": product.Category,
+		"url":         productURL, "sku": product.ID,
 		"brand": map[string]any{"@type": "Brand", "name": "گلملو"},
 	}
 	if len(product.Images) > 0 {
@@ -525,10 +525,10 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 		schema["image"] = []string{product.CoverImageURL}
 	}
 	if values := labelsForKeys(product.Materials, productMaterialLabels); len(values) > 0 {
-		schema["material"] = values
+		schema["material"] = strings.Join(values, "، ")
 	}
 	if values := labelsForKeys(product.Colors, productColorLabels); len(values) > 0 {
-		schema["color"] = values
+		schema["color"] = strings.Join(values, "، ")
 	}
 	if product.DiameterCM != nil {
 		schema["size"] = formatDiameter(*product.DiameterCM)
@@ -560,7 +560,7 @@ func productSchema(baseURL string, product models.Product) map[string]any {
 	if product.BasePriceRial > 0 {
 		schema["offers"] = map[string]any{
 			"@type": "Offer", "@id": productURL + "#offer", "price": product.BasePriceRial, "priceCurrency": firstNonEmpty(product.PriceCurrency, "IRR"),
-			"availability": schemaAvailability(product.Availability), "url": schema["url"],
+			"availability": schemaAvailability(product.Availability), "itemCondition": "https://schema.org/NewCondition", "url": schema["url"],
 		}
 	}
 	return schema
