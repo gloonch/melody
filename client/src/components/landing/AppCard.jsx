@@ -12,8 +12,8 @@ export function AppCard({ item }) {
           className="h-full w-full object-contain transition duration-500 group-hover:scale-[1.03]"
         />
       </div>
-      <h3 className="mb-2 text-base leading-7 text-[#4d4038] sm:text-xl">{item.title}</h3>
-      <p className="mx-auto max-w-[16rem] text-xs leading-6 text-[#6f6057] sm:text-sm sm:leading-7">{item.desc}</p>
+      <h3 className="mb-2 text-base leading-7 text-charcoal sm:text-xl">{item.title}</h3>
+      <p className="mx-auto max-w-[16rem] text-xs leading-6 text-charcoal/70 sm:text-sm sm:leading-7">{item.desc}</p>
     </div>
   );
 }

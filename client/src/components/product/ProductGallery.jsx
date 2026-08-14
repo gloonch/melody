@@ -13,7 +13,7 @@ export function ProductGallery({ images = [], title }) {
   }, [images]);
 
   if (!activeImage?.url) {
-    return <div className="aspect-square rounded-[28px] bg-[#f2e9df]" aria-label="تصویر محصول موجود نیست" />;
+    return <div className="aspect-square rounded-[28px] bg-greige/70" aria-label="تصویر محصول موجود نیست" />;
   }
 
   const showPrevious = () => {
@@ -48,7 +48,7 @@ export function ProductGallery({ images = [], title }) {
   return (
     <div className="min-w-0" aria-label={`گالری تصاویر ${title}`}>
       <div
-        className="group relative aspect-square overflow-hidden rounded-[28px] bg-[#f2e9df] outline-none focus-visible:ring-2 focus-visible:ring-[#a05f62] focus-visible:ring-offset-2"
+        className="group relative aspect-square overflow-hidden rounded-[28px] bg-greige/70 outline-none focus-visible:ring-2 focus-visible:ring-rosewood/40 focus-visible:ring-offset-2 focus-visible:ring-offset-alabaster"
         tabIndex={hasMultipleImages ? 0 : -1}
         onKeyDown={handleKeyDown}
         onTouchStart={(event) => { touchStartX.current = event.touches[0].clientX; }}
@@ -73,7 +73,7 @@ export function ProductGallery({ images = [], title }) {
             <button
               type="button"
               onClick={showPrevious}
-              className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#4f433b] shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a05f62]"
+              className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-alabaster/90 text-charcoal/70 shadow-soft transition hover:bg-alabaster focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/40"
               aria-label="تصویر قبلی"
             >
               <ChevronRight className="h-5 w-5" />
@@ -81,12 +81,12 @@ export function ProductGallery({ images = [], title }) {
             <button
               type="button"
               onClick={showNext}
-              className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#4f433b] shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a05f62]"
+              className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-alabaster/90 text-charcoal/70 shadow-soft transition hover:bg-alabaster focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/40"
               aria-label="تصویر بعدی"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#493d37]/75 px-3 py-1 text-xs text-white" aria-live="polite">
+            <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-rosewood/75 px-3 py-1 text-xs text-alabaster" aria-live="polite">
               {activeIndex + 1} / {images.length}
             </span>
           </>
@@ -100,7 +100,7 @@ export function ProductGallery({ images = [], title }) {
               key={image.id || image.url}
               type="button"
               onClick={() => setActiveIndex(index)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#f2e9df] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a05f62] ${index === activeIndex ? "border-[#a05f62]" : "border-transparent opacity-70 hover:opacity-100"}`}
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-greige/70 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood/40 ${index === activeIndex ? "border-rosewood/40" : "border-transparent opacity-70 hover:opacity-100"}`}
               aria-label={`نمایش تصویر ${index + 1}`}
               aria-current={index === activeIndex ? "true" : undefined}
             >

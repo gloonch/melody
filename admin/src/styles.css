@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Alabaster Cream #F1ECE6, Warm Greige #DDD5CD, Vintage Rosewood #7D4047, Charcoal Espresso #2E2E2E */
+  --color-alabaster: 241 236 230;
+  --color-greige: 221 213 205;
+  --color-rosewood: 125 64 71;
+  --color-charcoal: 46 46 46;
+}
+
 html,
 body,
 #root {
@@ -10,8 +18,8 @@ body,
 
 body {
   margin: 0;
-  background: #f6f3ef;
-  color: #3f352f;
+  background: rgb(var(--color-alabaster));
+  color: rgb(var(--color-charcoal));
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -22,7 +30,7 @@ textarea {
 }
 
 .admin-blog-preview {
-  color: #4f433d;
+  color: rgb(var(--color-charcoal));
   line-height: 2;
 }
 
@@ -30,7 +38,7 @@ textarea {
 .admin-blog-preview h3,
 .admin-blog-preview h4 {
   margin: 1.5rem 0 0.75rem;
-  color: #342c28;
+  color: rgb(var(--color-charcoal));
   font-weight: 700;
 }
 
@@ -56,15 +64,15 @@ textarea {
 
 .admin-blog-preview td,
 .admin-blog-preview th {
-  border: 1px solid #e0d7cd;
+  border: 1px solid rgb(var(--color-greige));
   padding: 0.5rem;
 }
 
 .rich-text-editor {
   overflow: hidden;
-  border: 1px solid #d9cfc5;
+  border: 1px solid rgb(var(--color-greige));
   border-radius: 6px;
-  background: #fff;
+  background: rgb(var(--color-alabaster));
 }
 
 .rich-text-editor__toolbar {
@@ -76,8 +84,8 @@ textarea {
   align-items: center;
   gap: 4px;
   overflow-x: auto;
-  border-bottom: 1px solid #e5ddd5;
-  background: rgba(251, 249, 246, 0.96);
+  border-bottom: 1px solid rgb(var(--color-greige));
+  background: rgb(var(--color-alabaster) / 0.96);
   padding: 6px 8px;
   backdrop-filter: blur(10px);
 }
@@ -91,14 +99,14 @@ textarea {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #62564f;
+  color: rgb(var(--color-rosewood));
   cursor: pointer;
 }
 
 .rich-text-editor__button:hover,
 .rich-text-editor__button.is-active {
-  background: #ead7d7;
-  color: #8d4f52;
+  background: rgb(var(--color-greige));
+  color: rgb(var(--color-rosewood));
 }
 
 .rich-text-editor__button:disabled {
@@ -116,13 +124,13 @@ textarea {
   height: 24px;
   flex: 0 0 1px;
   margin: 0 3px;
-  background: #ddd3ca;
+  background: rgb(var(--color-greige));
 }
 
 .rich-text-editor__content {
   min-height: 420px;
   padding: 24px;
-  color: #4f433d;
+  color: rgb(var(--color-charcoal));
   font-size: 15px;
   line-height: 2;
   outline: none;
@@ -137,7 +145,7 @@ textarea {
 .rich-text-editor__content h3,
 .rich-text-editor__content h4 {
   margin: 1.5rem 0 0.75rem;
-  color: #342c28;
+  color: rgb(var(--color-charcoal));
   font-weight: 700;
 }
 
@@ -167,19 +175,19 @@ textarea {
 }
 
 .rich-text-editor__content blockquote {
-  border-right: 3px solid #c08081;
-  background: #fbf5f3;
+  border-right: 3px solid rgb(var(--color-rosewood));
+  background: rgb(var(--color-alabaster));
   padding: 0.75rem 1rem;
-  color: #655750;
+  color: rgb(var(--color-rosewood));
 }
 
 .rich-text-editor__content pre {
   overflow-x: auto;
   direction: ltr;
   border-radius: 4px;
-  background: #302a27;
+  background: rgb(var(--color-charcoal));
   padding: 1rem;
-  color: #fff;
+  color: rgb(var(--color-alabaster));
   text-align: left;
 }
 
@@ -189,14 +197,14 @@ textarea {
 }
 
 .rich-text-editor__content a {
-  color: #8d4f52;
+  color: rgb(var(--color-rosewood));
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .rich-text-editor__content hr {
   border: 0;
-  border-top: 1px solid #ddd3ca;
+  border-top: 1px solid rgb(var(--color-greige));
 }
 
 .rich-text-editor__content img {
@@ -220,20 +228,20 @@ textarea {
 .rich-text-editor__content th {
   position: relative;
   min-width: 90px;
-  border: 1px solid #d9cfc5;
+  border: 1px solid rgb(var(--color-greige));
   padding: 0.5rem;
   vertical-align: top;
 }
 
 .rich-text-editor__content th {
-  background: #f7f3ef;
+  background: rgb(var(--color-alabaster));
   font-weight: 700;
 }
 
 .rich-text-editor__content .selectedCell::after {
   position: absolute;
   inset: 0;
-  background: rgba(192, 128, 129, 0.16);
+  background: rgb(var(--color-rosewood) / 0.16);
   content: "";
   pointer-events: none;
 }
@@ -242,9 +250,9 @@ textarea {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
-  border-top: 1px solid #eee7df;
+  border-top: 1px solid rgb(var(--color-alabaster));
   padding: 7px 12px;
-  color: #807269;
+  color: rgb(var(--color-rosewood));
   font-size: 11px;
 }
 

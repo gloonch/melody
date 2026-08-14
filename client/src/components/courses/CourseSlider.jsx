@@ -34,7 +34,7 @@ export function CourseSlider({ courses, statusLabels = {} }) {
     );
   }
 
-  const controlClassName = "absolute top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center text-[#c08081] transition hover:scale-110 hover:text-[#ad7274]";
+  const controlClassName = "absolute top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center text-charcoal/70 transition hover:scale-110 hover:text-rosewood";
 
   return (
     <div className="relative mt-12">

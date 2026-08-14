@@ -410,7 +410,7 @@ export const panelCourses = [
     title: "دوره مقدماتی گل‌سازی پارچه‌ای",
     subtitle: "شروع قدم‌به‌قدم از ابزار، آماده‌سازی پارچه و ساخت گل‌های پایه.",
     cover: flowerImage1,
-    accent: "#c08081",
+    accent: "rgb(var(--color-rosewood))",
     completedLessonIds: [
       "foundation-intro",
       "foundation-tools",
@@ -487,7 +487,7 @@ export const panelCourses = [
     title: "دوره جامع گل‌های پارچه‌ای پیشرفته",
     subtitle: "تمرین مدل‌های حجمی‌تر برای لباس، کلاه و اکسسوری‌های خاص.",
     cover: styleImage2,
-    accent: "#51645a",
+    accent: "rgb(var(--color-rosewood))",
     completedLessonIds: ["advanced-intro", "advanced-pattern"],
     chapters: [
       {
@@ -1157,7 +1157,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
     : `/auth?mode=login&redirect=${encodeURIComponent(customOrderPath)}`;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SuccessToast message={successToastMessage} toastKey="contact-success" />
 
       <SiteNavbar
@@ -1171,7 +1171,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 
       <section
         id="hero"
-        className="relative isolate scroll-mt-28 overflow-hidden bg-[#263129] text-[#fbf5ee] md:scroll-mt-32"
+        className="relative isolate scroll-mt-28 overflow-hidden bg-charcoal text-alabaster md:scroll-mt-32"
       >
         <div className="pointer-events-none absolute inset-0">
           {activeHero ? (
@@ -1188,23 +1188,23 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             />
           ) : null}
         </div>
-        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(24,30,25,0.92)_0%,rgba(38,49,41,0.78)_38%,rgba(38,49,41,0.36)_68%,rgba(38,49,41,0.12)_100%)]" />
-        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(24,30,25,0.76)_0%,rgba(24,30,25,0.2)_52%,rgba(24,30,25,0.72)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-ink-fade" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-vertical-ink-fade" />
 
         <div className="relative z-20 mx-auto grid min-h-[100svh] max-w-7xl items-end gap-10 px-6 pb-12 pt-32 md:px-8 md:pb-16 lg:px-12">
           <div className="max-w-5xl text-right">
-            <p className="mb-5 text-sm font-bold tracking-[0.24em] text-[#e4d2c1]">GOLMELO ATELIER</p>
+            <p className="mb-5 text-sm font-bold tracking-[0.24em] text-alabaster">GOLMELO ATELIER</p>
             <h1
-              className="max-w-3xl text-5xl leading-[1.08] text-white md:text-7xl"
-              style={{ textShadow: "0 4px 28px rgba(0,0,0,0.62), 0 1px 2px rgba(0,0,0,0.78)" }}
+              className="max-w-3xl text-5xl leading-[1.08] text-alabaster md:text-7xl"
+              style={{ textShadow: "0 4px 28px rgb(var(--color-charcoal) / 0.62), 0 1px 2px rgb(var(--color-charcoal) / 0.78)" }}
             >
               گل‌های پارچه‌ای دست‌ساز
               <br />
               برای لباس و اکسسوری
             </h1>
             <p
-              className="mt-6 max-w-2xl text-lg leading-9 text-[#f7eadf] md:text-xl"
-              style={{ textShadow: "0 3px 18px rgba(0,0,0,0.58), 0 1px 2px rgba(0,0,0,0.68)" }}
+              className="mt-6 max-w-2xl text-lg leading-9 text-alabaster md:text-xl"
+              style={{ textShadow: "0 3px 18px rgb(var(--color-charcoal) / 0.58), 0 1px 2px rgb(var(--color-charcoal) / 0.68)" }}
             >
               گلملو با بیش از یک دهه تجربه، گل‌های پارچه‌ای دست‌ساز را برای لباس و اکسسوری طراحی می‌کند و هنر ساخت آن‌ها را به‌صورت آنلاین آموزش می‌دهد.
             </p>
@@ -1214,11 +1214,11 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
                   key={item.title}
                   href={`#${item.target}`}
                   onClick={handleCtaClick(item.target)}
-                  className="group rounded-2xl bg-[#101812]/58 px-2 py-3 text-center text-white shadow-[0_18px_42px_rgba(12,18,15,0.22)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#101812]/72 sm:px-4 sm:py-4 md:text-right"
+                  className="group rounded-2xl bg-charcoal/58 px-2 py-3 text-center text-alabaster shadow-soft backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-charcoal/72 sm:px-4 sm:py-4 md:text-right"
                 >
                   <span className="block text-xs font-bold leading-6 sm:text-base">{item.title}</span>
-                  <span className="mt-1 hidden text-sm leading-7 text-[#f8ede5]/82 sm:block">{item.text}</span>
-                  <span className="mt-2 inline-flex items-center justify-center gap-1 text-xs font-bold text-[#f7eadf] sm:mt-3 sm:gap-2 sm:text-sm">
+                  <span className="mt-1 hidden text-sm leading-7 text-alabaster/82 sm:block">{item.text}</span>
+                  <span className="mt-2 inline-flex items-center justify-center gap-1 text-xs font-bold text-alabaster sm:mt-3 sm:gap-2 sm:text-sm">
                     {item.cta}
                     <ChevronLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-1 sm:h-4 sm:w-4" />
                   </span>
@@ -1231,9 +1231,9 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
 
       <main className="relative z-10 -mt-1">
         <section id="products" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
-          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#7c6558]">READY TO ORDER</p>
-          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">جدیدترین گل‌های گلملو</h2>
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-charcoal/70">READY TO ORDER</p>
+          <h2 className="text-4xl leading-tight text-charcoal md:text-5xl">جدیدترین گل‌های گلملو</h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-charcoal/70">
             محصولاتی آماده ارسال که می‌توانند متناسب با لباس، رنگ و سلیقه شما شخصی‌سازی شوند.
           </p>
 
@@ -1243,7 +1243,7 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             ))}
           </div>
           {products.length === 0 ? (
-            <div className="mt-10 text-center text-[#807269]">
+            <div className="mt-10 text-center text-charcoal/70">
               هنوز محصولی برای سفارش ثبت نشده است.
             </div>
           ) : null}
@@ -1272,14 +1272,14 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
               className="absolute inset-0 h-full w-full object-cover object-center"
             />
           </picture>
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(250,244,235,0.94)_0%,rgba(250,244,235,0.78)_54%,rgba(250,244,235,0.42)_100%)]" />
+          <div className="absolute inset-0 bg-surface-fade" />
           <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 text-center md:px-8 lg:px-12">
-            <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#8d786d]">CUSTOM ORDER</p>
-            <h2 className="text-4xl leading-tight text-[#2f3b33] md:text-5xl">گلی متناسب با لباس شما</h2>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-9 text-[#58483f]">
+            <p className="mb-4 text-sm font-bold tracking-[0.18em] text-charcoal/70">CUSTOM ORDER</p>
+            <h2 className="text-4xl leading-tight text-charcoal md:text-5xl">گلی متناسب با لباس شما</h2>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-9 text-charcoal/70">
               رنگ، اندازه، جنس، نوع اتصال و ترکیب گل‌ها می‌تواند بر اساس لباس، موقعیت استفاده و بودجه شما تغییر کند. پیش از ثبت سفارش، گلملو برای رسیدن به انتخاب مناسب‌تر به شما مشاوره می‌دهد.
             </p>
-            <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-bold text-[#59493f]">
+            <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-bold text-charcoal/70">
               {customOrderOptions.map((item) => (
                 <span key={item}>{item}</span>
               ))}
@@ -1293,30 +1293,30 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
             >
               شروع سفارش اختصاصی
             </ButtonLink>
-            <p className="mt-4 text-sm text-[#66564c]">مشاوره پیش از سفارش · تصاویر کاتالوگ از سفارش‌های واقعی</p>
+            <p className="mt-4 text-sm text-charcoal/70">مشاوره پیش از سفارش · تصاویر کاتالوگ از سفارش‌های واقعی</p>
           </div>
         </section>
 
         <section id="courses" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
-          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#7c6558]">ONLINE COURSE</p>
-          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">هنر ساخت گل را یاد بگیرید</h2>
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-charcoal/70">ONLINE COURSE</p>
+          <h2 className="text-4xl leading-tight text-charcoal md:text-5xl">هنر ساخت گل را یاد بگیرید</h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-charcoal/70">
             دوره‌های آنلاین گلملو، تجربه سال‌ها طراحی و ساخت گل‌های دست‌ساز را در قالب آموزش‌هایی روان، فشرده و مرحله‌به‌مرحله ارائه می‌کنند؛ از اولین گل تا خلق آثاری که می‌توانند فضای اطراف و استایل شما را زیباتر کنند.
           </p>
 
           {courses.length > 0 ? (
             <CourseSlider courses={courses} statusLabels={COURSE_STATUS_LABELS} />
           ) : (
-            <div className="mt-12 text-center text-[#807269]">
+            <div className="mt-12 text-center text-charcoal/70">
               هنوز دوره‌ای منتشر نشده است.
             </div>
           )}
         </section>
 
         <section id="usage" className="mx-auto max-w-7xl scroll-mt-24 px-6 py-24 text-center md:scroll-mt-28 md:px-8 lg:px-12">
-          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#7c6558]">REAL ORDERS</p>
-          <h2 className="text-4xl leading-tight text-[#51645a] md:text-5xl">از کارگاه گلملو تا لباس مشتریان</h2>
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a]">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-charcoal/70">REAL ORDERS</p>
+          <h2 className="text-4xl leading-tight text-charcoal md:text-5xl">از کارگاه گلملو تا لباس مشتریان</h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-charcoal/70">
             تصاویر این مجموعه مربوط به گل‌هایی است که برای سفارش‌های واقعی ساخته شده‌اند و روی لباس مشتریان مورد استفاده قرار گرفته‌اند.
           </p>
 
@@ -1328,42 +1328,42 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
         </section>
       </main>
 
-      <footer id="contact" className="scroll-mt-24 bg-[#2f3b33] px-6 py-20 text-center text-[#fbf5ee] md:scroll-mt-28 md:px-8 lg:px-12">
+      <footer id="contact" className="scroll-mt-24 bg-charcoal px-6 py-20 text-center text-alabaster md:scroll-mt-28 md:px-8 lg:px-12">
         <div className="mx-auto max-w-4xl">
           <div>
             <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="mx-auto mb-8 h-10 w-auto object-contain brightness-125" />
-            <h2 className="text-4xl leading-tight text-white md:text-5xl">تماس با گلملو</h2>
-            <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-[#e4d2c1]">
+            <h2 className="text-4xl leading-tight text-alabaster md:text-5xl">تماس با گلملو</h2>
+            <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-alabaster">
               اگر برای انتخاب گل، سفارش اختصاصی یا دوره آموزشی سؤال دارید، پیام بگذارید تا تیم گلملو برای راهنمایی با شما تماس بگیرد.
             </p>
           </div>
           <form onSubmit={handleContactSubmit} className="mx-auto mt-10 grid max-w-2xl gap-4 text-right">
-            <label className="grid gap-2 text-sm font-bold text-[#f4e8dc]">
+            <label className="grid gap-2 text-sm font-bold text-alabaster">
               نام و نام خانوادگی (اختیاری)
               <input
                 value={contactForm.fullName}
                 onChange={handleContactChange("fullName")}
-                className="h-12 rounded-2xl border border-white/18 bg-white/10 px-4 text-right text-sm text-white outline-none transition placeholder:text-white/45 focus:border-white/45"
+                className="h-12 rounded-2xl border border-alabaster/18 bg-alabaster/10 px-4 text-right text-sm text-alabaster outline-none transition placeholder:text-alabaster/45 focus:border-alabaster/45"
                 placeholder="نام شما"
               />
             </label>
-            <label className="grid gap-2 text-sm font-bold text-[#f4e8dc]">
+            <label className="grid gap-2 text-sm font-bold text-alabaster">
               شماره تماس
               <input
                 value={contactForm.contact}
                 onChange={handleContactChange("contact")}
-                className="h-12 rounded-2xl border border-white/18 bg-white/10 px-4 text-right text-sm text-white outline-none transition placeholder:text-white/45 focus:border-white/45"
+                className="h-12 rounded-2xl border border-alabaster/18 bg-alabaster/10 px-4 text-right text-sm text-alabaster outline-none transition placeholder:text-alabaster/45 focus:border-alabaster/45"
                 placeholder="09123456789"
                 inputMode="numeric"
                 required
               />
             </label>
-            <label className="grid gap-2 text-sm font-bold text-[#f4e8dc]">
+            <label className="grid gap-2 text-sm font-bold text-alabaster">
               پیام
               <textarea
                 value={contactForm.message}
                 onChange={handleContactChange("message")}
-                className="min-h-32 rounded-2xl border border-white/18 bg-white/10 px-4 py-3 text-right text-sm leading-7 text-white outline-none transition placeholder:text-white/45 focus:border-white/45"
+                className="min-h-32 rounded-2xl border border-alabaster/18 bg-alabaster/10 px-4 py-3 text-right text-sm leading-7 text-alabaster outline-none transition placeholder:text-alabaster/45 focus:border-alabaster/45"
                 placeholder="درباره سفارش، دوره یا مشاوره موردنیازتان بنویسید."
                 required
               />
@@ -1378,16 +1378,16 @@ function MelodyLandingPage({ authStatus = "guest", user = null }) {
               {isSendingContactRequest ? "در حال ارسال" : "ارسال پیام"}
             </Button>
             {contactStatus.type !== "success" ? (
-              <p aria-live="polite" className={`min-h-6 text-sm ${contactStatus.type === "error" ? "text-[#ffb7b9]" : "text-[#e4d2c1]"}`}>
+              <p aria-live="polite" className="min-h-6 text-sm text-alabaster" >
                 {contactStatus.message}
               </p>
             ) : null}
           </form>
-          <nav aria-label="راهنماهای گلملو" className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-3 border-t border-white/10 pt-8 text-sm text-[#e4d2c1]">
-            <Link to="/custom-order" className="transition hover:text-white">راهنمای سفارش اختصاصی</Link>
-            <Link to="/guides/choose-fabric-flower" className="transition hover:text-white">انتخاب گل مناسب لباس</Link>
-            <Link to="/guides/fabric-flower-making-beginners" className="transition hover:text-white">شروع گل‌سازی</Link>
-            <Link to="/privacy" className="transition hover:text-white">حریم خصوصی</Link>
+          <nav aria-label="راهنماهای گلملو" className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-3 border-t border-alabaster/10 pt-8 text-sm text-alabaster">
+            <Link to="/custom-order" className="transition hover:text-alabaster">راهنمای سفارش اختصاصی</Link>
+            <Link to="/guides/choose-fabric-flower" className="transition hover:text-alabaster">انتخاب گل مناسب لباس</Link>
+            <Link to="/guides/fabric-flower-making-beginners" className="transition hover:text-alabaster">شروع گل‌سازی</Link>
+            <Link to="/privacy" className="transition hover:text-alabaster">حریم خصوصی</Link>
           </nav>
         </div>
       </footer>
@@ -1427,31 +1427,31 @@ function GuideLayout({ title, intro, sections, faqs = [], cta = null, seo, schem
   } : null);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-4xl px-6 pb-20 pt-32 text-right md:px-8">
         <article>
-          <h1 className="text-4xl leading-tight text-[#51645a] md:text-6xl">{title}</h1>
-          <p className="mt-6 text-lg leading-9 text-[#67584f] md:text-xl">{intro}</p>
+          <h1 className="text-4xl leading-tight text-charcoal md:text-6xl">{title}</h1>
+          <p className="mt-6 text-lg leading-9 text-charcoal/70 md:text-xl">{intro}</p>
           {sections.map((section) => (
-            <section key={section.title} className="mt-12 border-t border-[#ded3c8] pt-10">
-              <h2 className="text-3xl text-[#51645a]">{section.title}</h2>
-              {section.body ? <p className="mt-4 text-base leading-8 text-[#75655a]">{section.body}</p> : null}
+            <section key={section.title} className="mt-12 border-t border-greige pt-10">
+              <h2 className="text-3xl text-charcoal">{section.title}</h2>
+              {section.body ? <p className="mt-4 text-base leading-8 text-charcoal/70">{section.body}</p> : null}
               {section.items ? (
-                <ul className="mt-5 grid gap-3 text-base leading-8 text-[#67584f]">
+                <ul className="mt-5 grid gap-3 text-base leading-8 text-charcoal/70">
                   {section.items.map((item) => <li key={item}>• {item}</li>)}
                 </ul>
               ) : null}
             </section>
           ))}
           {faqs.length > 0 ? (
-            <section className="mt-12 border-t border-[#ded3c8] pt-10">
-              <h2 className="text-3xl text-[#51645a]">پرسش‌های متداول</h2>
+            <section className="mt-12 border-t border-greige pt-10">
+              <h2 className="text-3xl text-charcoal">پرسش‌های متداول</h2>
               <div className="mt-6 grid gap-7">
                 {faqs.map((item) => (
                   <div key={item.question}>
-                    <h3 className="text-xl text-[#4f433b]">{item.question}</h3>
-                    <p className="mt-2 leading-8 text-[#75655a]">{item.answer}</p>
+                    <h3 className="text-xl text-charcoal">{item.question}</h3>
+                    <p className="mt-2 leading-8 text-charcoal/70">{item.answer}</p>
                   </div>
                 ))}
               </div>
@@ -1460,7 +1460,7 @@ function GuideLayout({ title, intro, sections, faqs = [], cta = null, seo, schem
           {cta ? <div className="mt-12">{cta}</div> : null}
         </article>
       </main>
-      <footer className="bg-[#2f3b33] px-6 py-10 text-center text-sm text-[#e4d2c1]">
+      <footer className="bg-charcoal px-6 py-10 text-center text-sm text-alabaster">
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
           <Link to="/products">گل‌های آماده</Link>
           <Link to="/custom-order">سفارش اختصاصی</Link>
@@ -1560,13 +1560,13 @@ function PrivacyPage({ authStatus, user }) {
 function NotFoundPage({ authStatus, user }) {
   usePageSEO({ title: "صفحه پیدا نشد | گلملو", description: "صفحه موردنظر در گلملو پیدا نشد.", url: `${SITE_URL}/not-found`, robots: "noindex, nofollow" });
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="grid min-h-screen place-items-center px-6 text-center">
         <div>
-          <p className="text-sm font-bold text-[#7c6558]">404</p>
-          <h1 className="mt-3 text-4xl text-[#51645a] md:text-5xl">صفحه پیدا نشد</h1>
-          <p className="mt-4 text-[#75655a]">آدرس واردشده وجود ندارد یا دیگر در دسترس نیست.</p>
+          <p className="text-sm font-bold text-charcoal/70">404</p>
+          <h1 className="mt-3 text-4xl text-charcoal md:text-5xl">صفحه پیدا نشد</h1>
+          <p className="mt-4 text-charcoal/70">آدرس واردشده وجود ندارد یا دیگر در دسترس نیست.</p>
           <ButtonLink to="/" variant="primary" size="md" className="mt-7">بازگشت به گلملو</ButtonLink>
         </div>
       </main>
@@ -1670,24 +1670,24 @@ function ProductsPage({ authStatus = "guest", user = null }) {
   }, [setFilters]);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-8 lg:px-12">
         <div className="mx-auto mb-10 max-w-4xl text-center">
-          <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1>
-          <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#75655a]">
+          <h1 className="text-4xl leading-tight text-charcoal md:text-5xl">گل پارچه‌ای دست‌ساز | گل لباس، گل فشن و سفارش اختصاصی</h1>
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-charcoal/70">
             گل‌های پارچه‌ای گلملو را برای لباس مجلسی، کت، مانتو، لباس عروس، کلاه و اکسسوری مو ببینید و بر اساس کاربرد، تکنیک، جنس، اندازه، ویژگی و نوع اتصال انتخاب کنید.
           </p>
         </div>
 
         {status.type === "loading" ? (
-          <div className="rounded-[28px] bg-white/70 p-8 text-center text-[#807269]">در حال بارگذاری محصولات...</div>
+          <div className="rounded-[28px] bg-alabaster/70 p-8 text-center text-charcoal/70">در حال بارگذاری محصولات...</div>
         ) : null}
         {status.type === "error" ? (
-          <div className="rounded-[28px] border border-[#efb8ba] bg-[#fff6f6] p-8 text-center text-[#b85d60]">{status.message}</div>
+          <div className="rounded-[28px] border border-rosewood/40 bg-alabaster p-8 text-center text-charcoal/70">{status.message}</div>
         ) : null}
         {status.type !== "loading" && products.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
+          <div className="rounded-[28px] border border-dashed border-greige bg-alabaster/60 p-8 text-center text-charcoal/70">
             هنوز محصولی ثبت نشده است.
           </div>
         ) : null}
@@ -1709,15 +1709,15 @@ function ProductsPage({ authStatus = "guest", user = null }) {
           ))}
         </div>
         {status.type === "idle" && products.length > 0 && filteredProducts.length === 0 ? (
-          <div className="py-14 text-center text-[#75655a]">
-            <p className="text-lg font-bold text-[#4f433b]">محصولی با این مشخصات پیدا نشد.</p>
-            <button type="button" onClick={handleFilterReset} className="mt-4 text-sm font-bold text-[#8d5558]">نمایش همه محصولات</button>
+          <div className="py-14 text-center text-charcoal/70">
+            <p className="text-lg font-bold text-charcoal/70">محصولی با این مشخصات پیدا نشد.</p>
+            <button type="button" onClick={handleFilterReset} className="mt-4 text-sm font-bold text-charcoal/70">نمایش همه محصولات</button>
           </div>
         ) : null}
 
-        <section className="mx-auto mt-20 max-w-3xl border-t border-[#ddd3c9] pt-10 text-center">
-          <h2 className="text-2xl text-[#51645a] md:text-3xl">انتخاب گل پارچه‌ای مناسب لباس</h2>
-          <p className="mt-4 text-sm leading-8 text-[#75655a] md:text-base">
+        <section className="mx-auto mt-20 max-w-3xl border-t border-greige pt-10 text-center">
+          <h2 className="text-2xl text-charcoal md:text-3xl">انتخاب گل پارچه‌ای مناسب لباس</h2>
+          <p className="mt-4 text-sm leading-8 text-charcoal/70 md:text-base">
             گل لباس می‌تواند بر اساس فرم لباس، محل نصب و جنس پارچه به‌صورت آماده یا اختصاصی انتخاب شود. مدل‌های کریشه، فشن، استامپ‌ورک و گل‌های سه‌بعدی هرکدام ظاهر متفاوتی ایجاد می‌کنند و امکان شخصی‌سازی رنگ، اندازه و متریال برای محصولات مشخص‌شده وجود دارد.
           </p>
           <ButtonLink to="/custom-order" variant="primary" size="md" className="mt-6">شروع سفارش اختصاصی</ButtonLink>
@@ -1769,24 +1769,24 @@ function CoursesPage({ authStatus = "guest", user = null }) {
   }, []);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-24 pt-32 md:px-8 lg:px-12">
         <div className="mx-auto mb-10 max-w-3xl text-center">
-          <h1 className="text-4xl leading-tight text-[#51645a] md:text-5xl">دوره‌های گلملو</h1>
-          <p className="mt-4 text-base leading-8 text-[#75655a] md:text-lg">
+          <h1 className="text-4xl leading-tight text-charcoal md:text-5xl">دوره‌های گلملو</h1>
+          <p className="mt-4 text-base leading-8 text-charcoal/70 md:text-lg">
             هر دوره را جداگانه ببینید، جزئیات آموزش‌ها را بررسی کنید و وضعیت انتشار یا ثبت‌نام را از صفحه همان دوره دنبال کنید.
           </p>
         </div>
 
         {status.type === "loading" ? (
-          <div className="rounded-[28px] bg-white/70 p-8 text-center text-[#807269]">در حال بارگذاری دوره‌ها...</div>
+          <div className="rounded-[28px] bg-alabaster/70 p-8 text-center text-charcoal/70">در حال بارگذاری دوره‌ها...</div>
         ) : null}
         {status.type === "error" ? (
-          <div className="rounded-[28px] border border-[#efb8ba] bg-[#fff6f6] p-8 text-center text-[#b85d60]">{status.message}</div>
+          <div className="rounded-[28px] border border-rosewood/40 bg-alabaster p-8 text-center text-charcoal/70">{status.message}</div>
         ) : null}
         {status.type !== "loading" && courses.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-[#d9cfc5] bg-white/60 p-8 text-center text-[#807269]">
+          <div className="rounded-[28px] border border-dashed border-greige bg-alabaster/60 p-8 text-center text-charcoal/70">
             هنوز دوره‌ای منتشر نشده است.
           </div>
         ) : null}
@@ -1947,7 +1947,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
 
   if (status.type === "loading") {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] text-[#75655a]">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster text-charcoal/70">
         در حال بارگذاری محصول...
       </div>
     );
@@ -1955,7 +1955,7 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
 
   if (!product) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] px-6 text-center text-[#75655a]">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster px-6 text-center text-charcoal/70">
         <div>
           <p>{status.message || "محصول پیدا نشد."}</p>
           <ButtonLink to={productBackTarget} state={productBackState} variant="primary" size="md" className="mt-4">بازگشت به محصولات</ButtonLink>
@@ -1965,24 +1965,24 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-8 lg:px-12">
-        <nav aria-label="مسیر صفحه" className="mb-5 flex flex-wrap items-center gap-2 text-sm text-[#75655a]">
+        <nav aria-label="مسیر صفحه" className="mb-5 flex flex-wrap items-center gap-2 text-sm text-charcoal/70">
           <Link to="/">گلملو</Link>
           <ChevronLeft className="h-4 w-4" />
           <Link to="/products">محصولات</Link>
           <ChevronLeft className="h-4 w-4" />
           <span aria-current="page">{product.title}</span>
         </nav>
-        <section className="grid gap-8 rounded-[34px] border border-[#e8dfd5] bg-[#faf7f3] p-5 shadow-[0_24px_60px_rgba(85,63,45,0.06)] md:grid-cols-[0.95fr_1.05fr] md:p-8">
+        <section className="grid gap-8 rounded-[34px] border border-greige bg-alabaster p-5 shadow-soft md:grid-cols-[0.95fr_1.05fr] md:p-8">
           <ProductGallery images={productImages} title={product.title} />
           <div className="flex flex-col justify-center text-right">
-            <p className="text-sm font-bold text-[#c08081]">{product.category || "محصول قابل سفارش"}</p>
-            <h1 className="mt-3 text-4xl leading-tight text-[#4f433b] md:text-5xl">{product.title}</h1>
-            <p className="mt-5 text-lg leading-9 text-[#75655a]">{product.description || product.shortDescription}</p>
+            <p className="text-sm font-bold text-charcoal/70">{product.category || "محصول قابل سفارش"}</p>
+            <h1 className="mt-3 text-4xl leading-tight text-charcoal md:text-5xl">{product.title}</h1>
+            <p className="mt-5 text-lg leading-9 text-charcoal/70">{product.description || product.shortDescription}</p>
 
-            <dl className="mt-5 grid gap-x-5 gap-y-3 rounded-2xl border border-[#ece4db] bg-white/80 p-4 text-sm text-[#6f6259] sm:grid-cols-2">
+            <dl className="mt-5 grid gap-x-5 gap-y-3 rounded-2xl border border-greige bg-alabaster/80 p-4 text-sm text-charcoal/70 sm:grid-cols-2">
               {[
                 ["قیمت پایه", productPriceLabel(product)],
                 ["موجودی", PRODUCT_AVAILABILITY_LABELS[product.availability] || "در حال بررسی"],
@@ -1997,9 +1997,9 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
                 ["اندازه", detailDiameter || "در حال تکمیل"],
                 ["سفارشی‌سازی", customizationLabels.length ? customizationLabels.join("، ") : product.isCustomizable ? "قابل سفارش اختصاصی" : "ثابت"],
               ].map(([label, value]) => (
-                <div key={label} className="flex items-start justify-between gap-4 border-b border-[#f0e7de] pb-2 last:border-b-0 last:pb-0 sm:[&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-last-child(-n+2)]:pb-0">
-                  <dt className="shrink-0 text-xs text-[#a18f83]">{label}</dt>
-                  <dd className="text-left text-sm font-bold leading-6 text-[#4f433b]">{value}</dd>
+                <div key={label} className="flex items-start justify-between gap-4 border-b border-greige pb-2 last:border-b-0 last:pb-0 sm:[&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-last-child(-n+2)]:pb-0">
+                  <dt className="shrink-0 text-xs text-charcoal/70">{label}</dt>
+                  <dd className="text-left text-sm font-bold leading-6 text-charcoal/70">{value}</dd>
                 </div>
               ))}
             </dl>
@@ -2017,19 +2017,19 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
               <Link
                 to={productBackTarget}
                 state={productBackState}
-                className="inline-flex h-12 items-center justify-center rounded-full border border-[#d8cabd] bg-white px-6 text-sm font-bold text-[#6d5d53] transition hover:border-[#c08081]/50 hover:text-[#c08081]"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-greige bg-alabaster px-6 text-sm font-bold text-charcoal/70 transition hover:border-rosewood/50 hover:text-rosewood"
               >
                 بازگشت به محصولات
               </Link>
             </div>
-            <p className="mt-4 text-sm leading-7 text-[#75655a]">
+            <p className="mt-4 text-sm leading-7 text-charcoal/70">
               قیمت نمایش‌داده‌شده پایه است و پس از انتخاب رنگ، اندازه، جنس و جزئیات شخصی‌سازی ممکن است تغییر کند. مشاوره پیش از ثبت نهایی سفارش انجام می‌شود.
             </p>
           </div>
         </section>
         {relatedProducts.length > 0 ? (
           <section className="py-16 text-center">
-            <h2 className="text-3xl text-[#51645a] md:text-4xl">گل‌های مشابه</h2>
+            <h2 className="text-3xl text-charcoal md:text-4xl">گل‌های مشابه</h2>
             <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-5 lg:gap-6">
               {relatedProducts.map((item, index) => (
                 <ProductCard key={item.id} product={item} index={index} showOverlay={false} sizes="33vw" />
@@ -2131,8 +2131,8 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
   if (authStatus === "checking") {
     content = (
       <>
-        <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#c08081]" />
-        <h3 className="mt-4 text-2xl text-[#4f433b]">در حال بررسی حساب کاربری</h3>
+        <Loader2 className="mx-auto h-6 w-6 animate-spin text-charcoal/70" />
+        <h3 className="mt-4 text-2xl text-charcoal">در حال بررسی حساب کاربری</h3>
       </>
     );
   } else if (hasAccess) {
@@ -2140,11 +2140,11 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
     const hasResumePoint = progressRecord.lastLessonId && progressRecord.currentTime > 0;
     content = (
       <>
-        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#edf7f0] text-[#4d9a61]">
+        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-alabaster text-charcoal/70">
           <CheckCircle2 className="h-5 w-5" />
         </div>
-        <h3 className="mt-4 text-2xl text-[#4f433b]">این دوره در پنل شما فعال است</h3>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#807269]">
+        <h3 className="mt-4 text-2xl text-charcoal">این دوره در پنل شما فعال است</h3>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-charcoal/70">
           {hasResumePoint
             ? `ادامه دوره از آخرین محل تماشا، حدود ${formatPlaybackTime(progressRecord.currentTime)}، باز می‌شود.`
             : "از پنل کاربری وارد دوره شوید و آموزش‌ها را از همان‌جا دنبال کنید."}
@@ -2163,11 +2163,11 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
   } else if (!requestType) {
     content = (
       <>
-        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f7efea] text-[#8d786d]">
+        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-alabaster text-charcoal/70">
           <BookOpen className="h-5 w-5" />
         </div>
-        <h3 className="mt-4 text-2xl text-[#4f433b]">ثبت درخواست این دوره فعلاً فعال نیست</h3>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#807269]">
+        <h3 className="mt-4 text-2xl text-charcoal">ثبت درخواست این دوره فعلاً فعال نیست</h3>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-charcoal/70">
           وضعیت انتشار و امکان ثبت درخواست از همین صفحه اعلام می‌شود.
         </p>
       </>
@@ -2175,11 +2175,11 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
   } else if (authStatus === "authenticated" && user) {
     content = (
       <>
-        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff2f2] text-[#c08081]">
+        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-alabaster text-charcoal/70">
           <BookOpen className="h-5 w-5" />
         </div>
-        <h3 className="mt-4 text-2xl text-[#4f433b]">{requestCopy.title}</h3>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#807269]">
+        <h3 className="mt-4 text-2xl text-charcoal">{requestCopy.title}</h3>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-charcoal/70">
           {requestCopy.description}
         </p>
         <Button
@@ -2197,11 +2197,11 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
   } else {
     content = (
       <>
-        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f7efea] text-[#c08081]">
+        <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-alabaster text-charcoal/70">
           <User className="h-5 w-5" />
         </div>
-        <h3 className="mt-4 text-2xl text-[#4f433b]">برای ادامه وارد شوید</h3>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#807269]">
+        <h3 className="mt-4 text-2xl text-charcoal">برای ادامه وارد شوید</h3>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-charcoal/70">
           بعد از ورود یا ساخت حساب، به همین صفحه برمی‌گردید و می‌توانید {requestCopy.title} را ثبت کنید.
         </p>
         <ButtonLink
@@ -2218,14 +2218,14 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
   }
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-[#e6dbcf] bg-white/70 p-6 text-center shadow-[0_18px_40px_rgba(85,63,45,0.05)]">
+    <div className="overflow-hidden rounded-[28px] border border-greige bg-alabaster/70 p-6 text-center shadow-soft">
       <SuccessToast message={successToastMessage} toastKey="course-signup-success" />
       {content}
 
       {courseStatus.type !== "success" ? (
         <p
           aria-live="polite"
-          className={`mx-auto mt-4 max-w-xl text-sm ${courseStatus.type === "error" ? "text-[#b85d60]" : "text-[#9b867d]"
+          className={`mx-auto mt-4 max-w-xl text-sm ${courseStatus.type === "error" ? "text-rosewood" : "text-charcoal/70"
             }`}
         >
           {courseStatus.message || (hasRequested ? "این درخواست قبلاً برای حساب شما ثبت شده است." : "")}
@@ -2238,9 +2238,9 @@ function CourseAccessPanel({ course, coursePath, authStatus = "guest", user = nu
 function LessonCard({ lesson }) {
   return (
     <article
-      className="relative overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] md:min-h-[420px]"
+      className="relative overflow-hidden rounded-[32px] border border-greige bg-alabaster shadow-soft md:min-h-[420px]"
     >
-      <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
+      <div className="relative h-64 overflow-hidden bg-alabaster md:hidden">
         <CourseVisual
           imageUrl={lesson.imageUrl}
           imageSources={lesson.imageSources}
@@ -2252,28 +2252,28 @@ function LessonCard({ lesson }) {
       <div className="absolute inset-0 hidden md:block">
         <CourseVisual imageUrl={lesson.imageUrl} imageSources={lesson.imageSources} sizes="(min-width: 1024px) 980px, 86vw" title={lesson.title} />
       </div>
-      <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
-      <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
+      <div className="absolute inset-0 hidden bg-surface-fade md:block" />
+      <div className="absolute inset-y-0 left-0 hidden bg-surface-fade md:block md:w-[72%]" />
 
       <div className="relative z-10 p-5 md:flex md:min-h-[420px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
         <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-[#a49084]">
-              <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em] text-[#6f5c52]">{lesson.id}</span>
+            <div className="flex items-center gap-2 text-charcoal/70">
+              <span className="rounded-full bg-alabaster px-3 py-1 text-xs tracking-[0.16em] text-charcoal/70">{lesson.id}</span>
               {lesson.level ? (
-                <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#536451]">{lesson.level}</span>
+                <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">{lesson.level}</span>
               ) : null}
               {lesson.type ? (
-                <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#6f5b51]">{lesson.type}</span>
+                <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">{lesson.type}</span>
               ) : null}
               {lesson.duration ? (
-                <span className="rounded-full bg-[#f8f3ed] px-3 py-1 text-xs text-[#8b7a70]">{lesson.duration}</span>
+                <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">{lesson.duration}</span>
               ) : null}
             </div>
           </div>
 
-          <h3 className="mt-5 text-3xl leading-tight text-[#4f433b]">گل {lesson.title}</h3>
-          <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{lesson.summary}</p>
+          <h3 className="mt-5 text-3xl leading-tight text-charcoal">گل {lesson.title}</h3>
+          <p className="mt-4 max-w-lg text-base leading-8 text-charcoal/70">{lesson.summary}</p>
 
           <div className="mt-6 flex flex-wrap justify-end gap-2">
             {(lesson.materials || []).map((item) => (
@@ -2385,12 +2385,12 @@ function CourseDetailPage({ authStatus = "guest", user = null }) {
   }, [course?.id, course?.status]);
 
   if (status.type === "loading") {
-    return <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] text-[#75655a]">در حال بارگذاری دوره...</div>;
+    return <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster text-charcoal/70">در حال بارگذاری دوره...</div>;
   }
 
   if (!course) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f5f1eb] px-6 text-center text-[#75655a]">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster px-6 text-center text-charcoal/70">
         <div>
           <p>{status.message || "دوره پیدا نشد."}</p>
           <ButtonLink to="/" variant="primary" size="md" className="mt-4">بازگشت به خانه</ButtonLink>
@@ -2400,49 +2400,49 @@ function CourseDetailPage({ authStatus = "guest", user = null }) {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal/70">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayUserName(user)} />
       <div className="mx-auto max-w-7xl px-6 pb-8 pt-28 md:px-8 lg:px-12">
-        <section className="overflow-hidden rounded-[40px] border border-[#e8dfd5] bg-[#faf7f3] shadow-[0_24px_60px_rgba(85,63,45,0.06)]">
-          <div className="border-b border-[#eee5db] px-6 py-14 md:px-10 lg:px-14">
+        <section className="overflow-hidden rounded-[40px] border border-greige bg-alabaster shadow-soft">
+          <div className="border-b border-greige px-6 py-14 md:px-10 lg:px-14">
             <div className="mx-auto max-w-4xl text-center">
-              <h1 className="mt-5 text-5xl leading-[1.18] text-[#4f433b] md:text-6xl">{course.title}</h1>
-              <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-[#75655a] md:text-xl">{course.description}</p>
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-sm text-[#75655a]">
-                <span className="rounded-full bg-white px-4 py-2 shadow-[0_10px_24px_rgba(85,63,45,0.05)]">
+              <h1 className="mt-5 text-5xl leading-[1.18] text-charcoal md:text-6xl">{course.title}</h1>
+              <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-charcoal/70 md:text-xl">{course.description}</p>
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-sm text-charcoal/70">
+                <span className="rounded-full bg-alabaster px-4 py-2 shadow-soft">
                   {COURSE_STATUS_LABELS[course.status] || course.status}
                 </span>
                 {course.basePriceRial > 0 ? (
-                  <span className="rounded-full bg-white px-4 py-2 font-bold text-[#4f433b] shadow-[0_10px_24px_rgba(85,63,45,0.05)]">
+                  <span className="rounded-full bg-alabaster px-4 py-2 font-bold text-charcoal/70 shadow-soft">
                     {formatTomanPrice(course.basePriceRial)}
                   </span>
                 ) : null}
-                {course.accessDuration ? <span className="rounded-full bg-white px-4 py-2">دسترسی: {course.accessDuration}</span> : null}
-                {course.supportType ? <span className="rounded-full bg-white px-4 py-2">پشتیبانی: {course.supportType}</span> : null}
+                {course.accessDuration ? <span className="rounded-full bg-alabaster px-4 py-2">دسترسی: {course.accessDuration}</span> : null}
+                {course.supportType ? <span className="rounded-full bg-alabaster px-4 py-2">پشتیبانی: {course.supportType}</span> : null}
               </div>
             </div>
 
             <div className="mt-10 grid gap-4 md:grid-cols-2">
-              <div className="rounded-[22px] border border-[#ece4db] bg-white p-4 text-right shadow-[0_10px_28px_rgba(85,63,45,0.04)] md:p-5">
-                <h3 className="mb-2 text-lg text-[#4f433b]">آنچه در این دوره یاد می‌گیرید</h3>
-                <ul className="space-y-1.5 text-sm leading-6 text-[#726359]">
+              <div className="rounded-[22px] border border-greige bg-alabaster p-4 text-right shadow-soft md:p-5">
+                <h3 className="mb-2 text-lg text-charcoal">آنچه در این دوره یاد می‌گیرید</h3>
+                <ul className="space-y-1.5 text-sm leading-6 text-charcoal/70">
                   {(course.outcomes || []).slice(0, 5).map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-[22px] border border-[#ece4db] bg-white p-4 text-right shadow-[0_10px_28px_rgba(85,63,45,0.04)] md:p-5">
-                <h3 className="mb-2 text-lg text-[#4f433b]">مناسب چه کسانی است؟</h3>
-                <ul className="space-y-1.5 text-sm leading-6 text-[#726359]">
+              <div className="rounded-[22px] border border-greige bg-alabaster p-4 text-right shadow-soft md:p-5">
+                <h3 className="mb-2 text-lg text-charcoal">مناسب چه کسانی است؟</h3>
+                <ul className="space-y-1.5 text-sm leading-6 text-charcoal/70">
                   {(course.audience || []).map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>
               {(course.prerequisites || []).length > 0 ? (
-                <div className="rounded-[22px] border border-[#ece4db] bg-white p-4 text-right shadow-[0_10px_28px_rgba(85,63,45,0.04)] md:col-span-2 md:p-5">
-                  <h3 className="mb-2 text-lg text-[#4f433b]">پیش‌نیازها</h3>
-                  <ul className="space-y-1.5 text-sm leading-6 text-[#726359]">
+                <div className="rounded-[22px] border border-greige bg-alabaster p-4 text-right shadow-soft md:col-span-2 md:p-5">
+                  <h3 className="mb-2 text-lg text-charcoal">پیش‌نیازها</h3>
+                  <ul className="space-y-1.5 text-sm leading-6 text-charcoal/70">
                     {course.prerequisites.map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 </div>
@@ -2452,10 +2452,10 @@ function CourseDetailPage({ authStatus = "guest", user = null }) {
 
           <div className="px-6 py-12 md:px-10 lg:px-14">
             <div className="mb-8 flex flex-col items-start gap-3 text-right md:flex-row md:items-end md:justify-between">
-              <div className="order-2 text-sm text-[#9c8a7f] md:order-1">{(course.lessons || []).length} آموزش ویدیویی</div>
+              <div className="order-2 text-sm text-charcoal/70 md:order-1">{(course.lessons || []).length} آموزش ویدیویی</div>
               <div className="order-1 md:order-2">
-                <h2 className="text-2xl text-[#4f433b]">سرفصل‌های دوره</h2>
-                <p className="mt-2 text-sm text-[#8f7f73]">هر درس با متریال موردنیاز و سطح سختی مشخص شده است.</p>
+                <h2 className="text-2xl text-charcoal">سرفصل‌های دوره</h2>
+                <p className="mt-2 text-sm text-charcoal/70">هر درس با متریال موردنیاز و سطح سختی مشخص شده است.</p>
               </div>
             </div>
 
@@ -2640,7 +2640,7 @@ function AppRoutes() {
       <Route
         path="/auth"
         element={(
-          <Suspense fallback={<div dir="rtl" className="grid min-h-screen place-items-center bg-[#f3f7fb] text-[#708097]">در حال بارگذاری...</div>}>
+          <Suspense fallback={<div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster text-charcoal/70">در حال بارگذاری...</div>}>
             <AuthPage authStatus={authStatus} user={user} onAuthenticate={authenticate} />
           </Suspense>
         )}
@@ -2649,7 +2649,7 @@ function AppRoutes() {
       <Route
         path="/panel/*"
         element={(
-          <Suspense fallback={<div dir="rtl" className="grid min-h-screen place-items-center bg-[#f3f7fb] text-[#708097]">در حال بارگذاری پنل...</div>}>
+          <Suspense fallback={<div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster text-charcoal/70">در حال بارگذاری پنل...</div>}>
             <PanelRoutes
               authStatus={authStatus}
               user={user}
@@ -2667,7 +2667,7 @@ function AppRoutes() {
 }
 
 function PublicPageLoader() {
-  return <div dir="rtl" className="grid min-h-screen place-items-center bg-[#fffdfb] text-[#807269]">در حال بارگذاری...</div>;
+  return <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster text-charcoal/70">در حال بارگذاری...</div>;
 }
 
 class PanelErrorBoundary extends React.Component {
@@ -2688,15 +2688,15 @@ class PanelErrorBoundary extends React.Component {
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f3f7fb] px-5 text-center text-[#40516a]">
-        <div className="w-full max-w-md rounded-[28px] bg-white p-7 shadow-[0_24px_64px_rgba(70,88,116,0.1)]">
-          <h1 className="text-xl font-black text-[#27364d]">پنل به‌درستی بارگذاری نشد</h1>
-          <p className="mt-3 text-sm leading-7 text-[#708097]">صفحه را دوباره بارگذاری کنید. اگر مشکل ادامه داشت، از حساب خارج شوید و دوباره وارد شوید.</p>
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster px-5 text-center text-charcoal">
+        <div className="w-full max-w-md rounded-[28px] bg-alabaster p-7 shadow-soft">
+          <h1 className="text-xl font-black text-charcoal">پنل به‌درستی بارگذاری نشد</h1>
+          <p className="mt-3 text-sm leading-7 text-charcoal/70">صفحه را دوباره بارگذاری کنید. اگر مشکل ادامه داشت، از حساب خارج شوید و دوباره وارد شوید.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <button type="button" onClick={() => window.location.reload()} className="h-11 rounded-xl bg-[#a05f62] px-5 text-sm font-bold text-white">
+            <button type="button" onClick={() => window.location.reload()} className="h-11 rounded-xl bg-rosewood px-5 text-sm font-bold text-alabaster">
               بارگذاری دوباره
             </button>
-            <a href="/" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] px-5 text-sm font-bold text-[#617088]">
+            <a href="/" className="inline-flex h-11 items-center justify-center rounded-xl border border-greige px-5 text-sm font-bold text-charcoal/70">
               بازگشت به سایت
             </a>
           </div>

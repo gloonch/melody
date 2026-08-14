@@ -98,7 +98,7 @@ export default function RichTextEditor({ contentKey, html, json, onChange, onUpl
   }, [contentKey, editor, html, json]);
 
   if (!editor) {
-    return <div className="grid min-h-[420px] place-items-center border border-[#d9cfc5] bg-white"><Loader2 className="h-5 w-5 animate-spin text-[#a05f62]" /></div>;
+    return <div className="grid min-h-[420px] place-items-center border border-greige bg-alabaster"><Loader2 className="h-5 w-5 animate-spin text-charcoal/70" /></div>;
   }
 
   const setLink = () => {

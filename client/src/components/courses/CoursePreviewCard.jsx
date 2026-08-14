@@ -12,9 +12,9 @@ export function CoursePreviewCard({ course, statusLabels = {} }) {
       aria-label={`مشاهده جزئیات دوره ${course.title}`}
     >
       <article
-        className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-[#e9e1d7] bg-white shadow-[0_18px_40px_rgba(85,63,45,0.05)] transition-transform duration-300 hover:-translate-y-1.5 md:min-h-[390px]"
+        className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-greige bg-alabaster shadow-soft transition-transform duration-300 hover:-translate-y-1.5 md:min-h-[390px]"
       >
-        <div className="relative h-64 overflow-hidden bg-[#f7f0e8] md:hidden">
+        <div className="relative h-64 overflow-hidden bg-alabaster md:hidden">
           <CourseVisual
             imageUrl={course.imageUrl}
             imageSources={course.imageSources}
@@ -26,30 +26,30 @@ export function CoursePreviewCard({ course, statusLabels = {} }) {
         <div className="absolute inset-0 hidden md:block">
           <CourseVisual imageUrl={course.imageUrl} imageSources={course.imageSources} sizes="(min-width: 1024px) 980px, 86vw" title={course.title} />
         </div>
-        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.96)_40%,rgba(255,250,246,0.72)_12%,rgba(255,250,246,0.18)_48%,rgba(255,250,246,0)_100%)] md:block" />
-        <div className="absolute inset-y-0 left-0 hidden bg-[linear-gradient(90deg,#fffaf6_0%,rgba(255,250,246,0.98)_36%,rgba(255,250,246,0.8)_52%,rgba(255,250,246,0)_74%)] md:block md:w-[72%]" />
+        <div className="absolute inset-0 hidden bg-surface-fade md:block" />
+        <div className="absolute inset-y-0 left-0 hidden bg-surface-fade md:block md:w-[72%]" />
 
         <div className="relative z-10 p-5 md:flex md:min-h-[390px] md:items-center md:py-8 md:pl-5 md:pr-8 lg:py-10 lg:pl-6 lg:pr-10">
           <div className="mr-auto w-full max-w-xl text-right md:w-[46%]">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-[#a49084]">
+              <div className="flex flex-wrap items-center gap-2 text-charcoal/70">
                 {course.term ? (
-                  <span className="rounded-full bg-[#f6efea] px-3 py-1 text-xs tracking-[0.16em] text-[#6f5c52]">{course.term}</span>
+                  <span className="rounded-full bg-alabaster px-3 py-1 text-xs tracking-[0.16em] text-charcoal/70">{course.term}</span>
                 ) : null}
                 {course.level ? (
-                  <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs text-[#536451]">{course.level}</span>
+                  <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">{course.level}</span>
                 ) : null}
                 {course.format ? (
-                  <span className="rounded-full bg-[#f4eeea] px-3 py-1 text-xs text-[#6f5b51]">{course.format}</span>
+                  <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">{course.format}</span>
                 ) : null}
-                <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#8f4f52]">
+                <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">
                   {statusLabels[course.status] || course.status}
                 </span>
               </div>
             </div>
 
-            <h3 className="mt-5 text-3xl leading-tight text-[#4f433b] md:text-[2.05rem]">{course.title}</h3>
-            <p className="mt-4 max-w-lg text-base leading-8 text-[#73645a]">{course.summary || course.subtitle}</p>
+            <h3 className="mt-5 text-3xl leading-tight text-charcoal md:text-[2.05rem]">{course.title}</h3>
+            <p className="mt-4 max-w-lg text-base leading-8 text-charcoal/70">{course.summary || course.subtitle}</p>
           </div>
         </div>
       </article>

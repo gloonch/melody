@@ -91,35 +91,35 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <main dir="rtl" className="grid min-h-screen place-items-center bg-[#f6f3ef] px-4">
-      <section className="w-full max-w-sm rounded-lg border border-[#ded5cc] bg-white p-6 shadow-sm">
+    <main dir="rtl" className="grid min-h-screen place-items-center bg-alabaster px-4">
+      <section className="w-full max-w-sm rounded-lg border border-greige bg-alabaster p-6 shadow-soft">
         <div className="mb-6 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-md bg-[#c08081] text-white">
+          <div className="grid h-10 w-10 place-items-center rounded-md bg-rosewood text-alabaster">
             <LayoutDashboard className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-[#3f352f]">پنل مدیریت golmelo</h1>
-            <p className="mt-1 text-sm text-[#807269]">ورود ادمین</p>
+            <h1 className="text-xl font-semibold text-charcoal">پنل مدیریت golmelo</h1>
+            <p className="mt-1 text-sm text-charcoal/70">ورود ادمین</p>
           </div>
         </div>
 
         <form className="grid gap-4" onSubmit={handleSubmit}>
-          <label className="grid gap-2 text-sm text-[#5f544d]">
+          <label className="grid gap-2 text-sm text-charcoal/70">
             نام کاربری
             <input
               value={form.username}
               onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-              className="h-11 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]"
+              className="h-11 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none focus:border-rosewood/40"
               autoComplete="username"
               required
             />
           </label>
-          <label className="grid gap-2 text-sm text-[#5f544d]">
+          <label className="grid gap-2 text-sm text-charcoal/70">
             رمز عبور
             <input
               value={form.password}
               onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-              className="h-11 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]"
+              className="h-11 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none focus:border-rosewood/40"
               type="password"
               autoComplete="current-password"
               required
@@ -128,14 +128,14 @@ function LoginScreen({ onLogin }) {
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#c08081] px-4 text-sm font-medium text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-rosewood px-4 text-sm font-medium text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             ورود
           </button>
         </form>
 
-        {status.message ? <p className="mt-4 text-sm text-[#b85d60]">{status.message}</p> : null}
+        {status.message ? <p className="mt-4 text-sm text-charcoal/70">{status.message}</p> : null}
       </section>
     </main>
   );
@@ -150,13 +150,13 @@ function StatBox({ label, value, icon: Icon, active, controls, onClick }) {
       aria-expanded={active}
       aria-controls={controls}
       onClick={onClick}
-      className={`w-full rounded-lg border p-4 text-right shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#c08081]/40 ${active ? "border-[#c08081] bg-[#fbf1f1]" : "border-[#e0d7cd] bg-white hover:border-[#d2b4b5] hover:bg-[#fdfafa]"}`}
+      className={`w-full rounded-lg border p-4 text-right shadow-soft transition focus:outline-none focus:ring-2 focus:ring-rosewood/40 ${active ? "border-rosewood/40 bg-alabaster" : "border-greige bg-alabaster hover:border-rosewood/40 hover:bg-alabaster"}`}
     >
-      <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-md ${active ? "bg-[#c08081] text-white" : "bg-[#f0ebe5] text-[#c08081]"}`}>
+      <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-md ${active ? "bg-rosewood text-alabaster" : "bg-alabaster text-charcoal/70"}`}>
         <Icon className="h-5 w-5" />
       </div>
-      <div className="text-2xl font-semibold text-[#3f352f]">{value}</div>
-      <div className="mt-1 text-sm text-[#807269]">{label}</div>
+      <div className="text-2xl font-semibold text-charcoal/70">{value}</div>
+      <div className="mt-1 text-sm text-charcoal/70">{label}</div>
     </button>
   );
 }
@@ -184,11 +184,11 @@ function ImageManager({ title, description, images, uploadLabel, onUpload, onDel
   };
 
   return (
-    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-greige bg-alabaster p-5 shadow-soft">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#3f352f]">{title}</h2>
-          <p className="mt-1 text-sm leading-6 text-[#807269]">{description}</p>
+          <h2 className="text-lg font-semibold text-charcoal">{title}</h2>
+          <p className="mt-1 text-sm leading-6 text-charcoal/70">{description}</p>
         </div>
         <form className="flex flex-col gap-2 sm:flex-row sm:items-center" onSubmit={handleSubmit}>
           <input
@@ -196,12 +196,12 @@ function ImageManager({ title, description, images, uploadLabel, onUpload, onDel
             type="file"
             accept="image/*"
             multiple
-            className="max-w-64 rounded-md border border-[#d9cfc5] bg-[#fbf9f6] px-3 py-2 text-sm text-[#5f544d]"
+            className="max-w-64 rounded-md border border-greige bg-alabaster px-3 py-2 text-sm text-charcoal/70"
           />
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#c08081] px-4 text-sm font-medium text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-rosewood px-4 text-sm font-medium text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood disabled:cursor-not-allowed disabled:opacity-70"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             {uploadLabel}
@@ -210,24 +210,24 @@ function ImageManager({ title, description, images, uploadLabel, onUpload, onDel
       </div>
 
       {images.length === 0 ? (
-        <div className="rounded-md border border-dashed border-[#d9cfc5] bg-[#fbf9f6] p-6 text-center text-sm text-[#807269]">
+        <div className="rounded-md border border-dashed border-greige bg-alabaster p-6 text-center text-sm text-charcoal/70">
           هنوز تصویری ثبت نشده است.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
           {images.map((image) => (
-            <article key={image.id} className="overflow-hidden rounded-lg border border-[#e5ddd5] bg-[#fbf9f6]">
-              <div className="aspect-square bg-[#efe8df]">
+            <article key={image.id} className="overflow-hidden rounded-lg border border-greige bg-alabaster">
+              <div className="aspect-square bg-greige/70">
                 <img src={image.url} alt={image.alt} className="h-full w-full object-cover" loading="lazy" />
               </div>
               <div className="flex items-center justify-between gap-2 p-2">
-                <span className="min-w-0 truncate text-xs text-[#807269]" title={image.filename}>
+                <span className="min-w-0 truncate text-xs text-charcoal/70" title={image.filename}>
                   {image.filename}
                 </span>
                 <button
                   type="button"
                   onClick={() => onDelete(image.id)}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#b85d60] transition hover:bg-[#f4e6e7]"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-charcoal/70 transition hover:bg-greige/70"
                   aria-label="حذف تصویر"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -243,45 +243,45 @@ function ImageManager({ title, description, images, uploadLabel, onUpload, onDel
 
 function ContactRequestsTable({ requests, onDelete, deletingId }) {
   return (
-    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-greige bg-alabaster p-5 shadow-soft">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-[#3f352f]">پیام‌های فرم تماس</h2>
-        <p className="mt-1 text-sm text-[#807269]">نام، شماره یا راه ارتباطی، متن پیام و تاریخ ارسال.</p>
+        <h2 className="text-lg font-semibold text-charcoal">پیام‌های فرم تماس</h2>
+        <p className="mt-1 text-sm text-charcoal/70">نام، شماره یا راه ارتباطی، متن پیام و تاریخ ارسال.</p>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] border-separate border-spacing-0 text-right text-sm">
           <thead>
-            <tr className="bg-[#f4eee8] text-[#5f544d]">
-              <th className="rounded-r-md border-y border-r border-[#e0d7cd] px-3 py-3 font-medium">نام شخص</th>
-              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">شماره تلفن</th>
-              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">پیام</th>
-              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">تاریخ ارسال</th>
-              <th className="rounded-l-md border-y border-l border-[#e0d7cd] px-3 py-3 font-medium">عملیات</th>
+            <tr className="bg-alabaster text-charcoal/70">
+              <th className="rounded-r-md border-y border-r border-greige px-3 py-3 font-medium">نام شخص</th>
+              <th className="border-y border-greige px-3 py-3 font-medium">شماره تلفن</th>
+              <th className="border-y border-greige px-3 py-3 font-medium">پیام</th>
+              <th className="border-y border-greige px-3 py-3 font-medium">تاریخ ارسال</th>
+              <th className="rounded-l-md border-y border-l border-greige px-3 py-3 font-medium">عملیات</th>
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-[#807269]">
+                <td colSpan={5} className="px-3 py-8 text-center text-charcoal/70">
                   هنوز پیامی ثبت نشده است.
                 </td>
               </tr>
             ) : (
               requests.map((request) => (
                 <tr key={request.id} className="align-top">
-                  <td className="border-b border-[#eee7df] px-3 py-3 font-medium text-[#3f352f]">{request.fullName}</td>
-                  <td className="border-b border-[#eee7df] px-3 py-3 text-[#5f544d]">{request.contact}</td>
-                  <td className="max-w-xl border-b border-[#eee7df] px-3 py-3 leading-6 text-[#5f544d]">{request.message}</td>
-                  <td className="whitespace-nowrap border-b border-[#eee7df] px-3 py-3 text-[#807269]">
+                  <td className="border-b border-greige px-3 py-3 font-medium text-charcoal/70">{request.fullName}</td>
+                  <td className="border-b border-greige px-3 py-3 text-charcoal/70">{request.contact}</td>
+                  <td className="max-w-xl border-b border-greige px-3 py-3 leading-6 text-charcoal/70">{request.message}</td>
+                  <td className="whitespace-nowrap border-b border-greige px-3 py-3 text-charcoal/70">
                     {formatDate(request.createdAt)}
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eee7df] px-3 py-3">
+                  <td className="whitespace-nowrap border-b border-greige px-3 py-3">
                     <button
                       type="button"
                       onClick={() => onDelete(request.id)}
                       disabled={deletingId === request.id}
-                      className="inline-flex h-9 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-3 text-sm text-[#b85d60] transition hover:bg-[#f4e6e7] disabled:opacity-50"
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70 transition hover:bg-greige/70 disabled:opacity-50"
                     >
                       {deletingId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       حذف
@@ -299,49 +299,49 @@ function ContactRequestsTable({ requests, onDelete, deletingId }) {
 
 function CourseSignupsTable({ signups, onDelete, deletingId }) {
   return (
-    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-greige bg-alabaster p-5 shadow-soft">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-[#3f352f]">درخواست‌های دوره</h2>
-        <p className="mt-1 text-sm text-[#807269]">درخواست خرید، اطلاع از انتشار یا عضویت در فهرست انتظار هر دوره.</p>
+        <h2 className="text-lg font-semibold text-charcoal">درخواست‌های دوره</h2>
+        <p className="mt-1 text-sm text-charcoal/70">درخواست خرید، اطلاع از انتشار یا عضویت در فهرست انتظار هر دوره.</p>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[680px] border-separate border-spacing-0 text-right text-sm">
           <thead>
-            <tr className="bg-[#f4eee8] text-[#5f544d]">
-              <th className="rounded-r-md border-y border-r border-[#e0d7cd] px-3 py-3 font-medium">شماره تلفن</th>
-              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">دوره</th>
-              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">نوع درخواست</th>
-              <th className="border-y border-[#e0d7cd] px-3 py-3 font-medium">تاریخ ثبت</th>
-              <th className="rounded-l-md border-y border-l border-[#e0d7cd] px-3 py-3 font-medium">عملیات</th>
+            <tr className="bg-alabaster text-charcoal/70">
+              <th className="rounded-r-md border-y border-r border-greige px-3 py-3 font-medium">شماره تلفن</th>
+              <th className="border-y border-greige px-3 py-3 font-medium">دوره</th>
+              <th className="border-y border-greige px-3 py-3 font-medium">نوع درخواست</th>
+              <th className="border-y border-greige px-3 py-3 font-medium">تاریخ ثبت</th>
+              <th className="rounded-l-md border-y border-l border-greige px-3 py-3 font-medium">عملیات</th>
             </tr>
           </thead>
           <tbody>
             {signups.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-[#807269]">
+                <td colSpan={5} className="px-3 py-8 text-center text-charcoal/70">
                   هنوز درخواستی ثبت نشده است.
                 </td>
               </tr>
             ) : (
               signups.map((signup) => (
                 <tr key={signup.id}>
-                  <td className="border-b border-[#eee7df] px-3 py-3 font-medium text-[#3f352f]">{signup.phone}</td>
-                  <td className="border-b border-[#eee7df] px-3 py-3 text-[#5f544d]">
+                  <td className="border-b border-greige px-3 py-3 font-medium text-charcoal/70">{signup.phone}</td>
+                  <td className="border-b border-greige px-3 py-3 text-charcoal/70">
                     {signup.courseTitle || signup.courseSlug || signup.courseId || "-"}
                   </td>
-                  <td className="border-b border-[#eee7df] px-3 py-3 text-[#5f544d]">
+                  <td className="border-b border-greige px-3 py-3 text-charcoal/70">
                     {signup.requestType === "notification" ? "اطلاع از انتشار" : signup.requestType === "waitlist" ? "فهرست انتظار" : "خرید دوره"}
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eee7df] px-3 py-3 text-[#807269]">
+                  <td className="whitespace-nowrap border-b border-greige px-3 py-3 text-charcoal/70">
                     {formatDate(signup.createdAt)}
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eee7df] px-3 py-3">
+                  <td className="whitespace-nowrap border-b border-greige px-3 py-3">
                     <button
                       type="button"
                       onClick={() => onDelete(signup.id)}
                       disabled={deletingId === signup.id}
-                      className="inline-flex h-9 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-3 text-sm text-[#b85d60] transition hover:bg-[#f4e6e7] disabled:opacity-50"
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70 transition hover:bg-greige/70 disabled:opacity-50"
                     >
                       {deletingId === signup.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       حذف
@@ -360,14 +360,14 @@ function CourseSignupsTable({ signups, onDelete, deletingId }) {
 function OrderStatusBadge({ status }) {
   const label = orderStatusOptions.find((item) => item.value === status)?.label || status || "نامشخص";
   const tone = {
-    delivered: "bg-[#edf7f0] text-[#4d9a61]",
-    cancelled: "bg-[#fff1f1] text-[#b85d60]",
-    ready: "bg-[#fff8e8] text-[#b07b28]",
-    in_progress: "bg-[#eef6ff] text-[#4372a6]",
-    confirmed: "bg-[#f1f4ff] text-[#5669b0]",
-    need_more_info: "bg-[#fff7ed] text-[#b06d32]",
-    pending_review: "bg-[#f5f7fb] text-[#6f7e96]",
-  }[status] || "bg-[#f5f7fb] text-[#6f7e96]";
+    delivered: "bg-alabaster text-charcoal/70",
+    cancelled: "bg-alabaster text-charcoal/70",
+    ready: "bg-alabaster text-charcoal/70",
+    in_progress: "bg-alabaster text-charcoal/70",
+    confirmed: "bg-alabaster text-charcoal/70",
+    need_more_info: "bg-alabaster text-charcoal/70",
+    pending_review: "bg-alabaster text-charcoal/70",
+  }[status] || "bg-alabaster text-charcoal/70";
 
   return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${tone}`}>{label}</span>;
 }
@@ -394,49 +394,49 @@ function OrdersTable({ orders, onUpdateStatus, onDelete, updatingId, deletingId 
   };
 
   return (
-    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-greige bg-alabaster p-5 shadow-soft">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-[#3f352f]">سفارش‌های مشتریان</h2>
-        <p className="mt-1 text-sm text-[#807269]">درخواست‌های ثبت‌شده از پنل مشتری و تغییر وضعیت سفارش.</p>
+        <h2 className="text-lg font-semibold text-charcoal">سفارش‌های مشتریان</h2>
+        <p className="mt-1 text-sm text-charcoal/70">درخواست‌های ثبت‌شده از پنل مشتری و تغییر وضعیت سفارش.</p>
       </div>
 
       <div className="grid gap-4">
         {orders.length === 0 ? (
-          <div className="rounded-md border border-dashed border-[#d9cfc5] bg-[#fbf9f6] p-6 text-center text-sm text-[#807269]">
+          <div className="rounded-md border border-dashed border-greige bg-alabaster p-6 text-center text-sm text-charcoal/70">
             هنوز سفارشی ثبت نشده است.
           </div>
         ) : (
           orders.map((order) => {
             const draft = draftFor(order);
             return (
-              <article key={order.id} className="grid gap-4 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
+              <article key={order.id} className="grid gap-4 rounded-lg border border-greige bg-alabaster p-4">
                 <div className="grid gap-3 lg:grid-cols-[96px_1fr_auto] lg:items-start">
-                  <div className="aspect-square overflow-hidden rounded-md bg-[#efe8df]">
+                  <div className="aspect-square overflow-hidden rounded-md bg-greige/70">
                     {order.productSnapshot?.coverImageUrl ? (
                       <img src={order.productSnapshot.coverImageUrl} alt={order.productSnapshot.title} className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                   <div className="min-w-0">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-[#3f352f]">{order.productSnapshot?.title || "سفارش گلملو"}</h3>
+                      <h3 className="font-semibold text-charcoal">{order.productSnapshot?.title || "سفارش گلملو"}</h3>
                       <OrderStatusBadge status={order.status} />
                     </div>
-                    <p className="text-sm leading-6 text-[#5f544d]">
+                    <p className="text-sm leading-6 text-charcoal/70">
                       مشتری: {order.userName || "کاربر گلملو"} · {order.userPhone || "بدون شماره"}
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-[#807269]">
+                    <p className="mt-1 text-sm leading-6 text-charcoal/70">
                       کاربرد: {order.usage || "-"} · رنگ: {order.preferredColor || "-"} · تاریخ موردنیاز: {order.neededBy || "-"}
                     </p>
-                    {order.customerNote ? <p className="mt-2 rounded-md bg-white px-3 py-2 text-sm leading-6 text-[#5f544d]">{order.customerNote}</p> : null}
-                    <p className="mt-2 text-xs text-[#9a8a80]">ثبت: {formatDate(order.createdAt)}</p>
+                    {order.customerNote ? <p className="mt-2 rounded-md bg-alabaster px-3 py-2 text-sm leading-6 text-charcoal/70">{order.customerNote}</p> : null}
+                    <p className="mt-2 text-xs text-charcoal/70">ثبت: {formatDate(order.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#807269]">#{order.id}</span>
+                    <span className="text-xs text-charcoal/70">#{order.id}</span>
                     <button
                       type="button"
                       onClick={() => onDelete(order)}
                       disabled={deletingId === order.id}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d9a5a7] text-[#a44f53] transition hover:bg-[#fff1f1] disabled:opacity-50"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rosewood/40 text-charcoal/70 transition hover:bg-alabaster disabled:opacity-50"
                       title={`حذف سفارش ${order.id}`}
                       aria-label={`حذف سفارش ${order.id}`}
                     >
@@ -445,32 +445,32 @@ function OrdersTable({ orders, onUpdateStatus, onDelete, updatingId, deletingId 
                   </div>
                 </div>
 
-                <form className="grid gap-3 border-t border-[#eee7df] pt-4 lg:grid-cols-[220px_1fr_auto] lg:items-end" onSubmit={(event) => handleSubmit(event, order)}>
-                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                <form className="grid gap-3 border-t border-greige pt-4 lg:grid-cols-[220px_1fr_auto] lg:items-end" onSubmit={(event) => handleSubmit(event, order)}>
+                  <label className="grid gap-2 text-sm text-charcoal/70">
                     وضعیت
                     <select
                       value={draft.status}
                       onChange={(event) => updateDraft(order, "status", event.target.value)}
-                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none"
+                      className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none"
                     >
                       {orderStatusOptions.map((item) => (
                         <option key={item.value} value={item.value}>{item.label}</option>
                       ))}
                     </select>
                   </label>
-                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                  <label className="grid gap-2 text-sm text-charcoal/70">
                     یادداشت تیم
                     <input
                       value={draft.adminNote}
                       onChange={(event) => updateDraft(order, "adminNote", event.target.value)}
-                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none"
+                      className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none"
                       placeholder="مثلاً برای تایید رنگ با مشتری تماس گرفته شد."
                     />
                   </label>
                   <button
                     type="submit"
                     disabled={updatingId === order.id}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#c08081] px-4 text-sm font-medium text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-rosewood px-4 text-sm font-medium text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {updatingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     ذخیره وضعیت
@@ -839,15 +839,15 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
   };
 
   return (
-    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-greige bg-alabaster p-5 shadow-soft">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#3f352f]">مدیریت محصولات</h2>
-          <p className="mt-1 text-sm leading-6 text-[#807269]">قیمت در این فرم به تومان وارد و در دیتابیس به ریال ذخیره می‌شود. محصولات ناقص را پیش‌نویس نگه دارید.</p>
-          <p className="mt-1 text-xs text-[#9b696b]">محصولات منتخب صفحه اصلی: {featuredCount} از ۳</p>
-          {incompleteCount > 0 ? <p className="mt-1 text-xs font-medium text-[#b06d32]">{incompleteCount} محصول هنوز مشخصات ساختاری، نام یا قیمت کامل ندارد.</p> : null}
+          <h2 className="text-lg font-semibold text-charcoal">مدیریت محصولات</h2>
+          <p className="mt-1 text-sm leading-6 text-charcoal/70">قیمت در این فرم به تومان وارد و در دیتابیس به ریال ذخیره می‌شود. محصولات ناقص را پیش‌نویس نگه دارید.</p>
+          <p className="mt-1 text-xs text-charcoal/70">محصولات منتخب صفحه اصلی: {featuredCount} از ۳</p>
+          {incompleteCount > 0 ? <p className="mt-1 text-xs font-medium text-charcoal/70">{incompleteCount} محصول هنوز مشخصات ساختاری، نام یا قیمت کامل ندارد.</p> : null}
         </div>
-        <button type="button" onClick={handleNew} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white shadow-sm">
+        <button type="button" onClick={handleNew} className="inline-flex h-10 items-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster shadow-accent">
           <Plus className="h-4 w-4" /> محصول جدید
         </button>
       </div>
@@ -856,25 +856,25 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
         {products.map((product) => {
           const isIncomplete = isProductMetadataIncomplete(product);
           return (
-            <article key={product.id} className="flex items-center gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-3">
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-[#eee7df]">
+            <article key={product.id} className="flex items-center gap-3 rounded-lg border border-greige bg-alabaster p-3">
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-greige/70">
                 {product.coverImageUrl ? <img src={product.coverImageUrl} alt="" className="h-full w-full object-cover" /> : null}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate font-medium text-[#3f352f]">{product.title}</h3>
-                  {product.isFeatured ? <span className="rounded-full bg-[#edf2ec] px-2 py-1 text-xs text-[#51645a]">منتخب</span> : null}
-                  {isIncomplete ? <span className="rounded-full bg-[#fff3e8] px-2 py-1 text-xs text-[#a9632d]">نیازمند تکمیل</span> : null}
+                  <h3 className="truncate font-medium text-charcoal">{product.title}</h3>
+                  {product.isFeatured ? <span className="rounded-full bg-alabaster px-2 py-1 text-xs text-charcoal/70">منتخب</span> : null}
+                  {isIncomplete ? <span className="rounded-full bg-alabaster px-2 py-1 text-xs text-charcoal/70">نیازمند تکمیل</span> : null}
                 </div>
-                <p className="mt-1 text-xs text-[#807269]">{formatToman(product.basePriceRial)} · {productStatusOptions.find((item) => item.value === product.status)?.label}</p>
+                <p className="mt-1 text-xs text-charcoal/70">{formatToman(product.basePriceRial)} · {productStatusOptions.find((item) => item.value === product.status)?.label}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <button type="button" onClick={() => handleEdit(product)} className="h-9 rounded-full bg-[#a05f62] px-4 text-sm text-white">ویرایش</button>
+                <button type="button" onClick={() => handleEdit(product)} className="h-9 rounded-full bg-rosewood px-4 text-sm text-alabaster">ویرایش</button>
                 <button
                   type="button"
                   onClick={() => handleDeleteProduct(product)}
                   disabled={deletingId === product.id}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d9a5a7] text-[#a44f53] transition hover:bg-[#fff1f1] disabled:opacity-50"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rosewood/40 text-charcoal/70 transition hover:bg-alabaster disabled:opacity-50"
                   title={`حذف ${product.title}`}
                   aria-label={`حذف ${product.title}`}
                 >
@@ -887,31 +887,31 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
       </div>
 
       {isOpen ? (
-        <form onSubmit={handleSave} className="mt-6 grid gap-4 border-t border-[#eee7df] pt-6">
+        <form onSubmit={handleSave} className="mt-6 grid gap-4 border-t border-greige pt-6">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold text-[#3f352f]">{selectedId ? "ویرایش محصول" : "محصول جدید"}</h3>
-            <button type="button" onClick={() => setIsOpen(false)} className="h-9 rounded-md border border-[#d9cfc5] px-3 text-sm text-[#807269]">بستن</button>
+            <h3 className="text-lg font-semibold text-charcoal">{selectedId ? "ویرایش محصول" : "محصول جدید"}</h3>
+            <button type="button" onClick={() => setIsOpen(false)} className="h-9 rounded-md border border-greige px-3 text-sm text-charcoal/70">بستن</button>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
             {[["id", "شناسه"], ["slug", "آدرس"], ["title", "نام محصول"], ["category", "دسته‌بندی"], ["usageLabel", "توضیح کوتاه کاربرد"], ["diameterCm", "قطر (سانتی‌متر)"], ["basePriceToman", "قیمت پایه (تومان)"], ["preparationDays", "آماده‌سازی (روز کاری)"], ["featuredOrder", "ترتیب منتخب"], ["sortOrder", "ترتیب کاتالوگ"]].map(([field, label]) => (
-              <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
+              <label key={field} className="grid gap-2 text-sm text-charcoal/70">
                 {label}
-                <input value={form[field]} onChange={update(field)} disabled={field === "id" && Boolean(selectedId)} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 outline-none focus:border-[#c08081] disabled:bg-[#f3f0ec]" />
+                <input value={form[field]} onChange={update(field)} disabled={field === "id" && Boolean(selectedId)} className="h-10 rounded-md border border-greige bg-alabaster px-3 outline-none focus:border-rosewood/40 disabled:bg-alabaster" />
               </label>
             ))}
-            <label className="grid gap-2 text-sm text-[#5f544d]">موجودی
-              <select value={form.availability} onChange={update("availability")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
+            <label className="grid gap-2 text-sm text-charcoal/70">موجودی
+              <select value={form.availability} onChange={update("availability")} className="h-10 rounded-md border border-greige bg-alabaster px-3">
                 {availabilityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </label>
-            <label className="grid gap-2 text-sm text-[#5f544d]">وضعیت انتشار
-              <select value={form.status} onChange={update("status")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
+            <label className="grid gap-2 text-sm text-charcoal/70">وضعیت انتشار
+              <select value={form.status} onChange={update("status")} className="h-10 rounded-md border border-greige bg-alabaster px-3">
                 {productStatusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </label>
-            <label className="grid gap-2 text-sm text-[#5f544d]">تصویر محصول
-              <select value={form.coverImageId} onChange={update("coverImageId")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3">
+            <label className="grid gap-2 text-sm text-charcoal/70">تصویر محصول
+              <select value={form.coverImageId} onChange={update("coverImageId")} className="h-10 rounded-md border border-greige bg-alabaster px-3">
                 <option value="">انتخاب تصویر</option>
                 {projectImages.map((image) => <option key={image.id} value={image.id}>{image.alt} · {image.filename}</option>)}
                 {galleryImages.filter((image) => image.filename).map((image, index) => <option key={image.id} value={image.id}>تصویر {index + 1} گالری محصول</option>)}
@@ -921,19 +921,19 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
 
           {selectedImage ? <img src={selectedImage.url} alt={selectedImage.alt} className="h-28 w-28 rounded-md object-cover" /> : null}
 
-          <section className="rounded-lg border border-[#e5ddd4] bg-[#fbf9f6] p-4">
+          <section className="rounded-lg border border-greige bg-alabaster p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h4 className="font-medium text-[#4f433b]">گالری تصاویر محصول</h4>
-                <p className="mt-1 text-xs leading-6 text-[#807269]">چند تصویر را هم‌زمان انتخاب کنید. تصویر اصلی روی کارت محصول نمایش داده می‌شود.</p>
+                <h4 className="font-medium text-charcoal">گالری تصاویر محصول</h4>
+                <p className="mt-1 text-xs leading-6 text-charcoal/70">چند تصویر را هم‌زمان انتخاب کنید. تصویر اصلی روی کارت محصول نمایش داده می‌شود.</p>
               </div>
-              <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-[#a05f62] px-4 text-sm text-white ${imageBusy === "upload" || !selectedId ? "cursor-not-allowed opacity-60" : ""}`}>
+              <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster ${imageBusy === "upload" || !selectedId ? "cursor-not-allowed opacity-60" : ""}`}>
                 {imageBusy === "upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 افزودن تصاویر
                 <input type="file" accept="image/*" multiple disabled={imageBusy === "upload" || !selectedId} onChange={handleProductImageUpload} className="sr-only" />
               </label>
             </div>
-            {!selectedId ? <p className="mt-3 text-xs text-[#a9632d]">برای آپلود تصویر، ابتدا محصول را ذخیره کنید.</p> : null}
+            {!selectedId ? <p className="mt-3 text-xs text-charcoal/70">برای آپلود تصویر، ابتدا محصول را ذخیره کنید.</p> : null}
             {galleryImages.length > 0 ? (
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
                 {galleryImages.map((image, index) => {
@@ -941,46 +941,46 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
                   const reorderable = galleryImages.filter((item) => item.filename);
                   const reorderIndex = reorderable.findIndex((item) => item.id === image.id);
                   return (
-                    <article key={image.id} className={`overflow-hidden rounded-lg border bg-white ${isCover ? "border-[#a05f62] ring-1 ring-[#a05f62]" : "border-[#e5ddd4]"}`}>
+                    <article key={image.id} className={`overflow-hidden rounded-lg border bg-alabaster ${isCover ? "border-rosewood/40 ring-1 ring-rosewood/40" : "border-greige"}`}>
                       <img src={image.sources?.[0]?.url || image.url} alt={image.alt || form.title} width="240" height="240" className="aspect-square w-full object-cover" />
                       <div className="grid gap-2 p-2">
-                        <button type="button" onClick={() => selectCoverImage(image.id)} className={`h-8 rounded-md px-2 text-xs ${isCover ? "bg-[#edf2ec] text-[#51645a]" : "border border-[#d9cfc5] text-[#6f6259]"}`}>
+                        <button type="button" onClick={() => selectCoverImage(image.id)} className={`h-8 rounded-md px-2 text-xs ${isCover ? "bg-alabaster text-charcoal/70" : "border border-greige text-charcoal/70"}`}>
                           {isCover ? "تصویر اصلی" : "انتخاب به‌عنوان اصلی"}
                         </button>
                         {image.filename ? (
                           <div className="flex items-center justify-center gap-1">
-                            <button type="button" disabled={imageBusy === "order" || reorderIndex <= 0} onClick={() => moveProductImage(image.id, -1)} className="grid h-8 w-8 place-items-center rounded-md border border-[#ddd4ca] disabled:opacity-30" title="یک جایگاه به قبل"><ChevronUp className="h-4 w-4" /></button>
-                            <button type="button" disabled={imageBusy === "order" || reorderIndex < 0 || reorderIndex >= reorderable.length - 1} onClick={() => moveProductImage(image.id, 1)} className="grid h-8 w-8 place-items-center rounded-md border border-[#ddd4ca] disabled:opacity-30" title="یک جایگاه به بعد"><ChevronDown className="h-4 w-4" /></button>
-                            <button type="button" disabled={imageBusy === `delete-${image.id}`} onClick={() => handleDeleteProductImage(image)} className="grid h-8 w-8 place-items-center rounded-md text-[#b85d60] disabled:opacity-40" aria-label={`حذف تصویر ${index + 1}`}>
+                            <button type="button" disabled={imageBusy === "order" || reorderIndex <= 0} onClick={() => moveProductImage(image.id, -1)} className="grid h-8 w-8 place-items-center rounded-md border border-greige disabled:opacity-30" title="یک جایگاه به قبل"><ChevronUp className="h-4 w-4" /></button>
+                            <button type="button" disabled={imageBusy === "order" || reorderIndex < 0 || reorderIndex >= reorderable.length - 1} onClick={() => moveProductImage(image.id, 1)} className="grid h-8 w-8 place-items-center rounded-md border border-greige disabled:opacity-30" title="یک جایگاه به بعد"><ChevronDown className="h-4 w-4" /></button>
+                            <button type="button" disabled={imageBusy === `delete-${image.id}`} onClick={() => handleDeleteProductImage(image)} className="grid h-8 w-8 place-items-center rounded-md text-charcoal/70 disabled:opacity-40" aria-label={`حذف تصویر ${index + 1}`}>
                               {imageBusy === `delete-${image.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                             </button>
                           </div>
-                        ) : <span className="text-center text-[11px] text-[#8b7a70]">تصویر فعلی محصول</span>}
+                        ) : <span className="text-center text-[11px] text-charcoal/70">تصویر فعلی محصول</span>}
                       </div>
                     </article>
                   );
                 })}
               </div>
-            ) : <p className="mt-4 text-sm text-[#807269]">هنوز تصویری در گالری این محصول نیست.</p>}
+            ) : <p className="mt-4 text-sm text-charcoal/70">هنوز تصویری در گالری این محصول نیست.</p>}
           </section>
 
           {[["shortDescription", "توضیح کوتاه", 2], ["description", "توضیحات کامل و یکتا", 5], ["seoTitle", "عنوان SEO اختیاری (حداکثر ۷۰ کاراکتر)", 2], ["seoDescription", "توضیح SEO اختیاری (حداکثر ۱۸۰ کاراکتر)", 3]].map(([field, label, rows]) => (
-            <label key={field} className="grid gap-2 text-sm text-[#5f544d]">{label}
-              <textarea value={form[field]} onChange={update(field)} rows={rows} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 outline-none focus:border-[#c08081]" />
+            <label key={field} className="grid gap-2 text-sm text-charcoal/70">{label}
+              <textarea value={form[field]} onChange={update(field)} rows={rows} className="rounded-md border border-greige bg-alabaster px-3 py-2 outline-none focus:border-rosewood/40" />
             </label>
           ))}
 
           <div className="grid gap-4 md:grid-cols-2">
             {productTaxonomyFields.map(({ field, label, options }) => (
-              <fieldset key={field} className="rounded-lg border border-[#e5ddd4] p-4">
-                <legend className="px-2 text-sm font-medium text-[#5f544d]">{label}</legend>
+              <fieldset key={field} className="rounded-lg border border-greige p-4">
+                <legend className="px-2 text-sm font-medium text-charcoal/70">{label}</legend>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {options.map((option) => {
                     const checked = (form[field] || []).includes(option.value);
                     return (
-                      <label key={option.value} className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm ${checked ? "border-[#a05f62] bg-[#f8eeee] text-[#824b4e]" : "border-[#ddd4ca] bg-white text-[#6f6259]"}`}>
-                        <input type="checkbox" checked={checked} onChange={() => toggleTaxonomyValue(field, option.value)} className="accent-[#a05f62]" />
-                        {option.swatch ? <span aria-hidden="true" className="h-4 w-4 rounded-full border border-black/10" style={{ background: option.swatch }} /> : null}
+                      <label key={option.value} className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm ${checked ? "border-rosewood/40 bg-alabaster text-charcoal/70" : "border-greige bg-alabaster text-charcoal/70"}`}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleTaxonomyValue(field, option.value)} className="accent-rosewood" />
+                        {option.swatch ? <span aria-hidden="true" className="h-4 w-4 rounded-full border border-charcoal/10" style={{ background: option.swatch }} /> : null}
                         {option.label}
                       </label>
                     );
@@ -988,16 +988,16 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
                 </div>
               </fieldset>
             ))}
-            <fieldset className="rounded-lg border border-[#e5ddd4] p-4">
-              <legend className="px-2 text-sm font-medium text-[#5f544d]">جواهردوزی</legend>
-              <label className={`mt-2 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm ${form.hasJewelryEmbroidery ? "border-[#a05f62] bg-[#f8eeee] text-[#824b4e]" : "border-[#ddd4ca] bg-white text-[#6f6259]"}`}>
-                <input type="checkbox" checked={form.hasJewelryEmbroidery} onChange={update("hasJewelryEmbroidery")} className="accent-[#a05f62]" />
+            <fieldset className="rounded-lg border border-greige p-4">
+              <legend className="px-2 text-sm font-medium text-charcoal/70">جواهردوزی</legend>
+              <label className={`mt-2 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm ${form.hasJewelryEmbroidery ? "border-rosewood/40 bg-alabaster text-charcoal/70" : "border-greige bg-alabaster text-charcoal/70"}`}>
+                <input type="checkbox" checked={form.hasJewelryEmbroidery} onChange={update("hasJewelryEmbroidery")} className="accent-rosewood" />
                 این محصول جواهردوزی دارد
               </label>
             </fieldset>
           </div>
 
-          <div className="flex flex-wrap gap-5 text-sm text-[#5f544d]">
+          <div className="flex flex-wrap gap-5 text-sm text-charcoal/70">
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isCustomizable} onChange={update("isCustomizable")} /> قابل شخصی‌سازی</label>
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.customizableColor} onChange={update("customizableColor")} /> رنگ قابل تغییر</label>
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.customizableSize} onChange={update("customizableSize")} /> اندازه قابل تغییر</label>
@@ -1006,13 +1006,13 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button type="submit" disabled={busy} className="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-[#a05f62] px-5 text-sm text-white disabled:opacity-60">
+            <button type="submit" disabled={busy} className="inline-flex h-10 w-fit items-center gap-2 rounded-full bg-rosewood px-5 text-sm text-alabaster disabled:opacity-60">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} ذخیره محصول
             </button>
             {saveStatus.message ? (
               <p
                 role="status"
-                className={`text-sm ${saveStatus.type === "error" ? "text-[#b85d60]" : "text-[#4f7659]"}`}
+                className={`text-sm ${saveStatus.type === "error" ? "text-rosewood" : "text-charcoal/70"}`}
               >
                 {saveStatus.message}
               </p>
@@ -1462,13 +1462,13 @@ function CourseManager({ courses, token, onReload, onStatus }) {
   const currentCourseImage = imageById.get(form.imageId);
 
   return (
-    <section className="rounded-lg border border-[#e0d7cd] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-greige bg-alabaster p-5 shadow-soft">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#3f352f]">مدیریت دوره‌ها</h2>
-          <p className="mt-1 text-sm leading-6 text-[#807269]">دوره‌ها ابتدا به شکل لیست نمایش داده می‌شوند؛ برای ویرایش، فرم کامل را باز کنید.</p>
+          <h2 className="text-lg font-semibold text-charcoal">مدیریت دوره‌ها</h2>
+          <p className="mt-1 text-sm leading-6 text-charcoal/70">دوره‌ها ابتدا به شکل لیست نمایش داده می‌شوند؛ برای ویرایش، فرم کامل را باز کنید.</p>
         </div>
-        <button type="button" onClick={handleNew} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">
+        <button type="button" onClick={handleNew} className="inline-flex h-10 items-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood">
           <Plus className="h-4 w-4" />
           دوره جدید
         </button>
@@ -1476,26 +1476,26 @@ function CourseManager({ courses, token, onReload, onStatus }) {
 
       <div className="grid gap-3">
         {courses.length === 0 ? (
-          <div className="rounded-md border border-dashed border-[#d9cfc5] bg-[#fbf9f6] p-6 text-center text-sm text-[#807269]">هنوز دوره‌ای ثبت نشده است.</div>
+          <div className="rounded-md border border-dashed border-greige bg-alabaster p-6 text-center text-sm text-charcoal/70">هنوز دوره‌ای ثبت نشده است.</div>
         ) : courses.map((course) => (
-          <article key={course.id} className="flex flex-col gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4 md:flex-row md:items-center md:justify-between">
+          <article key={course.id} className="flex flex-col gap-3 rounded-lg border border-greige bg-alabaster p-4 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold text-[#3f352f]">{course.title}</h3>
-                <span className="rounded-full bg-[#fff2f2] px-3 py-1 text-xs text-[#b06d6f]">
+                <h3 className="font-semibold text-charcoal">{course.title}</h3>
+                <span className="rounded-full bg-alabaster px-3 py-1 text-xs text-charcoal/70">
                   {courseStatusOptions.find((item) => item.value === course.status)?.label || course.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-[#807269]">
+              <p className="mt-1 text-sm text-charcoal/70">
                 {course.slug} · {course.lessons?.length || 0} قسمت
                 {` · ${formatToman(course.basePriceRial)}`}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => handleEdit(course)} className="inline-flex h-9 items-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">
+              <button type="button" onClick={() => handleEdit(course)} className="inline-flex h-9 items-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood">
                 ویرایش
               </button>
-              <button type="button" onClick={() => handleDelete(course.id)} disabled={busy === `delete-${course.id}`} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-3 text-sm text-[#b85d60] disabled:opacity-50">
+              <button type="button" onClick={() => handleDelete(course.id)} disabled={busy === `delete-${course.id}`} className="inline-flex h-9 items-center gap-2 rounded-md border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70 disabled:opacity-50">
                 {busy === `delete-${course.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 حذف
               </button>
@@ -1505,13 +1505,13 @@ function CourseManager({ courses, token, onReload, onStatus }) {
       </div>
 
       {isFormOpen ? (
-        <form className="mt-6 grid gap-4 border-t border-[#eee7df] pt-5" onSubmit={handleSave}>
+        <form className="mt-6 grid gap-4 border-t border-greige pt-5" onSubmit={handleSave}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-[#3f352f]">{selectedCourse ? `ویرایش ${selectedCourse.title}` : "دوره جدید"}</h3>
-              <p className="mt-1 text-sm text-[#807269]">برای آپلود تصویر، دوره باید یک‌بار ذخیره شده باشد.</p>
+              <h3 className="text-lg font-semibold text-charcoal">{selectedCourse ? `ویرایش ${selectedCourse.title}` : "دوره جدید"}</h3>
+              <p className="mt-1 text-sm text-charcoal/70">برای آپلود تصویر، دوره باید یک‌بار ذخیره شده باشد.</p>
             </div>
-            <button type="button" onClick={handleCancelEdit} className="inline-flex h-9 items-center gap-2 rounded-full border border-[#e7c2c3] bg-white px-3 text-sm text-[#9b696b] shadow-[0_10px_24px_rgba(192,128,129,0.12)]">
+            <button type="button" onClick={handleCancelEdit} className="inline-flex h-9 items-center gap-2 rounded-full border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70 shadow-accent">
               بستن فرم
             </button>
           </div>
@@ -1529,18 +1529,18 @@ function CourseManager({ courses, token, onReload, onStatus }) {
               ["supportType", "نوع پشتیبانی"],
               ["sortOrder", "ترتیب"],
             ].map(([field, label]) => (
-              <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
+              <label key={field} className="grid gap-2 text-sm text-charcoal/70">
                 {label}
                 <input
                   value={form[field]}
                   onChange={updateField(field)}
-                  className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]"
+                  className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none focus:border-rosewood/40"
                 />
               </label>
             ))}
-            <label className="grid gap-2 text-sm text-[#5f544d]">
+            <label className="grid gap-2 text-sm text-charcoal/70">
               وضعیت
-              <select value={form.status} onChange={updateField("status")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none">
+              <select value={form.status} onChange={updateField("status")} className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal outline-none">
                 {courseStatusOptions.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
@@ -1548,44 +1548,44 @@ function CourseManager({ courses, token, onReload, onStatus }) {
             </label>
           </div>
 
-          <div className="grid gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="grid gap-3 rounded-lg border border-greige bg-alabaster p-4 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <h4 className="font-semibold text-[#3f352f]">تصویر کارت دوره</h4>
-              <p className="mt-1 text-sm text-[#807269]">یک تصویر برای کل دوره انتخاب کنید.</p>
-              {currentCourseImage ? <p className="mt-2 text-xs text-[#9b696b]">تصویر فعلی: {currentCourseImage.filename}</p> : null}
+              <h4 className="font-semibold text-charcoal">تصویر کارت دوره</h4>
+              <p className="mt-1 text-sm text-charcoal/70">یک تصویر برای کل دوره انتخاب کنید.</p>
+              {currentCourseImage ? <p className="mt-2 text-xs text-charcoal/70">تصویر فعلی: {currentCourseImage.filename}</p> : null}
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               {currentCourseImage ? <img src={currentCourseImage.url} alt={currentCourseImage.alt} className="h-16 w-16 rounded-md object-cover" /> : null}
-              <input type="file" accept="image/*" onChange={handleCourseImageChange} disabled={!selectedId || busy === "course-image"} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-sm text-[#5f544d] disabled:opacity-50" />
-              {busy === "course-image" ? <Loader2 className="h-4 w-4 animate-spin text-[#c08081]" /> : null}
+              <input type="file" accept="image/*" onChange={handleCourseImageChange} disabled={!selectedId || busy === "course-image"} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-sm text-charcoal disabled:opacity-50" />
+              {busy === "course-image" ? <Loader2 className="h-4 w-4 animate-spin text-charcoal/70" /> : null}
             </div>
           </div>
 
-          <label className="grid gap-2 text-sm text-[#5f544d]">
+          <label className="grid gap-2 text-sm text-charcoal/70">
             عنوان
-            <input value={form.title} onChange={updateField("title")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]" />
+            <input value={form.title} onChange={updateField("title")} className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal outline-none focus:border-rosewood/40" />
           </label>
-          <label className="grid gap-2 text-sm text-[#5f544d]">
+          <label className="grid gap-2 text-sm text-charcoal/70">
             زیرعنوان
-            <input value={form.subtitle} onChange={updateField("subtitle")} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]" />
+            <input value={form.subtitle} onChange={updateField("subtitle")} className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal outline-none focus:border-rosewood/40" />
           </label>
-          <label className="grid gap-2 text-sm text-[#5f544d]">
+          <label className="grid gap-2 text-sm text-charcoal/70">
             خلاصه کارت
-            <textarea value={form.summary} onChange={updateField("summary")} rows={3} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
+            <textarea value={form.summary} onChange={updateField("summary")} rows={3} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-charcoal outline-none focus:border-rosewood/40" />
           </label>
-          <label className="grid gap-2 text-sm text-[#5f544d]">
+          <label className="grid gap-2 text-sm text-charcoal/70">
             توضیحات صفحه جزئیات
-            <textarea value={form.description} onChange={updateField("description")} rows={4} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
+            <textarea value={form.description} onChange={updateField("description")} rows={4} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-charcoal outline-none focus:border-rosewood/40" />
           </label><div className="grid gap-5 lg:grid-cols-2">
             {[
               ["outcomes", "آنچه در این دوره یاد می‌گیرید"],
               ["audience", "مناسب چه کسانی است؟"],
               ["prerequisites", "پیش‌نیازها"],
             ].map(([field, title]) => (
-              <div key={field} className="grid gap-3 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
+              <div key={field} className="grid gap-3 rounded-lg border border-greige bg-alabaster p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-semibold text-[#3f352f]">{title}</h3>
-                  <button type="button" onClick={() => addTextListItem(field)} className="inline-flex h-9 items-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">
+                  <h3 className="font-semibold text-charcoal">{title}</h3>
+                  <button type="button" onClick={() => addTextListItem(field)} className="inline-flex h-9 items-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood">
                     <Plus className="h-4 w-4" />
                     افزودن
                   </button>
@@ -1595,10 +1595,10 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                     <input
                       value={item}
                       onChange={(event) => updateTextList(field, index, event.target.value)}
-                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]"
+                      className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none focus:border-rosewood/40"
                       placeholder={`مورد ${index + 1}`}
                     />
-                    <button type="button" onClick={() => removeTextListItem(field, index)} className="inline-flex h-10 items-center justify-center rounded-md border border-[#e4c6c8] bg-white px-3 text-[#b85d60]" disabled={form[field].length === 1}>
+                    <button type="button" onClick={() => removeTextListItem(field, index)} className="inline-flex h-10 items-center justify-center rounded-md border border-rosewood/40 bg-alabaster px-3 text-charcoal/70" disabled={form[field].length === 1}>
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -1607,13 +1607,13 @@ function CourseManager({ courses, token, onReload, onStatus }) {
             ))}
           </div>
 
-          <div className="grid gap-4 rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
+          <div className="grid gap-4 rounded-lg border border-greige bg-alabaster p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="font-semibold text-[#3f352f]">سرفصل‌ها</h3>
-                <p className="mt-1 text-sm text-[#807269]">هر سرفصل ورودی تصویر مستقل خودش را دارد.</p>
+                <h3 className="font-semibold text-charcoal">سرفصل‌ها</h3>
+                <p className="mt-1 text-sm text-charcoal/70">هر سرفصل ورودی تصویر مستقل خودش را دارد.</p>
               </div>
-              <button type="button" onClick={addLesson} className="inline-flex h-9 items-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274]">
+              <button type="button" onClick={addLesson} className="inline-flex h-9 items-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood">
                 <Plus className="h-4 w-4" />
                 افزودن سرفصل
               </button>
@@ -1622,10 +1622,10 @@ function CourseManager({ courses, token, onReload, onStatus }) {
             {form.lessons.map((lesson, index) => {
               const lessonImage = imageById.get(lesson.imageId);
               return (
-                <article key={`lesson-${index}`} className="grid gap-3 rounded-lg border border-[#e5ddd5] bg-white p-4">
+                <article key={`lesson-${index}`} className="grid gap-3 rounded-lg border border-greige bg-alabaster p-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-[#3f352f]">سرفصل {index + 1}</h4>
-                    <button type="button" onClick={() => removeLesson(index)} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-3 text-sm text-[#b85d60]" disabled={form.lessons.length === 1}>
+                    <h4 className="font-medium text-charcoal">سرفصل {index + 1}</h4>
+                    <button type="button" onClick={() => removeLesson(index)} className="inline-flex h-9 items-center gap-2 rounded-md border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70" disabled={form.lessons.length === 1}>
                       <Trash2 className="h-4 w-4" />
                       حذف
                     </button>
@@ -1640,47 +1640,47 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                       ["type", "نوع"],
                       ["duration", "مدت"],
                     ].map(([field, label]) => (
-                      <label key={field} className="grid gap-2 text-sm text-[#5f544d]">
+                      <label key={field} className="grid gap-2 text-sm text-charcoal/70">
                         {label}
-                        <input value={lesson[field]} onChange={(event) => updateLesson(index, field, event.target.value)} className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]" />
+                        <input value={lesson[field]} onChange={(event) => updateLesson(index, field, event.target.value)} className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal outline-none focus:border-rosewood/40" />
                       </label>
                     ))}
                   </div>
-                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                  <label className="grid gap-2 text-sm text-charcoal/70">
                     لینک ویدئو
-                    <div className="flex items-center gap-2 rounded-md border border-[#d9cfc5] bg-white px-3 focus-within:border-[#c08081]">
-                      <Video className="h-4 w-4 shrink-0 text-[#9b867d]" />
+                    <div className="flex items-center gap-2 rounded-md border border-greige bg-alabaster px-3 focus-within:border-rosewood/40">
+                      <Video className="h-4 w-4 shrink-0 text-charcoal/70" />
                       <input
                         value={lesson.videoUrl}
                         onChange={(event) => updateLesson(index, "videoUrl", event.target.value)}
                         dir="ltr"
-                        className="h-10 min-w-0 flex-1 bg-transparent text-left text-[#3f352f] outline-none"
+                        className="h-10 min-w-0 flex-1 bg-transparent text-left text-charcoal/70 outline-none"
                         placeholder="https://..."
                       />
                     </div>
                   </label>
-                  <div className="grid gap-3 rounded-md border border-[#eee7df] bg-[#fbf9f6] p-3 md:grid-cols-[1fr_auto] md:items-center">
+                  <div className="grid gap-3 rounded-md border border-greige bg-alabaster p-3 md:grid-cols-[1fr_auto] md:items-center">
                     <div>
-                      <h5 className="text-sm font-medium text-[#3f352f]">تصویر سرفصل</h5>
-                      {lessonImage ? <p className="mt-1 text-xs text-[#9b696b]">تصویر فعلی: {lessonImage.filename}</p> : <p className="mt-1 text-xs text-[#807269]">بدون تصویر</p>}
+                      <h5 className="text-sm font-medium text-charcoal">تصویر سرفصل</h5>
+                      {lessonImage ? <p className="mt-1 text-xs text-charcoal/70">تصویر فعلی: {lessonImage.filename}</p> : <p className="mt-1 text-xs text-charcoal/70">بدون تصویر</p>}
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       {lessonImage ? <img src={lessonImage.url} alt={lessonImage.alt} className="h-14 w-14 rounded-md object-cover" /> : null}
-                      <input type="file" accept="image/*" onChange={handleLessonImageChange(index)} disabled={!selectedId || busy === `lesson-image-${index}`} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-sm text-[#5f544d] disabled:opacity-50" />
-                      {busy === `lesson-image-${index}` ? <Loader2 className="h-4 w-4 animate-spin text-[#c08081]" /> : null}
+                      <input type="file" accept="image/*" onChange={handleLessonImageChange(index)} disabled={!selectedId || busy === `lesson-image-${index}`} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-sm text-charcoal disabled:opacity-50" />
+                      {busy === `lesson-image-${index}` ? <Loader2 className="h-4 w-4 animate-spin text-charcoal/70" /> : null}
                     </div>
                   </div>
-                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                  <label className="grid gap-2 text-sm text-charcoal/70">
                     توضیح سرفصل
-                    <textarea value={lesson.summary} onChange={(event) => updateLesson(index, "summary", event.target.value)} rows={3} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
+                    <textarea value={lesson.summary} onChange={(event) => updateLesson(index, "summary", event.target.value)} rows={3} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-charcoal outline-none focus:border-rosewood/40" />
                   </label>
-                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                  <label className="grid gap-2 text-sm text-charcoal/70">
                     متن کامل قسمت
-                    <textarea value={lesson.body} onChange={(event) => updateLesson(index, "body", event.target.value)} rows={4} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
+                    <textarea value={lesson.body} onChange={(event) => updateLesson(index, "body", event.target.value)} rows={4} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-charcoal outline-none focus:border-rosewood/40" />
                   </label>
-                  <label className="grid gap-2 text-sm text-[#5f544d]">
+                  <label className="grid gap-2 text-sm text-charcoal/70">
                     متریال‌ها، هر مورد در یک خط
-                    <textarea value={lesson.materialsText} onChange={(event) => updateLesson(index, "materialsText", event.target.value)} rows={3} className="rounded-md border border-[#d9cfc5] bg-white px-3 py-2 text-[#3f352f] outline-none focus:border-[#c08081]" />
+                    <textarea value={lesson.materialsText} onChange={(event) => updateLesson(index, "materialsText", event.target.value)} rows={3} className="rounded-md border border-greige bg-alabaster px-3 py-2 text-charcoal outline-none focus:border-rosewood/40" />
                   </label>
                 </article>
               );
@@ -1688,39 +1688,39 @@ function CourseManager({ courses, token, onReload, onStatus }) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button type="submit" disabled={busy === "save"} className="inline-flex h-10 items-center gap-2 rounded-full bg-[#c08081] px-4 text-sm font-medium text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:opacity-70">
+            <button type="submit" disabled={busy === "save"} className="inline-flex h-10 items-center gap-2 rounded-full bg-rosewood px-4 text-sm font-medium text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood disabled:opacity-70">
               {busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               ذخیره دوره
             </button>
-            <button type="button" onClick={() => handleDelete(selectedId)} disabled={!selectedId || busy === `delete-${selectedId}`} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-4 text-sm text-[#b85d60] disabled:opacity-50">
+            <button type="button" onClick={() => handleDelete(selectedId)} disabled={!selectedId || busy === `delete-${selectedId}`} className="inline-flex h-10 items-center gap-2 rounded-md border border-rosewood/40 bg-alabaster px-4 text-sm text-charcoal/70 disabled:opacity-50">
               <Trash2 className="h-4 w-4" />
               حذف دوره
             </button>
           </div>
 
           {selectedId ? (
-            <div className="mt-2 grid gap-5 border-t border-[#eee7df] pt-5">
-              <section className="rounded-lg border border-[#eee7df] bg-[#fbf9f6] p-4">
+            <div className="mt-2 grid gap-5 border-t border-greige pt-5">
+              <section className="rounded-lg border border-greige bg-alabaster p-4">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-[#c08081]" />
-                      <h4 className="font-semibold text-[#3f352f]">دسترسی کاربران به این دوره</h4>
+                      <Users className="h-5 w-5 text-charcoal/70" />
+                      <h4 className="font-semibold text-charcoal">دسترسی کاربران به این دوره</h4>
                     </div>
-                    <p className="mt-1 text-sm text-[#807269]">شماره تلفن کاربر ثبت‌نام‌شده را وارد کنید تا دوره در پنل او فعال شود.</p>
+                    <p className="mt-1 text-sm text-charcoal/70">شماره تلفن کاربر ثبت‌نام‌شده را وارد کنید تا دوره در پنل او فعال شود.</p>
                   </div>
                   <form onSubmit={handleGrantAccess} className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[340px] sm:flex-row">
                     <input
                       value={accessPhone}
                       onChange={(event) => setAccessPhone(event.target.value)}
-                      className="h-10 rounded-md border border-[#d9cfc5] bg-white px-3 text-[#3f352f] outline-none focus:border-[#c08081]"
+                      className="h-10 rounded-md border border-greige bg-alabaster px-3 text-charcoal/70 outline-none focus:border-rosewood/40"
                       placeholder="شماره تلفن کاربر"
                       inputMode="tel"
                     />
                     <button
                       type="submit"
                       disabled={busy === "grant-access" || !accessPhone.trim()}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#c08081] px-4 text-sm text-white shadow-[0_14px_32px_rgba(192,128,129,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ad7274] disabled:opacity-60"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-rosewood px-4 text-sm text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-rosewood disabled:opacity-60"
                     >
                       {busy === "grant-access" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                       فعال‌سازی
@@ -1729,22 +1729,22 @@ function CourseManager({ courses, token, onReload, onStatus }) {
                 </div>
 
                 {accesses.length === 0 ? (
-                  <div className="rounded-md border border-dashed border-[#d9cfc5] bg-white p-5 text-center text-sm text-[#807269]">
+                  <div className="rounded-md border border-dashed border-greige bg-alabaster p-5 text-center text-sm text-charcoal/70">
                     هنوز کاربری به این دوره دسترسی ندارد.
                   </div>
                 ) : (
                   <div className="grid gap-2 md:grid-cols-2">
                     {accesses.map((access) => (
-                      <article key={access.id} className="flex items-center justify-between gap-3 rounded-md border border-[#e5ddd5] bg-white px-3 py-3">
+                      <article key={access.id} className="flex items-center justify-between gap-3 rounded-md border border-greige bg-alabaster px-3 py-3">
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-[#3f352f]">{access.userName || "کاربر گلملو"}</p>
-                          <p className="mt-1 text-sm text-[#807269]">{access.userPhone}</p>
+                          <p className="truncate font-medium text-charcoal/70">{access.userName || "کاربر گلملو"}</p>
+                          <p className="mt-1 text-sm text-charcoal/70">{access.userPhone}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRevokeAccess(access.id)}
                           disabled={busy === `revoke-access-${access.id}`}
-                          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-[#e4c6c8] bg-white px-3 text-sm text-[#b85d60] disabled:opacity-50"
+                          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70 disabled:opacity-50"
                         >
                           {busy === `revoke-access-${access.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                           حذف دسترسی
@@ -1756,19 +1756,19 @@ function CourseManager({ courses, token, onReload, onStatus }) {
               </section>
 
               <section>
-              <h4 className="mb-3 font-semibold text-[#3f352f]">تصاویر آپلودشده این دوره</h4>
+              <h4 className="mb-3 font-semibold text-charcoal">تصاویر آپلودشده این دوره</h4>
               {images.length === 0 ? (
-                <div className="rounded-md border border-dashed border-[#d9cfc5] bg-[#fbf9f6] p-5 text-center text-sm text-[#807269]">فعلاً تصویری برای این دوره ثبت نشده است.</div>
+                <div className="rounded-md border border-dashed border-greige bg-alabaster p-5 text-center text-sm text-charcoal/70">فعلاً تصویری برای این دوره ثبت نشده است.</div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
                   {images.map((image) => (
-                    <article key={image.id} className="overflow-hidden rounded-lg border border-[#e5ddd5] bg-[#fbf9f6]">
-                      <div className="aspect-square bg-[#efe8df]">
+                    <article key={image.id} className="overflow-hidden rounded-lg border border-greige bg-alabaster">
+                      <div className="aspect-square bg-greige/70">
                         <img src={image.url} alt={image.alt} className="h-full w-full object-cover" loading="lazy" />
                       </div>
                       <div className="flex items-center justify-between gap-2 p-2">
-                        <span className="min-w-0 truncate text-xs text-[#807269]" title={image.filename}>{image.filename}</span>
-                        <button type="button" onClick={() => handleDeleteImage(image.id)} className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#b85d60] hover:bg-[#f4e6e7]" aria-label="حذف تصویر">
+                        <span className="min-w-0 truncate text-xs text-charcoal/70" title={image.filename}>{image.filename}</span>
+                        <button type="button" onClick={() => handleDeleteImage(image.id)} className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-charcoal/70 hover:bg-greige/70" aria-label="حذف تصویر">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -1924,16 +1924,16 @@ function Dashboard({ token, onLogout }) {
   };
 
   return (
-    <main dir="rtl" className="min-h-screen bg-[#f6f3ef]">
-      <header className="sticky top-0 z-20 border-b border-[#e0d7cd] bg-white/90 backdrop-blur">
+    <main dir="rtl" className="min-h-screen bg-alabaster">
+      <header className="sticky top-0 z-20 border-b border-greige bg-alabaster/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-[#c08081] text-white">
+            <div className="grid h-10 w-10 place-items-center rounded-md bg-rosewood text-alabaster">
               <LayoutDashboard className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-[#3f352f]">مدیریت golmelo</h1>
-              <p className="text-sm text-[#807269]">محتوا، دوره‌ها، سفارش‌ها و دسترسی کاربران</p>
+              <h1 className="text-lg font-semibold text-charcoal">مدیریت golmelo</h1>
+              <p className="text-sm text-charcoal/70">محتوا، دوره‌ها، سفارش‌ها و دسترسی کاربران</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1941,7 +1941,7 @@ function Dashboard({ token, onLogout }) {
               type="button"
               onClick={rebuildImageVariants}
               disabled={optimizingImages}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d9cfc5] bg-white px-3 text-sm text-[#51645a] disabled:opacity-60"
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-greige bg-alabaster px-3 text-sm text-charcoal/70 disabled:opacity-60"
             >
               {optimizingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
               بهینه‌سازی تصاویر
@@ -1949,7 +1949,7 @@ function Dashboard({ token, onLogout }) {
             <button
               type="button"
               onClick={loadData}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-[#e7c2c3] bg-white px-3 text-sm text-[#9b696b] shadow-[0_10px_24px_rgba(192,128,129,0.12)] transition hover:bg-[#f7f1eb]"
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-rosewood/40 bg-alabaster px-3 text-sm text-charcoal/70 shadow-accent transition hover:bg-alabaster"
             >
               <RefreshCw className="h-4 w-4" />
               به‌روزرسانی
@@ -1957,7 +1957,7 @@ function Dashboard({ token, onLogout }) {
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#d9cfc5] bg-white px-3 text-sm text-[#b85d60] transition hover:bg-[#f4e6e7]"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-greige bg-alabaster px-3 text-sm text-charcoal/70 transition hover:bg-greige/70"
             >
               <LogOut className="h-4 w-4" />
               خروج
@@ -1968,10 +1968,10 @@ function Dashboard({ token, onLogout }) {
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:px-6">
         {status.type === "error" ? (
-          <div className="rounded-lg border border-[#efb8ba] bg-[#fff6f6] px-4 py-3 text-sm text-[#b85d60]">{status.message}</div>
+          <div className="rounded-lg border border-rosewood/40 bg-alabaster px-4 py-3 text-sm text-charcoal/70">{status.message}</div>
         ) : null}
         {status.type === "success" ? (
-          <div className="rounded-lg border border-[#bfd7c5] bg-[#f4faf5] px-4 py-3 text-sm text-[#4f7659]">{status.message}</div>
+          <div className="rounded-lg border border-greige bg-alabaster px-4 py-3 text-sm text-charcoal/70">{status.message}</div>
         ) : null}
 
         <section role="tablist" aria-label="بخش‌های پنل مدیریت" className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">

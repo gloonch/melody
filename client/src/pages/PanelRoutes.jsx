@@ -67,9 +67,9 @@ function PanelRoute({ authStatus, user, children }) {
 
   if (authStatus === "checking") {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-[#f3f7fb] text-[#708097]">
-        <div className="inline-flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-[0_18px_44px_rgba(70,88,116,0.08)]">
-          <Loader2 className="h-5 w-5 animate-spin text-[#c08081]" />
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-alabaster text-charcoal/70">
+        <div className="inline-flex items-center gap-3 rounded-2xl bg-alabaster px-5 py-4 shadow-soft">
+          <Loader2 className="h-5 w-5 animate-spin text-charcoal/70" />
           در حال بررسی نشست کاربری...
         </div>
       </div>
@@ -95,14 +95,14 @@ function PanelSidebar({ user, onNavigate, onLogout, isLoggingOut }) {
   const userPhone = user?.phone || "";
 
   return (
-    <div className="flex h-full flex-col bg-white px-7 py-8 text-[#35445b]">
+    <div className="flex h-full flex-col bg-alabaster px-7 py-8 text-charcoal">
       <Link to="/" className="mb-12 inline-flex items-center gap-3 text-right" onClick={onNavigate} aria-label="بازگشت به گلملو">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#51645a] shadow-[0_14px_30px_rgba(81,100,90,0.22)]">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-charcoal shadow-soft">
           <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-8 w-8 object-contain" />
         </span>
         <span>
-          <span className="block text-lg font-black text-[#26364c]">Golmelo</span>
-          <span className="block text-xs text-[#8a98ad]">پنل مشتری</span>
+          <span className="block text-lg font-black text-charcoal">Golmelo</span>
+          <span className="block text-xs text-charcoal/70">پنل مشتری</span>
         </span>
       </Link>
 
@@ -116,15 +116,15 @@ function PanelSidebar({ user, onNavigate, onLogout, isLoggingOut }) {
               onClick={onNavigate}
               className={({ isActive }) =>
                 `relative flex h-14 items-center gap-3 rounded-2xl px-4 text-sm transition ${isActive
-                  ? "bg-[#f7f9fc] font-bold text-[#1e2b3d]"
-                  : "text-[#6f7e96] hover:bg-[#f8fafc] hover:text-[#2d3b52]"
+                  ? "bg-alabaster font-bold text-charcoal"
+                  : "text-charcoal/70 hover:bg-alabaster hover:text-charcoal"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   <span
-                    className={`absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-l-full transition ${isActive ? "bg-[#c08081]" : "bg-transparent"
+                    className={`absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-l-full transition ${isActive ? "bg-rosewood" : "bg-transparent"
                       }`}
                   />
                   <Icon className="h-5 w-5" strokeWidth={isActive ? 2.4 : 1.8} />
@@ -137,15 +137,15 @@ function PanelSidebar({ user, onNavigate, onLogout, isLoggingOut }) {
       </nav>
 
       <div className="mt-auto space-y-3">
-        <div className="rounded-[22px] border border-[#eef2f7] bg-[#f8fafc] p-4 text-right">
-          <p className="text-sm font-bold text-[#2f3f55]">{userName}</p>
-          <p className="mt-1 text-xs text-[#7c8aa1]">{userPhone ? toPersianDigits(userPhone) : "شماره ثبت نشده"}</p>
+        <div className="rounded-[22px] border border-greige bg-alabaster p-4 text-right">
+          <p className="text-sm font-bold text-charcoal">{userName}</p>
+          <p className="mt-1 text-xs text-charcoal/70">{userPhone ? toPersianDigits(userPhone) : "شماره ثبت نشده"}</p>
         </div>
         <button
           type="button"
           onClick={onLogout}
           disabled={isLoggingOut}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#f0d7d8] bg-white text-sm font-bold text-[#b85d60] transition hover:bg-[#fff7f7] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-rosewood/40 bg-alabaster text-sm font-bold text-charcoal/70 transition hover:bg-alabaster disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
           خروج
@@ -171,22 +171,22 @@ function PanelLayout({ user, onLogout, isLoggingOut, children }) {
   }, [isDrawerOpen]);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f3f7fb] text-[#27364d]">
-      <aside className="fixed bottom-0 right-0 top-0 z-40 hidden w-[300px] rounded-l-[34px] border-l border-[#edf1f6] bg-white shadow-[0_24px_70px_rgba(70,88,116,0.08)] lg:block">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal">
+      <aside className="fixed bottom-0 right-0 top-0 z-40 hidden w-[300px] rounded-l-[34px] border-l border-greige bg-alabaster shadow-soft lg:block">
         <PanelSidebar user={user} onLogout={onLogout} isLoggingOut={isLoggingOut} />
       </aside>
 
       <AnimatePresence>
         {isDrawerOpen ? (
           <motion.div
-            className="fixed inset-0 z-[80] bg-[#142033]/35 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-[80] bg-charcoal/35 backdrop-blur-sm lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsDrawerOpen(false)}
           >
             <motion.aside
-              className="absolute bottom-0 right-0 top-0 w-[82vw] max-w-[320px] rounded-l-[30px] bg-white shadow-[0_24px_80px_rgba(26,39,59,0.2)]"
+              className="absolute bottom-0 right-0 top-0 w-[82vw] max-w-[320px] rounded-l-[30px] bg-alabaster shadow-soft"
               initial={{ x: 80, opacity: 0.8 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 80, opacity: 0 }}
@@ -196,7 +196,7 @@ function PanelLayout({ user, onLogout, isLoggingOut, children }) {
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(false)}
-                className="absolute left-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e7edf5] text-[#65748c]"
+                className="absolute left-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-greige text-charcoal/70"
                 aria-label="بستن منو"
               >
                 <X className="h-5 w-5" />
@@ -218,21 +218,21 @@ function PanelLayout({ user, onLogout, isLoggingOut, children }) {
             <button
               type="button"
               onClick={() => setIsDrawerOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#e5ecf5] bg-white text-[#40516a] shadow-[0_12px_28px_rgba(70,88,116,0.08)] lg:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-greige bg-alabaster text-charcoal shadow-soft lg:hidden"
               aria-label="باز کردن منو"
             >
               <Menu className="h-5 w-5" />
             </button>
             <Link to="/" className="inline-flex items-center gap-2 lg:hidden" aria-label="بازگشت به گلملو">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#51645a] shadow-[0_12px_26px_rgba(81,100,90,0.2)]">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-charcoal shadow-soft">
                 <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-7 w-7 object-contain" />
               </span>
-              <span className="text-sm font-black text-[#26364c]">Golmelo</span>
+              <span className="text-sm font-black text-charcoal">Golmelo</span>
             </Link>
           </div>
 
-          <div className="hidden items-center gap-3 rounded-full border border-[#e5ecf5] bg-white px-4 py-2 text-sm text-[#708097] shadow-[0_12px_28px_rgba(70,88,116,0.06)] sm:flex">
-            <Phone className="h-4 w-4 text-[#c08081]" />
+          <div className="hidden items-center gap-3 rounded-full border border-greige bg-alabaster px-4 py-2 text-sm text-charcoal/70 shadow-soft sm:flex">
+            <Phone className="h-4 w-4 text-charcoal/70" />
             <span dir="ltr">{userPhone ? toPersianDigits(userPhone) : "بدون شماره"}</span>
           </div>
         </header>
@@ -281,7 +281,7 @@ function AddressEditor({ initialValue, onCancel, onSave, isSaving }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 rounded-[22px] border border-[#dfe7f1] bg-[#f8fafc] p-4 text-right">
+    <form onSubmit={handleSubmit} className="grid gap-4 rounded-[22px] border border-greige bg-alabaster p-4 text-right">
       <div className="grid gap-4 md:grid-cols-2">
         <PanelField label="عنوان آدرس">
           <PanelInput value={form.title} onChange={updateField("title")} placeholder="خانه، محل کار..." required />
@@ -294,20 +294,20 @@ function AddressEditor({ initialValue, onCancel, onSave, isSaving }) {
         </PanelField>
       </div>
 
-      <label className="grid gap-2 text-right text-sm text-[#7f8ea5]">
+      <label className="grid gap-2 text-right text-sm text-charcoal/70">
         متن آدرس
         <textarea
           value={form.fullAddress}
           onChange={updateField("fullAddress")}
           required
           rows={4}
-          className="rounded-2xl border border-transparent bg-white px-4 py-3 text-sm leading-7 text-[#2e3d54] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#c08081]/60"
+          className="rounded-2xl border border-transparent bg-alabaster px-4 py-3 text-sm leading-7 text-charcoal outline-none transition placeholder:text-charcoal/70 focus:border-rosewood/60"
           placeholder="آدرس کامل را وارد کنید"
         />
       </label>
 
-      <label className="flex items-center gap-3 text-sm font-bold text-[#607089]">
-        <input type="checkbox" checked={form.isDefault} onChange={updateField("isDefault")} className="h-4 w-4 accent-[#c08081]" />
+      <label className="flex items-center gap-3 text-sm font-bold text-charcoal/70">
+        <input type="checkbox" checked={form.isDefault} onChange={updateField("isDefault")} className="h-4 w-4 accent-rosewood" />
         این آدرس پیش‌فرض باشد
       </label>
 
@@ -325,7 +325,7 @@ function AddressEditor({ initialValue, onCancel, onSave, isSaving }) {
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088]"
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-greige bg-alabaster px-5 text-sm font-bold text-charcoal/70"
         >
           انصراف
         </button>
@@ -337,18 +337,18 @@ function AddressEditor({ initialValue, onCancel, onSave, isSaving }) {
 function AddressCard({ address, selected, selectable = false, onSelect, onEdit, onDelete, onSetDefault, busy }) {
   return (
     <article
-      className={`rounded-[20px] border bg-white p-4 text-right transition ${selected ? "border-[#c08081] shadow-[0_14px_34px_rgba(192,128,129,0.14)]" : "border-[#edf1f6]"
+      className={`rounded-[20px] border bg-alabaster p-4 text-right transition ${selected ? "border-rosewood/40 shadow-accent" : "border-greige"
         }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-[#2f3f55]">{address.title}</h3>
-            {address.isDefault ? <span className="rounded-full bg-[#edf7f0] px-2.5 py-1 text-xs font-bold text-[#4d9a61]">پیش‌فرض</span> : null}
+            <h3 className="font-bold text-charcoal">{address.title}</h3>
+            {address.isDefault ? <span className="rounded-full bg-alabaster px-2.5 py-1 text-xs font-bold text-charcoal/70">پیش‌فرض</span> : null}
           </div>
-          <p className="mt-2 text-sm leading-7 text-[#617088]">{address.fullAddress}</p>
+          <p className="mt-2 text-sm leading-7 text-charcoal/70">{address.fullAddress}</p>
           {(address.receiverName || address.receiverPhone) ? (
-            <p className="mt-2 text-xs text-[#9aa8ba]">
+            <p className="mt-2 text-xs text-charcoal/70">
               {[address.receiverName, address.receiverPhone].filter(Boolean).join(" · ")}
             </p>
           ) : null}
@@ -357,7 +357,7 @@ function AddressCard({ address, selected, selectable = false, onSelect, onEdit, 
           <button
             type="button"
             onClick={() => onSelect(address.id)}
-            className={`h-5 w-5 shrink-0 rounded-full border ${selected ? "border-[#c08081] bg-[#c08081]" : "border-[#ccd6e4]"}`}
+            className={`h-5 w-5 shrink-0 rounded-full border ${selected ? "border-rosewood/40 bg-rosewood" : "border-greige"}`}
             aria-label="انتخاب آدرس"
           />
         ) : null}
@@ -366,18 +366,18 @@ function AddressCard({ address, selected, selectable = false, onSelect, onEdit, 
       {(onEdit || onDelete || onSetDefault) ? (
         <div className="mt-4 flex flex-wrap gap-2">
           {onEdit ? (
-            <button type="button" onClick={() => onEdit(address)} className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#dfe7f1] bg-white px-3 text-xs font-bold text-[#617088]">
+            <button type="button" onClick={() => onEdit(address)} className="inline-flex h-9 items-center gap-2 rounded-xl border border-greige bg-alabaster px-3 text-xs font-bold text-charcoal/70">
               ویرایش
             </button>
           ) : null}
           {onSetDefault && !address.isDefault ? (
-            <button type="button" onClick={() => onSetDefault(address.id)} disabled={busy === `default-${address.id}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#dfe7f1] bg-white px-3 text-xs font-bold text-[#617088] disabled:opacity-60">
+            <button type="button" onClick={() => onSetDefault(address.id)} disabled={busy === `default-${address.id}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-greige bg-alabaster px-3 text-xs font-bold text-charcoal/70 disabled:opacity-60">
               {busy === `default-${address.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               پیش‌فرض
             </button>
           ) : null}
           {onDelete ? (
-            <button type="button" onClick={() => onDelete(address.id)} disabled={busy === `delete-${address.id}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#f0d7d8] bg-white px-3 text-xs font-bold text-[#b85d60] disabled:opacity-60">
+            <button type="button" onClick={() => onDelete(address.id)} disabled={busy === `delete-${address.id}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-rosewood/40 bg-alabaster px-3 text-xs font-bold text-charcoal/70 disabled:opacity-60">
               {busy === `delete-${address.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               حذف
             </button>
@@ -493,11 +493,11 @@ function AddressManager({ selectable = false, selectedId = "", onSelect, compact
   };
 
   return (
-    <section className={`${compact ? "" : "border-t border-dashed border-[#dfe7f1] px-5 py-8 sm:px-7 lg:px-9"}`}>
+    <section className={`${compact ? "" : "border-t border-dashed border-greige px-5 py-8 sm:px-7 lg:px-9"}`}>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-right">
-          <h2 className="text-xl text-[#2f3f55]">آدرس‌های من</h2>
-          <p className="mt-1 text-sm text-[#7d8ca3]">فعلاً آدرس‌ها به صورت متن ذخیره می‌شوند و برای نقشه آینده آماده‌اند.</p>
+          <h2 className="text-xl text-charcoal">آدرس‌های من</h2>
+          <p className="mt-1 text-sm text-charcoal/70">فعلاً آدرس‌ها به صورت متن ذخیره می‌شوند و برای نقشه آینده آماده‌اند.</p>
         </div>
         <Button
           type="button"
@@ -511,9 +511,9 @@ function AddressManager({ selectable = false, selectedId = "", onSelect, compact
         </Button>
       </div>
 
-      {status.type === "loading" ? <p className="text-sm text-[#7d8ca3]">در حال بارگذاری آدرس‌ها...</p> : null}
+      {status.type === "loading" ? <p className="text-sm text-charcoal/70">در حال بارگذاری آدرس‌ها...</p> : null}
       {status.type !== "loading" && addresses.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed border-[#dfe7f1] bg-[#f8fafc] p-6 text-center text-sm text-[#7d8ca3]">
+        <div className="rounded-[20px] border border-dashed border-greige bg-alabaster p-6 text-center text-sm text-charcoal/70">
           هنوز آدرسی ثبت نکرده‌اید.
         </div>
       ) : null}
@@ -546,7 +546,7 @@ function AddressManager({ selectable = false, selectedId = "", onSelect, compact
       ) : null}
 
       {status.message ? (
-        <p className={`mt-3 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#5b8c67]"}`}>{status.message}</p>
+        <p className={`mt-3 text-sm ${status.type === "error" ? "text-rosewood" : "text-charcoal/70"}`}>{status.message}</p>
       ) : null}
     </section>
   );
@@ -627,21 +627,21 @@ function PanelProfilePage({ user, onProfileUpdate }) {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <form onSubmit={handleSubmit} className="overflow-hidden rounded-[28px] bg-white shadow-[0_26px_70px_rgba(70,88,116,0.08)]">
-        <div className="flex flex-col gap-5 bg-[#f8fbff] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
+      <form onSubmit={handleSubmit} className="overflow-hidden rounded-[28px] bg-alabaster shadow-soft">
+        <div className="flex flex-col gap-5 bg-alabaster px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
           <div className="flex items-center gap-4">
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#d8dde6] text-[#7b8492]">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-greige/70 text-charcoal/70">
               <User className="h-9 w-9" />
             </div>
             <div className="text-right">
-              <h1 className="text-2xl text-[#2f3f55]">{userName}</h1>
-              <p className="mt-1 text-sm text-[#8593a8]">{userPhone ? toPersianDigits(userPhone) : "شماره ثبت نشده"}</p>
+              <h1 className="text-2xl text-charcoal">{userName}</h1>
+              <p className="mt-1 text-sm text-charcoal/70">{userPhone ? toPersianDigits(userPhone) : "شماره ثبت نشده"}</p>
             </div>
           </div>
 
           <button
             type="button"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#c08081] bg-white px-5 text-sm font-bold text-[#c08081] transition hover:bg-[#fff7f7]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-rosewood/40 bg-alabaster px-5 text-sm font-bold text-charcoal/70 transition hover:bg-alabaster"
           >
             <Upload className="h-4 w-4" />
             آپلود تصویر
@@ -721,9 +721,9 @@ function PanelProfilePage({ user, onProfileUpdate }) {
           </div>
         </PanelSection>
 
-        <div className="flex flex-col gap-3 border-t border-dashed border-[#dfe7f1] px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
+        <div className="flex flex-col gap-3 border-t border-dashed border-greige px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
           <p
-            className={`min-h-6 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#5b8c67]"}`}
+            className={`min-h-6 text-sm ${status.type === "error" ? "text-rosewood" : "text-charcoal/70"}`}
             aria-live="polite"
           >
             {status.message}
@@ -731,7 +731,7 @@ function PanelProfilePage({ user, onProfileUpdate }) {
           <button
             type="submit"
             disabled={isSaving}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#2ecf7f] px-6 text-sm font-bold text-white shadow-[0_14px_32px_rgba(46,207,127,0.22)] transition hover:-translate-y-0.5 hover:bg-[#25bd72] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-rosewood px-6 text-sm font-bold text-alabaster shadow-accent transition hover:-translate-y-0.5 hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {isSaving ? "در حال ذخیره" : "ثبت تغییرات"}
@@ -739,7 +739,7 @@ function PanelProfilePage({ user, onProfileUpdate }) {
         </div>
       </form>
 
-      <div className="overflow-hidden rounded-[28px] bg-white shadow-[0_26px_70px_rgba(70,88,116,0.08)]">
+      <div className="overflow-hidden rounded-[28px] bg-alabaster shadow-soft">
         <AddressManager />
       </div>
     </div>
@@ -754,36 +754,36 @@ function PanelCourseCard({ course, progress }) {
     <motion.article whileHover={{ y: -8 }} transition={{ duration: 0.28 }} className="h-full">
       <Link
         to={`/panel/courses/${course.id}`}
-        className="group relative flex aspect-[0.76] min-h-[360px] overflow-hidden rounded-[24px] bg-[#172235] text-white shadow-[0_22px_52px_rgba(39,54,77,0.15)]"
+        className="group relative flex aspect-[0.76] min-h-[360px] overflow-hidden rounded-[24px] bg-charcoal text-alabaster shadow-soft"
       >
         <img
           src={course.cover}
           alt={course.title}
           className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(16,28,45,0.5)_0%,rgba(16,28,45,0.18)_38%,rgba(16,28,45,0.9)_100%)]" />
+        <div className="absolute inset-0 bg-vertical-ink-fade" />
 
         <div className="relative z-10 flex w-full flex-col justify-between p-5">
           <div>
             <div className="mb-3 flex items-center justify-between gap-3 text-sm font-bold">
               <span>{statusLabel}</span>
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#ff5b75] text-white">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-rosewood text-alabaster">
                 <Play className="h-4 w-4 fill-current" />
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/30">
-              <div className="h-full rounded-full bg-[#ff6b78]" style={{ width: `${progress}%` }} />
+            <div className="h-1.5 overflow-hidden rounded-full bg-alabaster/30">
+              <div className="h-full rounded-full bg-rosewood" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <h2 className="text-2xl leading-9 text-white drop-shadow-md">{course.title}</h2>
-              <p className="mt-2 line-clamp-2 text-sm leading-7 text-white/78">{course.subtitle}</p>
+              <h2 className="text-2xl leading-9 text-alabaster drop-shadow-ink">{course.title}</h2>
+              <p className="mt-2 line-clamp-2 text-sm leading-7 text-alabaster/78">{course.subtitle}</p>
             </div>
-            <div className="flex items-center justify-between gap-3 text-xs text-white/78">
+            <div className="flex items-center justify-between gap-3 text-xs text-alabaster/78">
               <span>{toPersianDigits(lessonsCount)} درس</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/14 px-3 py-1.5 text-white backdrop-blur">
+              <span className="inline-flex items-center gap-1 rounded-full bg-alabaster/14 px-3 py-1.5 text-alabaster backdrop-blur">
                 ورود به دوره
                 <ChevronLeft className="h-4 w-4" />
               </span>
@@ -830,8 +830,8 @@ function PanelCoursesPage({ user }) {
   return (
     <section className="py-6 lg:py-10">
       <div className="mb-8 text-right">
-        <h1 className="text-3xl leading-tight text-[#2f3f55] md:text-4xl">دوره‌هایی که خریدید</h1>
-        <p className="mt-2 text-sm text-[#7d8ca3]">دسترسی‌های فعال حساب شما در گلملو</p>
+        <h1 className="text-3xl leading-tight text-charcoal md:text-4xl">دوره‌هایی که خریدید</h1>
+        <p className="mt-2 text-sm text-charcoal/70">دسترسی‌های فعال حساب شما در گلملو</p>
       </div>
 
       {accessibleCourses.length > 0 ? (
@@ -841,10 +841,10 @@ function PanelCoursesPage({ user }) {
           ))}
         </div>
       ) : (
-        <div className="mx-auto grid min-h-[320px] max-w-xl place-items-center rounded-[28px] bg-white p-8 text-center shadow-[0_22px_58px_rgba(70,88,116,0.08)]">
+        <div className="mx-auto grid min-h-[320px] max-w-xl place-items-center rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
           <div>
-            <BookOpen className="mx-auto h-10 w-10 text-[#c08081]" />
-            <h2 className="mt-5 text-2xl text-[#2f3f55]">هنوز به دوره‌ای دسترسی ندارید.</h2>
+            <BookOpen className="mx-auto h-10 w-10 text-charcoal/70" />
+            <h2 className="mt-5 text-2xl text-charcoal">هنوز به دوره‌ای دسترسی ندارید.</h2>
             <ButtonLink
               to="/#courses"
               variant="primary"
@@ -890,7 +890,7 @@ function PanelVideoFrame({
   }, [isPlaying, lesson.videoUrl]);
 
   return (
-    <div className="relative aspect-video overflow-hidden rounded-[26px] bg-[#101a2a] shadow-[0_26px_70px_rgba(39,54,77,0.14)]">
+    <div className="relative aspect-video overflow-hidden rounded-[26px] bg-charcoal shadow-soft">
       {lesson.videoUrl ? (
         <video
           ref={videoRef}
@@ -904,24 +904,24 @@ function PanelVideoFrame({
       ) : (
         <img src={lesson.thumbnail || course.cover} alt={lesson.title} className="absolute inset-0 h-full w-full object-cover" />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(13,22,35,0.75)_0%,rgba(13,22,35,0.2)_52%,rgba(13,22,35,0.68)_100%)]" />
+      <div className="absolute inset-0 bg-ink-fade" />
       <button
         type="button"
         onClick={onPlay}
-        className="absolute left-1/2 top-1/2 inline-flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[24px] bg-[#ff7448] text-white shadow-[0_18px_42px_rgba(255,116,72,0.34)] transition hover:scale-105"
+        className="absolute left-1/2 top-1/2 inline-flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[24px] bg-rosewood text-alabaster shadow-accent transition hover:scale-105"
         aria-label="پخش درس"
       >
         <Play className="h-9 w-9 fill-current" />
       </button>
       <div className="absolute bottom-6 right-6 max-w-sm text-right">
-        <p className="text-sm font-bold text-[#ffd0c2]">{lesson.chapterTitle}</p>
-        <h2 className="mt-2 text-3xl leading-10 text-white">{lesson.title}</h2>
-        <p className="mt-2 text-sm text-white/75">
+        <p className="text-sm font-bold text-alabaster">{lesson.chapterTitle}</p>
+        <h2 className="mt-2 text-3xl leading-10 text-alabaster">{lesson.title}</h2>
+        <p className="mt-2 text-sm text-alabaster/75">
           {isPlaying ? "در حال پخش" : "آماده پخش"} از {formatPlaybackTime(currentSecond)}
         </p>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/18">
-        <div className="h-full bg-[#ff7448]" style={{ width: `${progress}%` }} />
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-alabaster/18">
+        <div className="h-full bg-rosewood" style={{ width: `${progress}%` }} />
       </div>
     </div>
   );
@@ -932,17 +932,17 @@ function PanelLessonButton({ lesson, isActive, isWatched, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-right text-sm transition ${isActive ? "bg-[#f4f7fb] text-[#26364c]" : "text-[#64748b] hover:bg-[#f8fafc]"
+      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-right text-sm transition ${isActive ? "bg-alabaster text-charcoal" : "text-charcoal/70 hover:bg-alabaster"
         }`}
     >
       <span
-        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isActive ? "bg-[#ff6b78] text-white" : isWatched ? "bg-[#edf7f0] text-[#50a568]" : "bg-[#eef3f9] text-[#91a0b5]"
+        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isActive ? "bg-rosewood text-alabaster" : isWatched ? "bg-alabaster text-charcoal/70" : "bg-alabaster text-charcoal/70"
           }`}
       >
         {isWatched ? <CheckCircle2 className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}
       </span>
       <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
-      <span className="shrink-0 text-xs text-[#9aa8ba]">{lesson.duration}</span>
+      <span className="shrink-0 text-xs text-charcoal/70">{lesson.duration}</span>
     </button>
   );
 }
@@ -957,16 +957,16 @@ function PanelCourseSyllabus({
   onSelectLesson,
 }) {
   return (
-    <aside className="overflow-hidden rounded-[28px] bg-white shadow-[0_24px_64px_rgba(70,88,116,0.08)] lg:sticky lg:top-7 lg:max-h-[calc(100vh-56px)] lg:self-start lg:[direction:rtl]">
-      <div className="bg-[linear-gradient(135deg,#f1f3f6_0%,#ffffff_100%)] px-6 py-7">
-        <h2 className="text-2xl leading-9 text-[#2f3f55]">{course.title}</h2>
+    <aside className="overflow-hidden rounded-[28px] bg-alabaster shadow-soft lg:sticky lg:top-7 lg:max-h-[calc(100vh-56px)] lg:self-start lg:[direction:rtl]">
+      <div className="bg-surface-gradient px-6 py-7">
+        <h2 className="text-2xl leading-9 text-charcoal">{course.title}</h2>
         <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between text-xs text-[#7d8ca3]">
+          <div className="mb-2 flex items-center justify-between text-xs text-charcoal/70">
             <span>پیشرفت دوره</span>
             <span>{toPersianDigits(progress)}٪</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[#e8eef6]">
-            <div className="h-full rounded-full bg-[#c08081]" style={{ width: `${progress}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-alabaster">
+            <div className="h-full rounded-full bg-rosewood" style={{ width: `${progress}%` }} />
           </div>
         </div>
       </div>
@@ -975,17 +975,17 @@ function PanelCourseSyllabus({
         {getCourseChapters(course).map((chapter, chapterIndex) => {
           const isOpen = openChapterIds.has(chapter.id);
           return (
-            <section key={chapter.id} className="border-b border-[#edf1f6] pb-3 last:border-b-0">
+            <section key={chapter.id} className="border-b border-greige pb-3 last:border-b-0">
               <button
                 type="button"
                 onClick={() => onToggleChapter(chapter.id)}
                 className="flex w-full items-center gap-3 py-3 text-right"
               >
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f1f4f8] text-sm font-bold text-[#697890]">
+                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-alabaster text-sm font-bold text-charcoal/70">
                   {toPersianDigits(chapterIndex + 1)}
                 </span>
-                <span className="min-w-0 flex-1 font-bold text-[#2f3f55]">{chapter.title}</span>
-                <ChevronDown className={`h-5 w-5 text-[#9aa8ba] transition ${isOpen ? "rotate-180" : ""}`} />
+                <span className="min-w-0 flex-1 font-bold text-charcoal">{chapter.title}</span>
+                <ChevronDown className={`h-5 w-5 text-charcoal/70 transition ${isOpen ? "rotate-180" : ""}`} />
               </button>
 
               <AnimatePresence initial={false}>
@@ -1194,15 +1194,15 @@ function PanelCourseDetailPage({ user }) {
   };
 
   if (loadStatus.type === "loading") {
-    return <div className="rounded-[28px] bg-white p-8 text-center text-[#7d8ca3] shadow-[0_22px_58px_rgba(70,88,116,0.08)]">در حال بارگذاری دوره...</div>;
+    return <div className="rounded-[28px] bg-alabaster p-8 text-center text-charcoal/70 shadow-soft">در حال بارگذاری دوره...</div>;
   }
 
   if (!course || !activeLesson) {
     return (
       <div className="grid min-h-[60vh] place-items-center py-10">
-        <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-          <BookOpen className="mx-auto h-10 w-10 text-[#c08081]" />
-          <h1 className="mt-5 text-2xl text-[#2f3f55]">{loadStatus.message || "دوره پیدا نشد."}</h1>
+        <div className="rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
+          <BookOpen className="mx-auto h-10 w-10 text-charcoal/70" />
+          <h1 className="mt-5 text-2xl text-charcoal">{loadStatus.message || "دوره پیدا نشد."}</h1>
           <ButtonLink
             to="/panel/courses"
             variant="primary"
@@ -1220,10 +1220,10 @@ function PanelCourseDetailPage({ user }) {
   if (!hasAccess) {
     return (
       <div className="grid min-h-[60vh] place-items-center py-10">
-        <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-          <Lock className="mx-auto h-10 w-10 text-[#c08081]" />
-          <h1 className="mt-5 text-2xl text-[#2f3f55]">این دوره هنوز برای حساب شما فعال نیست.</h1>
-          <p className="mt-3 max-w-md text-sm leading-7 text-[#7d8ca3]">از صفحه معرفی دوره درخواست خرید را ثبت کنید تا بعد از فعال‌سازی از همین مسیر وارد دوره شوید.</p>
+        <div className="rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
+          <Lock className="mx-auto h-10 w-10 text-charcoal/70" />
+          <h1 className="mt-5 text-2xl text-charcoal">این دوره هنوز برای حساب شما فعال نیست.</h1>
+          <p className="mt-3 max-w-md text-sm leading-7 text-charcoal/70">از صفحه معرفی دوره درخواست خرید را ثبت کنید تا بعد از فعال‌سازی از همین مسیر وارد دوره شوید.</p>
           <ButtonLink
             to={`/courses/${course.slug || course.id}`}
             variant="primary"
@@ -1242,12 +1242,12 @@ function PanelCourseDetailPage({ user }) {
     <section className="py-6 lg:py-10">
       <div className="mb-6 flex flex-col gap-3 text-right sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold text-[#c08081]">{activeLesson.chapterTitle}</p>
-          <h1 className="mt-1 text-3xl leading-tight text-[#2f3f55] md:text-4xl">{course.title}</h1>
+          <p className="text-sm font-bold text-charcoal/70">{activeLesson.chapterTitle}</p>
+          <h1 className="mt-1 text-3xl leading-tight text-charcoal md:text-4xl">{course.title}</h1>
         </div>
         <Link
           to="/panel/courses"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#e1e8f2] bg-white px-4 text-sm text-[#617088] transition hover:border-[#c08081]/40 hover:text-[#c08081]"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-greige bg-alabaster px-4 text-sm text-charcoal/70 transition hover:border-rosewood/40 hover:text-rosewood"
         >
           <ChevronRight className="h-4 w-4" />
           دوره‌های من
@@ -1270,11 +1270,11 @@ function PanelCourseDetailPage({ user }) {
             durationSeconds={activeLessonDuration}
           />
 
-          <div className="mt-5 rounded-[24px] bg-white p-5 text-center shadow-[0_18px_46px_rgba(70,88,116,0.06)]">
-            <p className="text-sm font-bold text-[#94a2b7]">{activeLesson.chapterTitle}</p>
-            <h2 className="mt-2 text-2xl text-[#2f3f55]">{activeLesson.title}</h2>
+          <div className="mt-5 rounded-[24px] bg-alabaster p-5 text-center shadow-soft">
+            <p className="text-sm font-bold text-charcoal/70">{activeLesson.chapterTitle}</p>
+            <h2 className="mt-2 text-2xl text-charcoal">{activeLesson.title}</h2>
             {isComplete ? (
-              <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full bg-[#edf7f0] px-4 py-2 text-sm font-bold text-[#4d9a61]">
+              <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full bg-alabaster px-4 py-2 text-sm font-bold text-charcoal/70">
                 <CheckCircle2 className="h-4 w-4" />
                 دوره تکمیل شد
               </div>
@@ -1286,7 +1286,7 @@ function PanelCourseDetailPage({ user }) {
               type="button"
               disabled={!previousLesson}
               onClick={() => previousLesson && selectLesson(previousLesson.id)}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#dfe7f1] bg-white px-4 text-sm font-bold text-[#6f7e96] transition hover:border-[#c08081]/40 hover:text-[#c08081] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-[#dfe7f1] disabled:hover:text-[#6f7e96]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-greige bg-alabaster px-4 text-sm font-bold text-charcoal/70 transition hover:border-rosewood/40 hover:text-rosewood disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-greige disabled:hover:text-rosewood"
             >
               <ChevronRight className="h-4 w-4" />
               بخش قبلی
@@ -1323,15 +1323,15 @@ function PanelCourseDetailPage({ user }) {
 function OrderStatusBadge({ status }) {
   const label = ORDER_STATUS_LABELS[status] || status || "نامشخص";
   const tone = {
-    draft: "bg-[#f5f7fb] text-[#6f7e96]",
-    delivered: "bg-[#edf7f0] text-[#4d9a61]",
-    cancelled: "bg-[#fff1f1] text-[#b85d60]",
-    ready: "bg-[#fff8e8] text-[#b07b28]",
-    in_progress: "bg-[#eef6ff] text-[#4372a6]",
-    confirmed: "bg-[#f1f4ff] text-[#5669b0]",
-    need_more_info: "bg-[#fff7ed] text-[#b06d32]",
-    pending_review: "bg-[#f5f7fb] text-[#6f7e96]",
-  }[status] || "bg-[#f5f7fb] text-[#6f7e96]";
+    draft: "bg-alabaster text-charcoal/70",
+    delivered: "bg-alabaster text-charcoal/70",
+    cancelled: "bg-alabaster text-charcoal/70",
+    ready: "bg-alabaster text-charcoal/70",
+    in_progress: "bg-alabaster text-charcoal/70",
+    confirmed: "bg-alabaster text-charcoal/70",
+    need_more_info: "bg-alabaster text-charcoal/70",
+    pending_review: "bg-alabaster text-charcoal/70",
+  }[status] || "bg-alabaster text-charcoal/70";
 
   return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${tone}`}>{label}</span>;
 }
@@ -1340,11 +1340,11 @@ function OrderThumbnail({ order, className = "aspect-square" }) {
   const cover = resolveApiURL(orderCoverImage(order));
 
   return (
-    <div className={`${className} grid overflow-hidden rounded-2xl bg-[#f3f6fa]`}>
+    <div className={`${className} grid overflow-hidden rounded-2xl bg-alabaster`}>
       {cover ? (
         <img src={cover} alt={orderDisplayTitle(order)} className="h-full w-full object-cover" />
       ) : (
-        <div className="grid h-full w-full place-items-center bg-[#f8fafc] text-[#c08081]">
+        <div className="grid h-full w-full place-items-center bg-alabaster text-charcoal/70">
           <Send className="h-8 w-8" />
         </div>
       )}
@@ -1396,8 +1396,8 @@ function PanelOrdersPage() {
     <section className="py-6 lg:py-10">
       <div className="mb-8 flex flex-col gap-4 text-right sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl leading-tight text-[#2f3f55] md:text-4xl">سفارش‌های من</h1>
-          <p className="mt-2 text-sm text-[#7d8ca3]">وضعیت سفارش‌های گل پارچه‌ای خود را تا زمان تحویل پیگیری کنید.</p>
+          <h1 className="text-3xl leading-tight text-charcoal md:text-4xl">سفارش‌های من</h1>
+          <p className="mt-2 text-sm text-charcoal/70">وضعیت سفارش‌های گل پارچه‌ای خود را تا زمان تحویل پیگیری کنید.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <ButtonLink
@@ -1410,7 +1410,7 @@ function PanelOrdersPage() {
           </ButtonLink>
           <Link
             to="/products"
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-5 text-sm font-bold text-[#617088] transition hover:border-[#c08081]/40 hover:text-[#c08081]"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-greige bg-alabaster px-5 text-sm font-bold text-charcoal/70 transition hover:border-rosewood/40 hover:text-rosewood"
           >
             انتخاب از محصولات
           </Link>
@@ -1418,22 +1418,22 @@ function PanelOrdersPage() {
       </div>
 
       {status.type === "loading" ? (
-        <div className="rounded-[28px] bg-white p-8 text-center text-[#7d8ca3] shadow-[0_22px_58px_rgba(70,88,116,0.08)]">در حال بارگذاری سفارش‌ها...</div>
+        <div className="rounded-[28px] bg-alabaster p-8 text-center text-charcoal/70 shadow-soft">در حال بارگذاری سفارش‌ها...</div>
       ) : null}
       {status.type === "error" ? (
-        <div className="rounded-[28px] border border-[#efb8ba] bg-[#fff6f6] p-8 text-center text-[#b85d60]">
+        <div className="rounded-[28px] border border-rosewood/40 bg-alabaster p-8 text-center text-charcoal/70">
           <p>{status.message}</p>
-          <button type="button" onClick={loadOrders} className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-bold text-[#b85d60]">
+          <button type="button" onClick={loadOrders} className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-alabaster px-4 text-sm font-bold text-charcoal/70">
             تلاش دوباره
           </button>
         </div>
       ) : null}
 
       {isEmpty ? (
-        <div className="mx-auto grid min-h-[320px] max-w-xl place-items-center rounded-[28px] bg-white p-8 text-center shadow-[0_22px_58px_rgba(70,88,116,0.08)]">
+        <div className="mx-auto grid min-h-[320px] max-w-xl place-items-center rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
           <div>
-            <Send className="mx-auto h-10 w-10 text-[#c08081]" />
-            <h2 className="mt-5 text-2xl text-[#2f3f55]">هنوز سفارشی ثبت نشده است.</h2>
+            <Send className="mx-auto h-10 w-10 text-charcoal/70" />
+            <h2 className="mt-5 text-2xl text-charcoal">هنوز سفارشی ثبت نشده است.</h2>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <ButtonLink to="/products" variant="primary" size="panelMd" shape="panel">
                 مشاهده محصولات
@@ -1448,23 +1448,23 @@ function PanelOrdersPage() {
 
       {drafts.length > 0 ? (
         <section className="mb-8">
-          <h2 className="mb-3 text-right text-xl text-[#2f3f55]">پیش‌نویس‌ها</h2>
+          <h2 className="mb-3 text-right text-xl text-charcoal">پیش‌نویس‌ها</h2>
           <div className="grid gap-4">
             {drafts.map((order) => (
               <article
                 key={order.id}
-                className="grid gap-4 rounded-[24px] border border-dashed border-[#dfe7f1] bg-white p-5 text-right shadow-[0_18px_46px_rgba(70,88,116,0.05)] md:grid-cols-[96px_1fr_auto] md:items-center"
+                className="grid gap-4 rounded-[24px] border border-dashed border-greige bg-alabaster p-5 text-right shadow-soft md:grid-cols-[96px_1fr_auto] md:items-center"
               >
                 <OrderThumbnail order={order} />
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <h3 className="text-xl text-[#2f3f55]">{orderDisplayTitle(order)}</h3>
+                    <h3 className="text-xl text-charcoal">{orderDisplayTitle(order)}</h3>
                     <OrderStatusBadge status={order.status} />
                   </div>
-                  <p className="line-clamp-2 text-sm leading-7 text-[#708097]">
+                  <p className="line-clamp-2 text-sm leading-7 text-charcoal/70">
                     {orderSummaryText(order, "می‌توانید ثبت سفارش را ادامه دهید.")}
                   </p>
-                  <p className="mt-2 text-xs text-[#9aa8ba]">آخرین تغییر: {formatPersianDate(order.updatedAt || order.createdAt)}</p>
+                  <p className="mt-2 text-xs text-charcoal/70">آخرین تغییر: {formatPersianDate(order.updatedAt || order.createdAt)}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
                   <ButtonLink
@@ -1479,7 +1479,7 @@ function PanelOrdersPage() {
                     type="button"
                     onClick={() => deleteDraft(order.id)}
                     disabled={busyDraftId === order.id}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#f0d7d8] bg-white px-4 text-sm font-bold text-[#b85d60] disabled:opacity-60"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rosewood/40 bg-alabaster px-4 text-sm font-bold text-charcoal/70 disabled:opacity-60"
                   >
                     {busyDraftId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     حذف
@@ -1493,26 +1493,26 @@ function PanelOrdersPage() {
 
       {submittedOrders.length > 0 ? (
         <section>
-          <h2 className="mb-3 text-right text-xl text-[#2f3f55]">سفارش‌های ثبت‌شده</h2>
+          <h2 className="mb-3 text-right text-xl text-charcoal">سفارش‌های ثبت‌شده</h2>
           <div className="grid gap-4">
             {submittedOrders.map((order) => (
               <Link
                 key={order.id}
                 to={`/panel/orders/${order.id}`}
-                className="grid gap-4 rounded-[24px] bg-white p-5 text-right shadow-[0_18px_46px_rgba(70,88,116,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_56px_rgba(70,88,116,0.1)] md:grid-cols-[96px_1fr_auto] md:items-center"
+                className="grid gap-4 rounded-[24px] bg-alabaster p-5 text-right shadow-soft transition hover:-translate-y-0.5 hover:shadow-soft md:grid-cols-[96px_1fr_auto] md:items-center"
               >
                 <OrderThumbnail order={order} />
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl text-[#2f3f55]">{orderDisplayTitle(order)}</h2>
+                    <h2 className="text-xl text-charcoal">{orderDisplayTitle(order)}</h2>
                     <OrderStatusBadge status={order.status} />
                   </div>
-                  <p className="line-clamp-2 text-sm leading-7 text-[#708097]">
+                  <p className="line-clamp-2 text-sm leading-7 text-charcoal/70">
                     {orderSummaryText(order)}
                   </p>
-                  <p className="mt-2 text-xs text-[#9aa8ba]">ثبت: {formatPersianDate(order.submittedAt || order.createdAt)}</p>
+                  <p className="mt-2 text-xs text-charcoal/70">ثبت: {formatPersianDate(order.submittedAt || order.createdAt)}</p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-sm font-bold text-[#c08081]">
+                <span className="inline-flex items-center gap-1 text-sm font-bold text-charcoal/70">
                   مشاهده جزئیات
                   <ChevronLeft className="h-4 w-4" />
                 </span>
@@ -1573,9 +1573,9 @@ function PanelNewOrderPage() {
 
   return (
     <section className="py-6 lg:py-10">
-      <div className="rounded-[28px] bg-white p-8 text-center text-[#7d8ca3] shadow-[0_22px_58px_rgba(70,88,116,0.08)]">
-        {status.type === "loading" ? <Loader2 className="mx-auto mb-4 h-7 w-7 animate-spin text-[#c08081]" /> : null}
-        <p className={status.type === "error" ? "text-[#b85d60]" : ""}>{status.message}</p>
+      <div className="rounded-[28px] bg-alabaster p-8 text-center text-charcoal/70 shadow-soft">
+        {status.type === "loading" ? <Loader2 className="mx-auto mb-4 h-7 w-7 animate-spin text-charcoal/70" /> : null}
+        <p className={status.type === "error" ? "text-rosewood" : ""}>{status.message}</p>
         {status.type === "error" ? (
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <ButtonLink to="/products" variant="primary" size="panelSm" shape="panel">
@@ -1666,11 +1666,11 @@ function ReferenceImagesField({ orderId, images = [], onImagesChange }) {
   };
 
   return (
-    <section className="rounded-[24px] border border-[#edf1f6] bg-white p-5 text-right">
+    <section className="rounded-[24px] border border-greige bg-alabaster p-5 text-right">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl text-[#2f3f55]">تصاویر مرجع</h2>
-          <p className="mt-1 text-sm text-[#7d8ca3]">برای توضیح رنگ، فرم یا نمونه مشابه، تا ۵ تصویر اضافه کنید.</p>
+          <h2 className="text-xl text-charcoal">تصاویر مرجع</h2>
+          <p className="mt-1 text-sm text-charcoal/70">برای توضیح رنگ، فرم یا نمونه مشابه، تا ۵ تصویر اضافه کنید.</p>
         </div>
         <label className={buttonClassName({ variant: "primary", size: "panelSm", shape: "panel", className: `cursor-pointer ${isUploading ? "pointer-events-none opacity-70" : ""}` })}>
           {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -1682,13 +1682,13 @@ function ReferenceImagesField({ orderId, images = [], onImagesChange }) {
       {resolvedImages.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {resolvedImages.map((image) => (
-            <div key={image.id} className="relative overflow-hidden rounded-2xl bg-[#f3f6fa]">
+            <div key={image.id} className="relative overflow-hidden rounded-2xl bg-alabaster">
               <img src={image.url} alt="تصویر مرجع سفارش" className="aspect-square h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => deleteImage(image.id)}
                 disabled={isUploading}
-                className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/90 text-[#b85d60] shadow-[0_8px_20px_rgba(70,88,116,0.12)] disabled:opacity-60"
+                className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-alabaster/90 text-charcoal/70 shadow-soft disabled:opacity-60"
                 aria-label="حذف تصویر"
               >
                 <Trash2 className="h-4 w-4" />
@@ -1697,13 +1697,13 @@ function ReferenceImagesField({ orderId, images = [], onImagesChange }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-[20px] border border-dashed border-[#dfe7f1] bg-[#f8fafc] p-6 text-center text-sm text-[#7d8ca3]">
+        <div className="rounded-[20px] border border-dashed border-greige bg-alabaster p-6 text-center text-sm text-charcoal/70">
           هنوز تصویر مرجعی اضافه نشده است.
         </div>
       )}
 
       {status.message ? (
-        <p className={`mt-3 min-h-5 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#5b8c67]"}`}>{status.message}</p>
+        <p className={`mt-3 min-h-5 text-sm ${status.type === "error" ? "text-rosewood" : "text-charcoal/70"}`}>{status.message}</p>
       ) : null}
     </section>
   );
@@ -1809,21 +1809,21 @@ function DraftOrderEditor({ order, onOrderChange }) {
   const productSnapshot = order.productSnapshot || {};
 
   return (
-    <section className="grid gap-6 rounded-[28px] bg-white p-5 text-right shadow-[0_26px_70px_rgba(70,88,116,0.08)] lg:grid-cols-[300px_1fr] lg:p-7">
-      <aside className="overflow-hidden rounded-[24px] border border-[#edf1f6] bg-[#f8fafc] lg:self-start">
+    <section className="grid gap-6 rounded-[28px] bg-alabaster p-5 text-right shadow-soft lg:grid-cols-[300px_1fr] lg:p-7">
+      <aside className="overflow-hidden rounded-[24px] border border-greige bg-alabaster lg:self-start">
         {isProductOrder ? (
           <>
-            <div className="aspect-square overflow-hidden bg-[#eef3f9]">
+            <div className="aspect-square overflow-hidden bg-alabaster">
               {productSnapshot.coverImageUrl ? (
                 <img src={resolveApiURL(productSnapshot.coverImageUrl)} alt={productSnapshot.title} className="h-full w-full object-cover" />
               ) : null}
             </div>
             <div className="p-4">
-              <h2 className="text-xl text-[#2f3f55]">{productSnapshot.title || "محصول انتخاب‌شده"}</h2>
-              <p className="mt-2 text-sm leading-7 text-[#708097]">{productSnapshot.shortDescription}</p>
-              <p className="mt-3 text-sm font-bold text-[#c08081]">{formatTomanPrice(productSnapshot.basePriceRial, productSnapshot.priceLabel || "پس از بررسی اعلام می‌شود")}</p>
+              <h2 className="text-xl text-charcoal">{productSnapshot.title || "محصول انتخاب‌شده"}</h2>
+              <p className="mt-2 text-sm leading-7 text-charcoal/70">{productSnapshot.shortDescription}</p>
+              <p className="mt-3 text-sm font-bold text-charcoal/70">{formatTomanPrice(productSnapshot.basePriceRial, productSnapshot.priceLabel || "پس از بررسی اعلام می‌شود")}</p>
               {order.productId ? (
-                <Link to={`/products/${productSnapshot.slug || order.productId}`} className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-[#dfe7f1] bg-white px-4 text-xs font-bold text-[#617088]">
+                <Link to={`/products/${productSnapshot.slug || order.productId}`} className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-greige bg-alabaster px-4 text-xs font-bold text-charcoal/70">
                   مشاهده محصول
                 </Link>
               ) : null}
@@ -1832,25 +1832,25 @@ function DraftOrderEditor({ order, onOrderChange }) {
         ) : (
           <div className="grid min-h-[260px] place-items-center p-6 text-center">
             <div>
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-[#fff1f1] text-[#c08081]">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-alabaster text-charcoal/70">
                 <Plus className="h-8 w-8" />
               </div>
-              <h2 className="mt-5 text-2xl text-[#2f3f55]">سفارش اختصاصی</h2>
-              <p className="mt-3 text-sm leading-7 text-[#708097]">جزئیات محصولی را که در ذهن دارید ثبت کنید تا بررسی و قیمت‌گذاری شود.</p>
+              <h2 className="mt-5 text-2xl text-charcoal">سفارش اختصاصی</h2>
+              <p className="mt-3 text-sm leading-7 text-charcoal/70">جزئیات محصولی را که در ذهن دارید ثبت کنید تا بررسی و قیمت‌گذاری شود.</p>
             </div>
           </div>
         )}
       </aside>
 
       <div className="grid content-start gap-5">
-        <section className="rounded-[24px] border border-[#edf1f6] bg-white p-5">
-          <h2 className="mb-5 text-xl text-[#2f3f55]">جزئیات سفارش</h2>
+        <section className="rounded-[24px] border border-greige bg-alabaster p-5">
+          <h2 className="mb-5 text-xl text-charcoal">جزئیات سفارش</h2>
           <div className="grid gap-5 md:grid-cols-2">
             <PanelField label="کاربرد سفارش">
               <select
                 value={form.usage}
                 onChange={updateField("usage")}
-                className="h-[52px] rounded-2xl border border-transparent bg-[#f8fafc] px-4 text-sm text-[#2e3d54] outline-none transition focus:border-[#c08081]/60 focus:bg-white"
+                className="h-[52px] rounded-2xl border border-transparent bg-alabaster px-4 text-sm text-charcoal outline-none transition focus:border-rosewood/60 focus:bg-alabaster"
               >
                 <option value="">انتخاب کنید</option>
                 {CUSTOM_USAGE_OPTIONS.map((item) => (
@@ -1877,13 +1877,13 @@ function DraftOrderEditor({ order, onOrderChange }) {
             </PanelField>
           </div>
 
-          <label className="mt-5 grid gap-2 text-right text-sm text-[#7f8ea5]">
+          <label className="mt-5 grid gap-2 text-right text-sm text-charcoal/70">
             {form.type === "custom" ? "توضیحات سفارش اختصاصی" : "توضیحات تکمیلی"}
             <textarea
               value={form.customerNote}
               onChange={updateField("customerNote")}
               rows={7}
-              className="rounded-2xl border border-transparent bg-[#f8fafc] px-4 py-3 text-sm leading-7 text-[#2e3d54] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#c08081]/60 focus:bg-white"
+              className="rounded-2xl border border-transparent bg-alabaster px-4 py-3 text-sm leading-7 text-charcoal outline-none transition placeholder:text-charcoal/70 focus:border-rosewood/60 focus:bg-alabaster"
               placeholder="ابعاد، کاربرد، رنگ، محدودیت زمانی یا هر جزئیات مهم دیگر را بنویسید."
             />
           </label>
@@ -1891,10 +1891,10 @@ function DraftOrderEditor({ order, onOrderChange }) {
 
         <ReferenceImagesField orderId={order.id} images={images} onImagesChange={setImages} />
 
-        <section className="rounded-[24px] border border-[#edf1f6] bg-white p-5">
+        <section className="rounded-[24px] border border-greige bg-alabaster p-5">
           <div className="mb-4 flex items-center gap-2 text-right">
-            <MapPin className="h-5 w-5 text-[#c08081]" />
-            <h2 className="text-xl text-[#2f3f55]">آدرس تحویل</h2>
+            <MapPin className="h-5 w-5 text-charcoal/70" />
+            <h2 className="text-xl text-charcoal">آدرس تحویل</h2>
           </div>
           <AddressManager
             selectable
@@ -1904,8 +1904,8 @@ function DraftOrderEditor({ order, onOrderChange }) {
           />
         </section>
 
-        <div className="flex flex-col gap-3 rounded-[24px] border border-[#edf1f6] bg-[#f8fafc] p-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className={`min-h-6 text-sm ${saveStatus.type === "error" || submitStatus.type === "error" ? "text-[#b85d60]" : "text-[#708097]"}`}>
+        <div className="flex flex-col gap-3 rounded-[24px] border border-greige bg-alabaster p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className={`min-h-6 text-sm ${saveStatus.type === "error" || submitStatus.type === "error" ? "text-rosewood" : "text-charcoal/70"}`}>
             {submitStatus.message || saveStatus.message || "تغییرات به صورت پیش‌نویس ذخیره می‌شود."}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -1968,14 +1968,14 @@ function PanelDraftOrderPage() {
   }, [id]);
 
   if (status.type === "loading") {
-    return <div className="rounded-[28px] bg-white p-8 text-center text-[#7d8ca3] shadow-[0_22px_58px_rgba(70,88,116,0.08)]">در حال بارگذاری پیش‌نویس...</div>;
+    return <div className="rounded-[28px] bg-alabaster p-8 text-center text-charcoal/70 shadow-soft">در حال بارگذاری پیش‌نویس...</div>;
   }
 
   if (!order) {
     return (
       <div className="grid min-h-[50vh] place-items-center py-10">
-        <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-          <h1 className="text-2xl text-[#2f3f55]">{status.message || "پیش‌نویس پیدا نشد."}</h1>
+        <div className="rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
+          <h1 className="text-2xl text-charcoal">{status.message || "پیش‌نویس پیدا نشد."}</h1>
           <ButtonLink to="/panel/orders" variant="primary" size="panelMd" shape="panel" className="mt-6">
             بازگشت به سفارش‌ها
           </ButtonLink>
@@ -1987,9 +1987,9 @@ function PanelDraftOrderPage() {
   if (order.status !== "draft") {
     return (
       <div className="grid min-h-[50vh] place-items-center py-10">
-        <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
+        <div className="rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
           <OrderStatusBadge status={order.status} />
-          <h1 className="mt-4 text-2xl text-[#2f3f55]">این سفارش قبلاً ثبت نهایی شده است.</h1>
+          <h1 className="mt-4 text-2xl text-charcoal">این سفارش قبلاً ثبت نهایی شده است.</h1>
           <ButtonLink to={`/panel/orders/${order.id}`} variant="primary" size="panelMd" shape="panel" className="mt-6">
             مشاهده جزئیات سفارش
           </ButtonLink>
@@ -2002,12 +2002,12 @@ function PanelDraftOrderPage() {
     <section className="py-6 lg:py-10">
       <div className="mb-6 flex flex-col gap-3 text-right sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl leading-tight text-[#2f3f55] md:text-4xl">
+          <h1 className="text-3xl leading-tight text-charcoal md:text-4xl">
             {order.type === "custom" ? "تکمیل سفارش اختصاصی" : "تکمیل سفارش محصول"}
           </h1>
-          <p className="mt-2 text-sm text-[#7d8ca3]">جزئیات، تصاویر مرجع و آدرس تحویل را ثبت کنید و سپس سفارش را نهایی کنید.</p>
+          <p className="mt-2 text-sm text-charcoal/70">جزئیات، تصاویر مرجع و آدرس تحویل را ثبت کنید و سپس سفارش را نهایی کنید.</p>
         </div>
-        <Link to="/panel/orders" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#e1e8f2] bg-white px-4 text-sm text-[#617088] transition hover:border-[#c08081]/40 hover:text-[#c08081]">
+        <Link to="/panel/orders" className="inline-flex h-11 items-center justify-center rounded-xl border border-greige bg-alabaster px-4 text-sm text-charcoal/70 transition hover:border-rosewood/40 hover:text-rosewood">
           بازگشت به سفارش‌ها
         </Link>
       </div>
@@ -2047,14 +2047,14 @@ function PanelOrderDetailPage() {
   }, [id]);
 
   if (status.type === "loading") {
-    return <div className="rounded-[28px] bg-white p-8 text-center text-[#7d8ca3] shadow-[0_22px_58px_rgba(70,88,116,0.08)]">در حال بارگذاری سفارش...</div>;
+    return <div className="rounded-[28px] bg-alabaster p-8 text-center text-charcoal/70 shadow-soft">در حال بارگذاری سفارش...</div>;
   }
 
   if (!order) {
     return (
       <div className="grid min-h-[50vh] place-items-center py-10">
-        <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-          <h1 className="text-2xl text-[#2f3f55]">{status.message || "سفارش پیدا نشد."}</h1>
+        <div className="rounded-[28px] bg-alabaster p-8 text-center shadow-soft">
+          <h1 className="text-2xl text-charcoal">{status.message || "سفارش پیدا نشد."}</h1>
           <ButtonLink to="/panel/orders" variant="primary" size="panelMd" shape="panel" className="mt-6">
             بازگشت به سفارش‌ها
           </ButtonLink>
@@ -2073,10 +2073,10 @@ function PanelOrderDetailPage() {
       <div className="mb-6 flex flex-col gap-3 text-right sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl leading-tight text-[#2f3f55] md:text-4xl">{title}</h1>
+            <h1 className="text-3xl leading-tight text-charcoal md:text-4xl">{title}</h1>
             <OrderStatusBadge status={order.status} />
           </div>
-          <p className="text-sm text-[#7d8ca3]">ثبت شده در {formatPersianDate(order.submittedAt || order.createdAt)}</p>
+          <p className="text-sm text-charcoal/70">ثبت شده در {formatPersianDate(order.submittedAt || order.createdAt)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {order.status === "draft" ? (
@@ -2084,7 +2084,7 @@ function PanelOrderDetailPage() {
               ادامه پیش‌نویس
             </ButtonLink>
           ) : null}
-          <Link to="/panel/orders" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#e1e8f2] bg-white px-4 text-sm text-[#617088] transition hover:border-[#c08081]/40 hover:text-[#c08081]">
+          <Link to="/panel/orders" className="inline-flex h-11 items-center justify-center rounded-xl border border-greige bg-alabaster px-4 text-sm text-charcoal/70 transition hover:border-rosewood/40 hover:text-rosewood">
             بازگشت به سفارش‌ها
           </Link>
         </div>
@@ -2092,78 +2092,78 @@ function PanelOrderDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid gap-5">
-          <section className="rounded-[28px] bg-white p-5 text-right shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-            <h2 className="text-xl text-[#2f3f55]">اطلاعات سفارش</h2>
-            <div className="mt-5 grid gap-3 text-sm text-[#617088] md:grid-cols-2">
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">نوع سفارش</span>{order.type === "custom" ? "اختصاصی" : "محصول"}</div>
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">کاربرد</span>{order.usage === "other" ? order.usageOtherText || "سایر" : usageLabel(order.usage)}</div>
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">رنگ ترجیحی</span>{order.preferredColor || "-"}</div>
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">استایل</span>{order.styleNote || "-"}</div>
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">تعداد</span>{toPersianDigits(order.quantity || 1)}</div>
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">تاریخ موردنیاز</span>{order.neededBy || "-"}</div>
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-3"><span className="block text-xs text-[#9aa8ba]">قیمت پایه</span>{formatTomanPrice(order.productSnapshot?.basePriceRial, order.productSnapshot?.priceLabel || "پس از بررسی اعلام می‌شود")}</div>
+          <section className="rounded-[28px] bg-alabaster p-5 text-right shadow-soft">
+            <h2 className="text-xl text-charcoal">اطلاعات سفارش</h2>
+            <div className="mt-5 grid gap-3 text-sm text-charcoal/70 md:grid-cols-2">
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">نوع سفارش</span>{order.type === "custom" ? "اختصاصی" : "محصول"}</div>
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">کاربرد</span>{order.usage === "other" ? order.usageOtherText || "سایر" : usageLabel(order.usage)}</div>
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">رنگ ترجیحی</span>{order.preferredColor || "-"}</div>
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">استایل</span>{order.styleNote || "-"}</div>
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">تعداد</span>{toPersianDigits(order.quantity || 1)}</div>
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">تاریخ موردنیاز</span>{order.neededBy || "-"}</div>
+              <div className="rounded-2xl bg-alabaster px-4 py-3"><span className="block text-xs text-charcoal/70">قیمت پایه</span>{formatTomanPrice(order.productSnapshot?.basePriceRial, order.productSnapshot?.priceLabel || "پس از بررسی اعلام می‌شود")}</div>
             </div>
-            <div className="mt-4 rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm leading-7 text-[#617088]">
-              <span className="mb-1 block text-xs text-[#9aa8ba]">توضیحات شما</span>
+            <div className="mt-4 rounded-2xl bg-alabaster px-4 py-3 text-sm leading-7 text-charcoal/70">
+              <span className="mb-1 block text-xs text-charcoal/70">توضیحات شما</span>
               {order.customerNote || "-"}
             </div>
             {order.adminNote ? (
-              <div className="mt-4 rounded-2xl border border-[#f0d7d8] bg-[#fff8f8] px-4 py-3 text-sm leading-7 text-[#8f5f61]">
-                <span className="mb-1 block text-xs text-[#b06d6f]">یادداشت تیم گلملو</span>
+              <div className="mt-4 rounded-2xl border border-rosewood/40 bg-alabaster px-4 py-3 text-sm leading-7 text-charcoal/70">
+                <span className="mb-1 block text-xs text-charcoal/70">یادداشت تیم گلملو</span>
                 {order.adminNote}
               </div>
             ) : null}
           </section>
 
-          <section className="rounded-[28px] bg-white p-5 text-right shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
+          <section className="rounded-[28px] bg-alabaster p-5 text-right shadow-soft">
             <div className="mb-4 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-[#c08081]" />
-              <h2 className="text-xl text-[#2f3f55]">آدرس تحویل</h2>
+              <MapPin className="h-5 w-5 text-charcoal/70" />
+              <h2 className="text-xl text-charcoal">آدرس تحویل</h2>
             </div>
             {address.fullAddress ? (
-              <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-sm leading-7 text-[#617088]">
-                <p className="font-bold text-[#2f3f55]">{address.title || "آدرس تحویل"}</p>
+              <div className="rounded-2xl bg-alabaster px-4 py-4 text-sm leading-7 text-charcoal/70">
+                <p className="font-bold text-charcoal">{address.title || "آدرس تحویل"}</p>
                 <p className="mt-2">{address.fullAddress}</p>
                 {(address.receiverName || address.receiverPhone) ? (
-                  <p className="mt-2 text-xs text-[#9aa8ba]">{[address.receiverName, address.receiverPhone].filter(Boolean).join(" · ")}</p>
+                  <p className="mt-2 text-xs text-charcoal/70">{[address.receiverName, address.receiverPhone].filter(Boolean).join(" · ")}</p>
                 ) : null}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[#dfe7f1] bg-[#f8fafc] p-5 text-sm text-[#7d8ca3]">
+              <div className="rounded-2xl border border-dashed border-greige bg-alabaster p-5 text-sm text-charcoal/70">
                 آدرس تحویل برای این سفارش ثبت نشده است.
               </div>
             )}
           </section>
 
-          <section className="rounded-[28px] bg-white p-5 text-right shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-            <h2 className="text-xl text-[#2f3f55]">تصاویر مرجع</h2>
+          <section className="rounded-[28px] bg-alabaster p-5 text-right shadow-soft">
+            <h2 className="text-xl text-charcoal">تصاویر مرجع</h2>
             {referenceImages.length > 0 ? (
               <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {referenceImages.map((image) => (
-                  <a key={image.id} href={resolveApiURL(image.url)} target="_blank" rel="noreferrer" className="overflow-hidden rounded-2xl bg-[#f3f6fa]">
+                  <a key={image.id} href={resolveApiURL(image.url)} target="_blank" rel="noreferrer" className="overflow-hidden rounded-2xl bg-alabaster">
                     <img src={resolveApiURL(image.url)} alt="تصویر مرجع سفارش" className="aspect-square h-full w-full object-cover" />
                   </a>
                 ))}
               </div>
             ) : (
-              <div className="mt-5 rounded-2xl border border-dashed border-[#dfe7f1] bg-[#f8fafc] p-5 text-center text-sm text-[#7d8ca3]">
+              <div className="mt-5 rounded-2xl border border-dashed border-greige bg-alabaster p-5 text-center text-sm text-charcoal/70">
                 تصویر مرجعی برای این سفارش ثبت نشده است.
               </div>
             )}
           </section>
 
-          <section className="rounded-[28px] bg-white p-5 text-right shadow-[0_24px_64px_rgba(70,88,116,0.08)]">
-            <h2 className="text-xl text-[#2f3f55]">روند وضعیت سفارش</h2>
+          <section className="rounded-[28px] bg-alabaster p-5 text-right shadow-soft">
+            <h2 className="text-xl text-charcoal">روند وضعیت سفارش</h2>
             <div className="mt-5 grid gap-3">
               {(order.statusHistory || []).map((entry, index) => (
-                <div key={`${entry.status}-${entry.createdAt}-${index}`} className="flex gap-3 rounded-2xl bg-[#f8fafc] p-4">
-                  <span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-[#c08081]" />
+                <div key={`${entry.status}-${entry.createdAt}-${index}`} className="flex gap-3 rounded-2xl bg-alabaster p-4">
+                  <span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-rosewood" />
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <OrderStatusBadge status={entry.status} />
-                      <span className="text-xs text-[#9aa8ba]">{formatPersianDate(entry.createdAt)}</span>
+                      <span className="text-xs text-charcoal/70">{formatPersianDate(entry.createdAt)}</span>
                     </div>
-                    {entry.note ? <p className="mt-2 text-sm leading-7 text-[#617088]">{entry.note}</p> : null}
+                    {entry.note ? <p className="mt-2 text-sm leading-7 text-charcoal/70">{entry.note}</p> : null}
                   </div>
                 </div>
               ))}
@@ -2171,23 +2171,23 @@ function PanelOrderDetailPage() {
           </section>
         </div>
 
-        <aside className="overflow-hidden rounded-[28px] bg-white shadow-[0_24px_64px_rgba(70,88,116,0.08)] lg:self-start">
-          <div className="aspect-square bg-[#eef3f9]">
+        <aside className="overflow-hidden rounded-[28px] bg-alabaster shadow-soft lg:self-start">
+          <div className="aspect-square bg-alabaster">
             {cover ? (
               <img src={cover} alt={title} className="h-full w-full object-cover" />
             ) : (
-              <div className="grid h-full w-full place-items-center text-[#c08081]">
+              <div className="grid h-full w-full place-items-center text-charcoal/70">
                 <Send className="h-14 w-14" />
               </div>
             )}
           </div>
           <div className="p-5 text-right">
-            <h2 className="text-xl text-[#2f3f55]">{title}</h2>
-            <p className="mt-2 text-sm leading-7 text-[#708097]">
+            <h2 className="text-xl text-charcoal">{title}</h2>
+            <p className="mt-2 text-sm leading-7 text-charcoal/70">
               {order.productSnapshot?.shortDescription || "سفارش اختصاصی شما بر اساس توضیحات و تصاویر مرجع بررسی می‌شود."}
             </p>
             {order.productId ? (
-              <Link to={`/products/${order.productSnapshot?.slug || order.productId}`} className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-[#e1e8f2] bg-white px-4 text-sm font-bold text-[#c08081]">
+              <Link to={`/products/${order.productSnapshot?.slug || order.productId}`} className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-greige bg-alabaster px-4 text-sm font-bold text-charcoal/70">
                 مشاهده محصول
               </Link>
             ) : null}

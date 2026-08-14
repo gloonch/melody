@@ -71,7 +71,7 @@ function BlogCard({ post }) {
     <article>
       <Link to={`/blogs/${post.slug}`} className="group block" onClick={() => trackEvent("blog_viewed", { content_id: post.id, source: "blog_list" })}>
         {post.coverImageUrl ? (
-          <div className="aspect-[4/3] overflow-hidden rounded-md bg-[#f3eeea]">
+          <div className="aspect-[4/3] overflow-hidden rounded-md bg-alabaster">
             <ResponsiveImage
               src={post.coverImageUrl}
               sources={post.coverImageSources || []}
@@ -86,10 +86,10 @@ function BlogCard({ post }) {
           </div>
         ) : null}
         <div className="pt-4 text-right">
-          <p className="text-xs text-[#8a7770]">{formatDate(effectiveDate(post))} · {Number(post.readingTimeMinutes || 1).toLocaleString("fa-IR")} دقیقه مطالعه</p>
-          <h2 className="mt-2 text-xl leading-8 text-[#342c28]">{post.title}</h2>
-          <p className="mt-2 line-clamp-3 text-sm leading-7 text-[#6f625b]">{post.excerpt}</p>
-          <span className="mt-3 inline-block text-sm font-bold text-[#a05f62]">مطالعه مقاله</span>
+          <p className="text-xs text-charcoal/70">{formatDate(effectiveDate(post))} · {Number(post.readingTimeMinutes || 1).toLocaleString("fa-IR")} دقیقه مطالعه</p>
+          <h2 className="mt-2 text-xl leading-8 text-charcoal">{post.title}</h2>
+          <p className="mt-2 line-clamp-3 text-sm leading-7 text-charcoal/70">{post.excerpt}</p>
+          <span className="mt-3 inline-block text-sm font-bold text-charcoal/70">مطالعه مقاله</span>
         </div>
       </Link>
     </article>
@@ -105,7 +105,7 @@ function Pagination({ page, totalPages }) {
           key={number}
           to={number === 1 ? "/blogs" : `/blogs/page/${number}`}
           aria-current={number === page ? "page" : undefined}
-          className={number === page ? "grid h-10 w-10 place-items-center bg-[#a05f62] text-white" : "grid h-10 w-10 place-items-center border border-[#decfca] text-[#5f514c]"}
+          className={number === page ? "grid h-10 w-10 place-items-center bg-rosewood text-alabaster" : "grid h-10 w-10 place-items-center border border-greige text-charcoal/70"}
         >
           {number.toLocaleString("fa-IR")}
         </Link>
@@ -154,13 +154,13 @@ export function BlogsPage({ authStatus, user, navItems }) {
   if (state === "not-found") return <Navigate to="/not-found" replace />;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayName(user)} />
       <main className="pt-32">
         <section className="mx-auto max-w-6xl px-4 pb-20 md:px-8">
           <header className="mb-10 text-center">
             <h1 className="text-4xl leading-tight md:text-5xl">مقالات گلملو</h1>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#6f625b] md:text-base">راهنماها و تجربه‌های گلملو برای انتخاب، سفارش و ساخت گل‌های پارچه‌ای دست‌ساز.</p>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-charcoal/70 md:text-base">راهنماها و تجربه‌های گلملو برای انتخاب، سفارش و ساخت گل‌های پارچه‌ای دست‌ساز.</p>
           </header>
           {state === "loading" ? <PageState icon={<Loader2 className="h-5 w-5 animate-spin" />} text="در حال دریافت مقالات..." /> : null}
           {state === "error" ? <PageState text="دریافت مقالات انجام نشد. صفحه را دوباره بارگذاری کنید." /> : null}
@@ -210,7 +210,7 @@ export function BlogDetailPage({ authStatus, user, navItems }) {
   if (state === "not-found") return <Navigate to="/not-found" replace />;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f1eb] text-[#493d37]">
+    <div dir="rtl" className="min-h-screen bg-alabaster text-charcoal">
       <SiteNavbar navItems={navItems} authStatus={authStatus} user={user} userDisplayName={displayName(user)} />
       {state === "loading" ? <main className="pt-36"><PageState icon={<Loader2 className="h-5 w-5 animate-spin" />} text="در حال دریافت مقاله..." /></main> : null}
       {state === "error" ? <main className="pt-36"><PageState text="دریافت مقاله انجام نشد. صفحه را دوباره بارگذاری کنید." /></main> : null}
@@ -224,13 +224,13 @@ function BlogArticle({ post }) {
   return (
     <main className="pt-32">
       <article className="mx-auto max-w-4xl px-4 pb-20 md:px-8">
-        <nav aria-label="مسیر صفحه" className="mb-7 text-sm text-[#807269]"><Link to="/">گلملو</Link><span className="px-2">/</span><Link to="/blogs">مقالات</Link></nav>
+        <nav aria-label="مسیر صفحه" className="mb-7 text-sm text-charcoal/70"><Link to="/">گلملو</Link><span className="px-2">/</span><Link to="/blogs">مقالات</Link></nav>
         <header className="text-center">
           <h1 className="text-4xl leading-tight md:text-5xl">{post.title}</h1>
-          <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#6f625b]">{post.excerpt}</p>
-          <p className="mt-4 text-xs text-[#8a7770]">{post.authorName} · {formatDate(effectiveDate(post))} · {Number(post.readingTimeMinutes || 1).toLocaleString("fa-IR")} دقیقه مطالعه</p>
-          {post.reviewerName ? <p className="mt-2 text-xs text-[#8a7770]">بازبینی: {post.reviewerName}</p> : null}
-          {post.updatedAt && effectiveDate(post) && new Date(post.updatedAt) - new Date(effectiveDate(post)) > 86400000 ? <p className="mt-2 text-xs text-[#8a7770]">آخرین ویرایش: {formatDate(post.updatedAt)}</p> : null}
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-charcoal/70">{post.excerpt}</p>
+          <p className="mt-4 text-xs text-charcoal/70">{post.authorName} · {formatDate(effectiveDate(post))} · {Number(post.readingTimeMinutes || 1).toLocaleString("fa-IR")} دقیقه مطالعه</p>
+          {post.reviewerName ? <p className="mt-2 text-xs text-charcoal/70">بازبینی: {post.reviewerName}</p> : null}
+          {post.updatedAt && effectiveDate(post) && new Date(post.updatedAt) - new Date(effectiveDate(post)) > 86400000 ? <p className="mt-2 text-xs text-charcoal/70">آخرین ویرایش: {formatDate(post.updatedAt)}</p> : null}
         </header>
         {post.coverImageUrl ? (
           <figure className="my-10 overflow-hidden rounded-md">
@@ -238,17 +238,17 @@ function BlogArticle({ post }) {
           </figure>
         ) : null}
         {post.tableOfContents?.length ? (
-          <nav aria-label="فهرست مطالب" className="blog-toc my-10 border-y border-[#eadfda] py-6">
+          <nav aria-label="فهرست مطالب" className="blog-toc my-10 border-y border-greige py-6">
             <h2 className="mb-3 text-xl">فهرست مطالب</h2>
-            <ol className="space-y-2 text-sm text-[#6f625b]">{post.tableOfContents.map((item) => <li key={item.id} className={item.level > 2 ? "pr-4" : ""}><a href={`#${item.id}`}>{item.title}</a></li>)}</ol>
+            <ol className="space-y-2 text-sm text-charcoal/70">{post.tableOfContents.map((item) => <li key={item.id} className={item.level > 2 ? "pr-4" : ""}><a href={`#${item.id}`}>{item.title}</a></li>)}</ol>
           </nav>
         ) : null}
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: post.bodyHtml }} />
         {post.faqItems?.length ? (
-          <section className="mt-14"><h2 className="mb-6 text-3xl">سؤال‌های متداول</h2><div className="divide-y divide-[#eadfda] border-y border-[#eadfda]">{post.faqItems.map((faq, index) => <details key={`${faq.question}-${index}`} className="py-5"><summary className="cursor-pointer font-bold">{faq.question}</summary><p className="mt-3 text-sm leading-7 text-[#6f625b]">{faq.answer}</p></details>)}</div></section>
+          <section className="mt-14"><h2 className="mb-6 text-3xl">سؤال‌های متداول</h2><div className="divide-y divide-greige border-y border-greige">{post.faqItems.map((faq, index) => <details key={`${faq.question}-${index}`} className="py-5"><summary className="cursor-pointer font-bold">{faq.question}</summary><p className="mt-3 text-sm leading-7 text-charcoal">{faq.answer}</p></details>)}</div></section>
         ) : null}
         {post.ctaLabel && post.ctaUrl ? (
-          <aside className="mt-14 bg-[#f6eeee] px-5 py-8 text-center"><p className="mx-auto max-w-xl text-sm leading-7 text-[#5f514c]">{post.ctaText}</p><ButtonLink to={post.ctaUrl.startsWith("/") ? post.ctaUrl : undefined} href={post.ctaUrl.startsWith("/") ? undefined : post.ctaUrl} className="mt-5" onClick={() => trackEvent("blog_cta_clicked", { content_id: post.id, source: "blog_article" })}>{post.ctaLabel}</ButtonLink></aside>
+          <aside className="mt-14 bg-alabaster px-5 py-8 text-center"><p className="mx-auto max-w-xl text-sm leading-7 text-charcoal/70">{post.ctaText}</p><ButtonLink to={post.ctaUrl.startsWith("/") ? post.ctaUrl : undefined} href={post.ctaUrl.startsWith("/") ? undefined : post.ctaUrl} className="mt-5" onClick={() => trackEvent("blog_cta_clicked", { content_id: post.id, source: "blog_article" })}>{post.ctaLabel}</ButtonLink></aside>
         ) : null}
         {post.relatedPosts?.length ? <section className="mt-16"><h2 className="mb-7 text-center text-3xl">مقالات مرتبط</h2><div className="grid gap-8 md:grid-cols-3">{post.relatedPosts.map((related) => <BlogCard key={related.id} post={related} />)}</div></section> : null}
       </article>
@@ -257,7 +257,7 @@ function BlogArticle({ post }) {
 }
 
 function PageState({ icon, text }) {
-  return <div className="flex min-h-48 items-center justify-center gap-2 text-center text-sm text-[#807269]">{icon}{text}</div>;
+  return <div className="flex min-h-48 items-center justify-center gap-2 text-center text-sm text-charcoal/70">{icon}{text}</div>;
 }
 
 function BlogFooter() {
@@ -276,16 +276,16 @@ function BlogFooter() {
     }
   };
   return (
-    <footer id="contact" className="bg-[#2f3b33] px-6 py-16 text-center text-[#fbf5ee]">
-      <div className="mx-auto max-w-3xl"><h2 className="text-4xl text-white">تماس با گلملو</h2><p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[#e4d2c1]">برای انتخاب گل، سفارش اختصاصی یا دوره آموزشی پیام بگذارید.</p>
+    <footer id="contact" className="bg-charcoal px-6 py-16 text-center text-alabaster">
+      <div className="mx-auto max-w-3xl"><h2 className="text-4xl text-alabaster">تماس با گلملو</h2><p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-alabaster">برای انتخاب گل، سفارش اختصاصی یا دوره آموزشی پیام بگذارید.</p>
         <form onSubmit={submit} className="mx-auto mt-8 grid max-w-2xl gap-3 text-right">
-          <input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="h-12 rounded-xl border border-white/20 bg-white/10 px-4 text-white outline-none" placeholder="نام و نام خانوادگی (اختیاری)" />
-          <input required value={form.contact} onChange={(event) => setForm({ ...form, contact: event.target.value })} className="h-12 rounded-xl border border-white/20 bg-white/10 px-4 text-white outline-none" placeholder="شماره تماس" inputMode="tel" />
-          <textarea required minLength={10} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} className="min-h-28 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white outline-none" placeholder="پیام شما" />
+          <input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="h-12 rounded-xl border border-alabaster/20 bg-alabaster/10 px-4 text-alabaster outline-none" placeholder="نام و نام خانوادگی (اختیاری)" />
+          <input required value={form.contact} onChange={(event) => setForm({ ...form, contact: event.target.value })} className="h-12 rounded-xl border border-alabaster/20 bg-alabaster/10 px-4 text-alabaster outline-none" placeholder="شماره تماس" inputMode="tel" />
+          <textarea required minLength={10} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} className="min-h-28 rounded-xl border border-alabaster/20 bg-alabaster/10 px-4 py-3 text-alabaster outline-none" placeholder="پیام شما" />
           <Button type="submit" variant="light" disabled={status === "loading"}>{status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} ارسال پیام</Button>
-          <p aria-live="polite" className="min-h-6 text-sm text-[#e4d2c1]">{status === "success" ? "پیام شما ثبت شد." : status === "error" ? "ارسال پیام انجام نشد." : ""}</p>
+          <p aria-live="polite" className="min-h-6 text-sm text-alabaster">{status === "success" ? "پیام شما ثبت شد." : status === "error" ? "ارسال پیام انجام نشد." : ""}</p>
         </form>
-        <nav className="mt-8 flex flex-wrap justify-center gap-5 border-t border-white/10 pt-7 text-sm text-[#e4d2c1]"><Link to="/custom-order">راهنمای سفارش اختصاصی</Link><Link to="/blogs">مقالات</Link><Link to="/privacy">حریم خصوصی</Link></nav>
+        <nav className="mt-8 flex flex-wrap justify-center gap-5 border-t border-alabaster/10 pt-7 text-sm text-alabaster"><Link to="/custom-order">راهنمای سفارش اختصاصی</Link><Link to="/blogs">مقالات</Link><Link to="/privacy">حریم خصوصی</Link></nav>
       </div>
     </footer>
   );

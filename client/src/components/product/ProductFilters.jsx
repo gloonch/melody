@@ -34,19 +34,19 @@ function FilterOptions({ group, filters, products, onToggle, expanded, onExpande
               aria-pressed={selected}
               disabled={disabled}
               onClick={() => onToggle(group.key, option.value)}
-              className={`flex min-h-9 min-w-0 items-center justify-between gap-1 rounded-full border px-1.5 text-[10px] transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-2 sm:text-xs lg:px-3 lg:text-sm ${selected ? "border-[#a05f62] bg-[#a05f62] text-white" : "border-[#d8cdc3] bg-white/70 text-[#6d5d53] hover:border-[#c08081]"}`}
+              className={`flex min-h-9 min-w-0 items-center justify-between gap-1 rounded-full border px-1.5 text-[10px] transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-2 sm:text-xs lg:px-3 lg:text-sm ${selected ? "border-rosewood/40 bg-rosewood text-alabaster" : "border-greige bg-alabaster/70 text-charcoal/70 hover:border-rosewood/40"}`}
             >
               <span className="min-w-0 leading-5">{option.label}</span>
-              <span className={`shrink-0 ${selected ? "text-white/75" : "text-[#9b8b80]"}`}>{new Intl.NumberFormat("fa-IR").format(count)}</span>
+              <span className={`shrink-0 ${selected ? "text-alabaster/75" : "text-charcoal/70"}`}>{new Intl.NumberFormat("fa-IR").format(count)}</span>
             </button>
           );
         })}
       </div>
 
       {!expanded && hiddenOptions.length > 0 ? (
-        <div aria-hidden="true" className="relative mt-1 h-5 overflow-hidden text-center text-[11px] leading-5 text-[#9b8b80]/35">
+        <div aria-hidden="true" className="relative mt-1 h-5 overflow-hidden text-center text-[11px] leading-5 text-charcoal/35">
           {hiddenOptions.map((option) => option.label).join("، ")}
-          <span className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-[#f5f1eb] to-transparent" />
+          <span className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-alabaster to-transparent" />
         </div>
       ) : null}
 
@@ -55,7 +55,7 @@ function FilterOptions({ group, filters, products, onToggle, expanded, onExpande
           type="button"
           aria-expanded={expanded}
           onClick={() => onExpandedChange(!expanded)}
-          className="mx-auto mt-1.5 flex min-h-8 items-center justify-center gap-1 text-[11px] font-bold text-[#8d5558] transition hover:text-[#713f42] sm:text-xs"
+          className="mx-auto mt-1.5 flex min-h-8 items-center justify-center gap-1 text-[11px] font-bold text-charcoal/70 transition hover:text-rosewood sm:text-xs"
         >
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           {expanded ? "نمایش کمتر" : "مشاهده بیشتر"}
@@ -70,17 +70,17 @@ export function ProductFilters({ products, filters, resultCount, onQueryChange, 
   const hasFilters = filters.query || PRODUCT_FILTER_GROUPS.some((group) => filters[group.key].length);
 
   return (
-    <section aria-label="جست‌وجو و فیلتر محصولات" className="mb-10 border-y border-[#ddd3c9] py-6 text-right">
+    <section aria-label="جست‌وجو و فیلتر محصولات" className="mb-10 border-y border-greige py-6 text-right">
       <div className="mx-auto max-w-2xl">
         <label className="relative block">
           <span className="sr-only">جست‌وجو در محصولات</span>
-          <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9a877b]" />
+          <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-charcoal/70" />
           <input
             type="search"
             value={filters.query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="جست‌وجوی نام، کاربرد، تکنیک یا جنس"
-            className="h-12 w-full rounded-full border border-[#d8cdc3] bg-white/80 px-12 text-sm text-[#4f433b] outline-none transition placeholder:text-[#a6978d] focus:border-[#a05f62]"
+            className="h-12 w-full rounded-full border border-greige bg-alabaster/80 px-12 text-sm text-charcoal/70 outline-none transition placeholder:text-charcoal/70 focus:border-rosewood/40"
           />
         </label>
       </div>
@@ -89,7 +89,7 @@ export function ProductFilters({ products, filters, resultCount, onQueryChange, 
         <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:gap-x-4 md:gap-x-7">
           {PRODUCT_FILTER_GROUPS.map((group) => (
             <fieldset key={group.key} className="min-w-0">
-              <legend className="mb-2 text-xs font-bold text-[#62534b] sm:text-sm">{group.label}</legend>
+              <legend className="mb-2 text-xs font-bold text-charcoal/70 sm:text-sm">{group.label}</legend>
               <FilterOptions
                 group={group}
                 filters={filters}
@@ -103,10 +103,10 @@ export function ProductFilters({ products, filters, resultCount, onQueryChange, 
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-[#75655a] md:justify-between">
-        <p aria-live="polite"><strong className="text-[#4f433b]">{new Intl.NumberFormat("fa-IR").format(resultCount)}</strong> محصول</p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-charcoal/70 md:justify-between">
+        <p aria-live="polite"><strong className="text-charcoal/70">{new Intl.NumberFormat("fa-IR").format(resultCount)}</strong> محصول</p>
         {hasFilters ? (
-          <button type="button" onClick={onReset} className="inline-flex min-h-10 items-center gap-2 text-[#8d5558] hover:text-[#713f42]">
+          <button type="button" onClick={onReset} className="inline-flex min-h-10 items-center gap-2 text-charcoal/70 hover:text-rosewood">
             <X className="h-4 w-4" /> پاک‌کردن فیلترها
           </button>
         ) : null}

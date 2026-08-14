@@ -97,27 +97,27 @@ export default function AuthPage({ authStatus, user, onAuthenticate }) {
   };
 
   return (
-    <main dir="rtl" className="grid min-h-screen place-items-center bg-[#f3f7fb] px-4 py-10 text-[#27364d]">
-      <section className="w-full max-w-md overflow-hidden rounded-[30px] bg-white shadow-[0_26px_70px_rgba(70,88,116,0.12)]">
-        <div className="bg-[#f8fbff] px-6 py-6">
+    <main dir="rtl" className="grid min-h-screen place-items-center bg-alabaster px-4 py-10 text-charcoal">
+      <section className="w-full max-w-md overflow-hidden rounded-[30px] bg-alabaster shadow-soft">
+        <div className="bg-alabaster px-6 py-6">
           <Link to="/" className="inline-flex items-center gap-3 text-right" aria-label="بازگشت به گلملو">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#51645a] shadow-[0_14px_30px_rgba(81,100,90,0.22)]">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-charcoal shadow-soft">
               <img src={logoImage} alt="نشان گلملو" width="128" height="128" className="h-8 w-8 object-contain" />
             </span>
             <span>
-              <span className="block text-lg font-black text-[#26364c]">Golmelo</span>
-              <span className="block text-xs text-[#8a98ad]">پنل مشتری</span>
+              <span className="block text-lg font-black text-charcoal">Golmelo</span>
+              <span className="block text-xs text-charcoal/70">پنل مشتری</span>
             </span>
           </Link>
 
-          <h1 className="mt-8 text-3xl text-[#2f3f55]">{isSignup ? "ساخت حساب کاربری" : "ورود به حساب کاربری"}</h1>
-          <p className="mt-2 text-sm leading-7 text-[#74839a]">
+          <h1 className="mt-8 text-3xl text-charcoal">{isSignup ? "ساخت حساب کاربری" : "ورود به حساب کاربری"}</h1>
+          <p className="mt-2 text-sm leading-7 text-charcoal/70">
             {isSignup ? `با شماره تلفن و رمز عبور حساب خود را بسازید. ${authIntent}` : authIntent}
           </p>
         </div>
 
         <form className="grid gap-4 px-6 py-6" onSubmit={handleSubmit}>
-          <label className="grid gap-2 text-sm font-bold text-[#607089]">
+          <label className="grid gap-2 text-sm font-bold text-charcoal/70">
             شماره تلفن
             <div className="relative">
               <input
@@ -126,15 +126,15 @@ export default function AuthPage({ authStatus, user, onAuthenticate }) {
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                className="h-[52px] w-full rounded-2xl border border-transparent bg-[#f8fafc] px-4 pl-12 text-[#2e3d54] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#c08081]/60 focus:bg-white"
+                className="h-[52px] w-full rounded-2xl border border-transparent bg-alabaster px-4 pl-12 text-charcoal outline-none transition placeholder:text-charcoal/70 focus:border-rosewood/60 focus:bg-alabaster"
                 placeholder="09121234567"
                 required
               />
-              <Smartphone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9aa8ba]" />
+              <Smartphone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-charcoal/70" />
             </div>
           </label>
 
-          <label className="grid gap-2 text-sm font-bold text-[#607089]">
+          <label className="grid gap-2 text-sm font-bold text-charcoal/70">
             رمز عبور
             <PasswordInput
               value={form.password}
@@ -148,7 +148,7 @@ export default function AuthPage({ authStatus, user, onAuthenticate }) {
           </label>
 
           {isSignup ? (
-            <label className="grid gap-2 text-sm font-bold text-[#607089]">
+            <label className="grid gap-2 text-sm font-bold text-charcoal/70">
               تکرار رمز عبور
               <PasswordInput
                 value={form.repeatPassword}
@@ -167,12 +167,12 @@ export default function AuthPage({ authStatus, user, onAuthenticate }) {
             {isSignup ? "ثبت‌نام و ورود" : "ورود به پنل"}
           </Button>
 
-          <p className={`min-h-6 text-sm ${status.type === "error" ? "text-[#b85d60]" : "text-[#708097]"}`} aria-live="polite">
+          <p className={`min-h-6 text-sm ${status.type === "error" ? "text-rosewood" : "text-charcoal/70"}`} aria-live="polite">
             {status.message}
           </p>
         </form>
 
-        <div className="border-t border-dashed border-[#dfe7f1] px-6 py-5 text-center text-sm text-[#708097]">
+        <div className="border-t border-dashed border-greige px-6 py-5 text-center text-sm text-charcoal/70">
           {isSignup ? "قبلاً حساب دارید؟" : "حساب ندارید؟"}
           <button
             type="button"
@@ -180,7 +180,7 @@ export default function AuthPage({ authStatus, user, onAuthenticate }) {
               setMode(isSignup ? "login" : "signup");
               setStatus({ type: "idle", message: "" });
             }}
-            className="mr-2 font-bold text-[#c08081]"
+            className="mr-2 font-bold text-rosewood transition hover:text-charcoal"
           >
             {isSignup ? "ورود" : "ثبت‌نام"}
           </button>

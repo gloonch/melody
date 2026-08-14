@@ -7,16 +7,16 @@ const buttonBase =
 
 const buttonVariants = {
   primary:
-    "bg-[#a05f62] text-white shadow-[0_14px_32px_rgba(160,95,98,0.25)] hover:bg-[#8f5356]",
-  dark: "bg-[#2f3b33] text-white hover:bg-[#51645a]",
+    "bg-rosewood text-alabaster shadow-accent hover:bg-charcoal",
+  dark: "bg-charcoal text-alabaster hover:bg-rosewood",
   light:
-    "bg-[#f7eadf] text-[#2f3b33] shadow-[0_18px_40px_rgba(24,30,25,0.26)] hover:bg-white",
+    "bg-alabaster text-charcoal shadow-soft hover:bg-greige",
   outlineLight:
-    "border border-white/60 bg-white/12 text-white shadow-[0_18px_40px_rgba(24,30,25,0.2)] backdrop-blur hover:bg-white/18",
+    "border border-alabaster/60 bg-alabaster/12 text-alabaster shadow-soft backdrop-blur hover:bg-alabaster/18",
   outlineNeutral:
-    "border border-[#d8cabd] bg-white text-[#6d5d53] hover:border-[#c08081]/50 hover:text-[#c08081]",
+    "border border-greige bg-alabaster text-charcoal/70 hover:border-rosewood/50 hover:text-rosewood",
   dangerOutline:
-    "border border-[#f0d7d8] bg-white text-[#b85d60] hover:bg-[#fff7f7]",
+    "border border-rosewood/40 bg-alabaster text-rosewood hover:bg-greige",
 };
 
 const buttonSizes = {
