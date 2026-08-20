@@ -78,6 +78,10 @@ func (h *Handler) GetBlog(c *gin.Context) {
 		return
 	}
 	h.prepareBlogPost(ctx, &post)
+	if err := h.attachBlogRelations(ctx, &post, false); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات مرتبط انجام نشد."})
+		return
+	}
 	post.BodyHTMLSource = ""
 	post.BodyJSON = nil
 	c.JSON(http.StatusOK, gin.H{"post": post})
@@ -108,6 +112,10 @@ func (h *Handler) GetAdminBlog(c *gin.Context) {
 		return
 	}
 	h.prepareBlogPost(ctx, &post)
+	if err := h.attachBlogRelations(ctx, &post, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات مرتبط انجام نشد."})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"post": post})
 }
 
@@ -117,6 +125,7 @@ func (h *Handler) CreateAdminBlog(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات مقاله معتبر نیست."})
 		return
 	}
+	linksProvided := post.RelatedProductIDs != nil
 	if err := processBlogHTML(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "HTML مقاله معتبر نیست."})
 		return
@@ -128,6 +137,16 @@ func (h *Handler) CreateAdminBlog(c *gin.Context) {
 		h.writeBlogMutationError(c, err)
 		return
 	}
+	if linksProvided {
+		if err := h.contentLinks.ReplaceForBlog(ctx, created.ID, post.RelatedProductIDs); err != nil {
+			h.writeBlogMutationError(c, err)
+			return
+		}
+	}
+	if err := h.attachBlogRelations(ctx, &created, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات مرتبط انجام نشد."})
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{"post": created})
 }
 
@@ -137,6 +156,7 @@ func (h *Handler) UpdateAdminBlog(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "اطلاعات مقاله معتبر نیست."})
 		return
 	}
+	linksProvided := post.RelatedProductIDs != nil
 	if err := processBlogHTML(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "HTML مقاله معتبر نیست."})
 		return
@@ -148,7 +168,17 @@ func (h *Handler) UpdateAdminBlog(c *gin.Context) {
 		h.writeBlogMutationError(c, err)
 		return
 	}
+	if linksProvided {
+		if err := h.contentLinks.ReplaceForBlog(ctx, updated.ID, post.RelatedProductIDs); err != nil {
+			h.writeBlogMutationError(c, err)
+			return
+		}
+	}
 	h.prepareBlogPost(ctx, &updated)
+	if err := h.attachBlogRelations(ctx, &updated, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت محصولات مرتبط انجام نشد."})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"post": updated})
 }
 
@@ -542,6 +572,8 @@ func (h *Handler) writeBlogMutationError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, repository.ErrNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "مقاله پیدا نشد."})
+	case errors.Is(err, repository.ErrTooManyRelatedItems):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "حداکثر سه محصول مرتبط انتخاب کنید."})
 	case errors.Is(err, repository.ErrInvalidBlog):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "عنوان، slug یا اطلاعات مقاله معتبر نیست."})
 	case errors.Is(err, repository.ErrInvalidPublish):

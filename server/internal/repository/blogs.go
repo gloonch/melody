@@ -553,6 +553,9 @@ func normalizeBlog(post *models.BlogPost) {
 }
 
 func validateBlog(post models.BlogPost) error {
+	if _, err := normalizeRelatedIDs(post.RelatedProductIDs); err != nil {
+		return err
+	}
 	if post.Title == "" || len([]rune(post.Title)) > 180 || ValidateBlogSlug(post.Slug) != nil || len([]rune(post.Excerpt)) > 500 || len([]rune(post.SEODescription)) > 320 {
 		return ErrInvalidBlog
 	}

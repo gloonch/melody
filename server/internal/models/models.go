@@ -58,43 +58,45 @@ type RefreshToken struct {
 }
 
 type Product struct {
-	ID                   string         `json:"id" db:"id"`
-	Slug                 string         `json:"slug" db:"slug"`
-	Title                string         `json:"title" db:"title"`
-	ShortDescription     string         `json:"shortDescription" db:"short_description"`
-	Description          string         `json:"description" db:"description"`
-	CoverImageID         string         `json:"coverImageId" db:"cover_image_id"`
-	CoverImageURL        string         `json:"coverImageUrl,omitempty"`
-	CoverImageSources    []ImageSource  `json:"coverImageSources,omitempty"`
-	Images               []ProductImage `json:"images,omitempty"`
-	Category             string         `json:"category" db:"category"`
-	UsageLabel           string         `json:"usageLabel" db:"usage_label"`
-	UseCases             []string       `json:"useCases" db:"use_cases"`
-	Techniques           []string       `json:"techniques" db:"techniques"`
-	Materials            []string       `json:"materials" db:"materials"`
-	Colors               []string       `json:"colors" db:"colors"`
-	Features             []string       `json:"features" db:"features"`
-	AttachmentTypes      []string       `json:"attachmentTypes" db:"attachment_types"`
-	DiameterCM           *float64       `json:"diameterCm,omitempty" db:"diameter_cm"`
-	HasJewelryEmbroidery bool           `json:"hasJewelryEmbroidery" db:"has_jewelry_embroidery"`
-	IsCustomizable       bool           `json:"isCustomizable" db:"is_customizable"`
-	CustomizableColor    bool           `json:"customizableColor" db:"customizable_color"`
-	CustomizableSize     bool           `json:"customizableSize" db:"customizable_size"`
-	CustomizableMaterial bool           `json:"customizableMaterial" db:"customizable_material"`
-	PriceLabel           string         `json:"priceLabel" db:"price_label"`
-	BasePriceRial        int64          `json:"basePriceRial" db:"base_price_rial"`
-	PriceCurrency        string         `json:"priceCurrency" db:"price_currency"`
-	Availability         string         `json:"availability" db:"availability"`
-	PreparationTime      string         `json:"preparationTime" db:"preparation_time"`
-	PreparationDays      int            `json:"preparationDays" db:"preparation_days"`
-	IsFeatured           bool           `json:"isFeatured" db:"is_featured"`
-	FeaturedOrder        int            `json:"featuredOrder" db:"featured_order"`
-	SEOTitle             string         `json:"seoTitle" db:"seo_title"`
-	SEODescription       string         `json:"seoDescription" db:"seo_description"`
-	Status               string         `json:"status" db:"status"`
-	SortOrder            int            `json:"sortOrder" db:"sort_order"`
-	CreatedAt            time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt            time.Time      `json:"updatedAt" db:"updated_at"`
+	ID                   string            `json:"id" db:"id"`
+	Slug                 string            `json:"slug" db:"slug"`
+	Title                string            `json:"title" db:"title"`
+	ShortDescription     string            `json:"shortDescription" db:"short_description"`
+	Description          string            `json:"description" db:"description"`
+	CoverImageID         string            `json:"coverImageId" db:"cover_image_id"`
+	CoverImageURL        string            `json:"coverImageUrl,omitempty"`
+	CoverImageSources    []ImageSource     `json:"coverImageSources,omitempty"`
+	Images               []ProductImage    `json:"images,omitempty"`
+	Category             string            `json:"category" db:"category"`
+	UsageLabel           string            `json:"usageLabel" db:"usage_label"`
+	UseCases             []string          `json:"useCases" db:"use_cases"`
+	Techniques           []string          `json:"techniques" db:"techniques"`
+	Materials            []string          `json:"materials" db:"materials"`
+	Colors               []string          `json:"colors" db:"colors"`
+	Features             []string          `json:"features" db:"features"`
+	AttachmentTypes      []string          `json:"attachmentTypes" db:"attachment_types"`
+	DiameterCM           *float64          `json:"diameterCm,omitempty" db:"diameter_cm"`
+	HasJewelryEmbroidery bool              `json:"hasJewelryEmbroidery" db:"has_jewelry_embroidery"`
+	IsCustomizable       bool              `json:"isCustomizable" db:"is_customizable"`
+	CustomizableColor    bool              `json:"customizableColor" db:"customizable_color"`
+	CustomizableSize     bool              `json:"customizableSize" db:"customizable_size"`
+	CustomizableMaterial bool              `json:"customizableMaterial" db:"customizable_material"`
+	PriceLabel           string            `json:"priceLabel" db:"price_label"`
+	BasePriceRial        int64             `json:"basePriceRial" db:"base_price_rial"`
+	PriceCurrency        string            `json:"priceCurrency" db:"price_currency"`
+	Availability         string            `json:"availability" db:"availability"`
+	PreparationTime      string            `json:"preparationTime" db:"preparation_time"`
+	PreparationDays      int               `json:"preparationDays" db:"preparation_days"`
+	IsFeatured           bool              `json:"isFeatured" db:"is_featured"`
+	FeaturedOrder        int               `json:"featuredOrder" db:"featured_order"`
+	SEOTitle             string            `json:"seoTitle" db:"seo_title"`
+	SEODescription       string            `json:"seoDescription" db:"seo_description"`
+	Status               string            `json:"status" db:"status"`
+	SortOrder            int               `json:"sortOrder" db:"sort_order"`
+	CreatedAt            time.Time         `json:"createdAt" db:"created_at"`
+	UpdatedAt            time.Time         `json:"updatedAt" db:"updated_at"`
+	RelatedPostIDs       []string          `json:"relatedPostIds,omitempty"`
+	RelatedPosts         []BlogPostSummary `json:"relatedPosts,omitempty"`
 }
 
 type ProductImage struct {
@@ -369,6 +371,8 @@ type BlogPost struct {
 	FAQItems           []BlogFAQItem     `json:"faqItems" db:"faq_items"`
 	RelatedPostIDs     []string          `json:"relatedPostIds" db:"related_post_ids"`
 	RelatedPosts       []BlogPostSummary `json:"relatedPosts,omitempty"`
+	RelatedProductIDs  []string          `json:"relatedProductIds,omitempty"`
+	RelatedProducts    []Product         `json:"relatedProducts,omitempty"`
 	CTALabel           string            `json:"ctaLabel" db:"cta_label"`
 	CTAText            string            `json:"ctaText" db:"cta_text"`
 	CTAURL             string            `json:"ctaUrl" db:"cta_url"`

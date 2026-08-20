@@ -2027,6 +2027,22 @@ function ProductDetailPage({ authStatus = "guest", user = null }) {
             </p>
           </div>
         </section>
+        {product.relatedPosts?.length > 0 ? (
+          <section className="border-y border-greige py-12 text-center">
+            <h2 className="text-2xl text-charcoal md:text-3xl">راهنمای مرتبط</h2>
+            <div className="mx-auto mt-7 grid max-w-4xl gap-3 md:grid-cols-3">
+              {product.relatedPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  to={`/blogs/${post.slug}`}
+                  className="px-3 py-3 text-sm font-bold leading-7 text-charcoal/70 transition hover:text-rosewood"
+                >
+                  {post.title}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {relatedProducts.length > 0 ? (
           <section className="py-16 text-center">
             <h2 className="text-3xl text-charcoal md:text-4xl">گل‌های مشابه</h2>

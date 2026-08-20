@@ -250,6 +250,30 @@ function BlogArticle({ post }) {
         {post.ctaLabel && post.ctaUrl ? (
           <aside className="mt-14 bg-alabaster px-5 py-8 text-center"><p className="mx-auto max-w-xl text-sm leading-7 text-charcoal/70">{post.ctaText}</p><ButtonLink to={post.ctaUrl.startsWith("/") ? post.ctaUrl : undefined} href={post.ctaUrl.startsWith("/") ? undefined : post.ctaUrl} className="mt-5" onClick={() => trackEvent("blog_cta_clicked", { content_id: post.id, source: "blog_article" })}>{post.ctaLabel}</ButtonLink></aside>
         ) : null}
+        {post.relatedProducts?.length ? (
+          <section className="mt-16">
+            <h2 className="mb-7 text-center text-3xl">محصولات مرتبط</h2>
+            <div className="grid grid-cols-3 gap-3 md:gap-6">
+              {post.relatedProducts.map((product) => (
+                <Link key={product.id} to={`/products/${product.slug}`} className="group block text-center">
+                  {product.coverImageUrl ? (
+                    <ResponsiveImage
+                      src={product.coverImageUrl}
+                      sources={product.coverImageSources || []}
+                      sizes="(min-width: 896px) 256px, 33vw"
+                      alt={product.title}
+                      width="480"
+                      height="480"
+                      loading="lazy"
+                      className="aspect-square w-full object-cover transition duration-300 group-hover:opacity-90"
+                    />
+                  ) : null}
+                  <h3 className="mt-3 text-sm font-bold leading-6 text-charcoal md:text-base">{product.title}</h3>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {post.relatedPosts?.length ? <section className="mt-16"><h2 className="mb-7 text-center text-3xl">مقالات مرتبط</h2><div className="grid gap-8 md:grid-cols-3">{post.relatedPosts.map((related) => <BlogCard key={related.id} post={related} />)}</div></section> : null}
       </article>
     </main>

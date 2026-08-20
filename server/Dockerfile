@@ -18,6 +18,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -o /bin/server ./cmd/api/main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -o /bin/migrate ./cmd/migrate/main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -o /bin/bloglinks ./cmd/bloglinks/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -o /bin/productcontent ./cmd/productcontent/main.go
 
 FROM alpine:latest AS prod
 WORKDIR /app
@@ -25,6 +26,7 @@ RUN apk add --no-cache ca-certificates libwebp-tools
 COPY --from=build /bin/server /app/server
 COPY --from=build /bin/migrate /app/migrate
 COPY --from=build /bin/bloglinks /app/bloglinks
+COPY --from=build /bin/productcontent /app/productcontent
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 EXPOSE 8080

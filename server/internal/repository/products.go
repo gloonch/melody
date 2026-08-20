@@ -493,6 +493,9 @@ func (r *ProductRepository) ReorderImages(ctx context.Context, productID string,
 }
 
 func ValidateProduct(product models.Product) error {
+	if _, err := normalizeRelatedIDs(product.RelatedPostIDs); err != nil {
+		return err
+	}
 	if product.Slug == "" {
 		return errors.New("آدرس محصول الزامی است")
 	}

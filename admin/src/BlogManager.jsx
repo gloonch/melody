@@ -40,6 +40,7 @@ const emptyPost = () => ({
   reviewerName: "",
   faqItems: [],
   relatedPostIds: [],
+  relatedProductIds: [],
   ctaLabel: "مشاهده گل‌های مناسب لباس مجلسی",
   ctaText: "مدل‌های آماده را ببینید یا برای انتخاب رنگ و اندازه متناسب با لباس خود مشاوره بگیرید.",
   ctaUrl: "/custom-order",
@@ -50,7 +51,7 @@ const emptyPost = () => ({
 
 const fieldClass = "w-full rounded-md border border-greige bg-alabaster px-3 py-2.5 text-sm text-charcoal/70 outline-none transition focus:border-rosewood/40";
 
-export function BlogManager({ token, onStatus, onCountChange }) {
+export function BlogManager({ token, products = [], onStatus, onCountChange }) {
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
@@ -405,7 +406,7 @@ export function BlogManager({ token, onStatus, onCountChange }) {
         </div>
 
         {busy === "load" ? <div className="grid min-h-80 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-charcoal/70" /></div> : <>
-          <EditorSection id="blog-editor-content" title="محتوا" description="عنوان، متن، پرسش‌های متداول و مسیرهای مرتبط مقاله"><ContentFields form={form} update={update} updateContent={updateContent} categories={categories} posts={posts} preview={preview} onPreview={previewPost} onUploadImage={uploadInlineImage} onStatus={onStatus} busy={busy} /></EditorSection>
+          <EditorSection id="blog-editor-content" title="محتوا" description="عنوان، متن، پرسش‌های متداول و مسیرهای مرتبط مقاله"><ContentFields form={form} update={update} updateContent={updateContent} categories={categories} posts={posts} products={products} preview={preview} onPreview={previewPost} onUploadImage={uploadInlineImage} onStatus={onStatus} busy={busy} /></EditorSection>
           <EditorSection id="blog-editor-media" title="رسانه" description="تصویر شاخص، تصویر شبکه‌های اجتماعی و تصاویر داخل متن"><MediaFields form={form} update={update} images={images} setImages={setImages} token={token} onUpload={uploadImages} onSetCover={persistCoverImage} busy={busy} onStatus={onStatus} /></EditorSection>
           <EditorSection id="blog-editor-seo" title="SEO" description="کلیدواژه‌ها، metadata و کنترل کیفیت صفحه"><SEOFields form={form} update={update} warnings={seoWarnings} /></EditorSection>
           <EditorSection id="blog-editor-publication" title="انتشار" description="وضعیت، زمان‌بندی و اصلاح تاریخ انتشار"><PublicationFields form={form} scheduleDate={scheduleDate} onScheduleDateChange={updateScheduleDate} publishedDate={publishedDate} publishedDateDirty={publishedDateDirty} onPublishedDateChange={updatePublishedDate} onSavePublishedAt={savePublishedAt} onPublication={publication} busy={busy} /></EditorSection>
@@ -442,8 +443,16 @@ function EditorSection({ id, title, description, children }) {
   return <section id={id} className="scroll-mt-32 border-t border-greige py-8 first:border-t-0 first:pt-0"><header className="mb-5"><h3 className="text-lg font-semibold text-charcoal">{title}</h3><p className="mt-1 text-sm text-charcoal">{description}</p></header>{children}</section>;
 }
 
-function ContentFields({ form, update, updateContent, categories, posts, preview, onPreview, onUploadImage, onStatus, busy }) {
+function ContentFields({ form, update, updateContent, categories, posts, products, preview, onPreview, onUploadImage, onStatus, busy }) {
   const addFAQ = () => update("faqItems", [...form.faqItems, { question: "", answer: "" }]);
+  const toggleRelatedProduct = (productID) => {
+    const selected = form.relatedProductIds || [];
+    if (!selected.includes(productID) && selected.length >= 3) {
+      onStatus({ type: "error", message: "حداکثر سه محصول مرتبط انتخاب کنید." });
+      return;
+    }
+    update("relatedProductIds", toggleValue(selected, productID));
+  };
   return <div className="grid gap-4">
     <div className="grid gap-4 md:grid-cols-2"><Field label="عنوان مقاله"><input className={fieldClass} value={form.title} onChange={(e) => update("title", e.target.value)} maxLength={180} /></Field><Field label="Slug لاتین"><input dir="ltr" className={`${fieldClass} text-left`} value={form.slug} onChange={(e) => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="choose-fabric-flower" /></Field></div>
     <Field label="خلاصه"><textarea className={`${fieldClass} min-h-24`} value={form.excerpt} onChange={(e) => update("excerpt", e.target.value)} maxLength={500} /></Field>
@@ -453,6 +462,7 @@ function ContentFields({ form, update, updateContent, categories, posts, preview
     {preview ? <div className="rounded-md border border-greige bg-alabaster p-5"><div className="mb-4 flex flex-wrap gap-2 text-xs text-charcoal/70"><span>{preview.readingTimeMinutes} دقیقه مطالعه</span>{preview.warnings?.map((warning) => <span key={warning} className="bg-alabaster px-2 py-1 text-charcoal/70">{warning}</span>)}</div><div className="admin-blog-preview" dangerouslySetInnerHTML={{ __html: preview.html }} /></div> : null}
     <section className="border-t border-greige pt-5"><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold text-charcoal">سؤال‌های متداول</h3><button type="button" onClick={addFAQ} className="inline-flex h-9 items-center gap-1 text-sm text-charcoal"><Plus className="h-4 w-4" />افزودن سؤال</button></div>{form.faqItems.map((faq, index) => <div key={index} className="mb-3 grid gap-2 border-b border-greige pb-3 md:grid-cols-[1fr_1fr_auto]"><input className={fieldClass} value={faq.question} onChange={(e) => updateFAQ(form, update, index, "question", e.target.value)} placeholder="سؤال" /><textarea className={fieldClass} value={faq.answer} onChange={(e) => updateFAQ(form, update, index, "answer", e.target.value)} placeholder="پاسخ" /><button type="button" onClick={() => update("faqItems", form.faqItems.filter((_, i) => i !== index))} aria-label="حذف سؤال"><X className="h-4 w-4 text-charcoal" /></button></div>)}</section>
     <section className="border-t border-greige pt-5"><h3 className="mb-3 font-semibold text-charcoal">مقالات مرتبط</h3><div className="grid gap-2 md:grid-cols-2">{posts.filter((post) => post.id !== form.id).map((post) => <label key={post.id} className="flex items-center gap-2 text-sm text-charcoal"><input type="checkbox" checked={form.relatedPostIds.includes(post.id)} onChange={() => update("relatedPostIds", toggleValue(form.relatedPostIds, post.id))} />{post.title}</label>)}</div><p className="mt-2 text-xs text-charcoal">اگر انتخابی نداشته باشید، سه مقاله هم‌دسته خودکار نمایش داده می‌شود.</p></section>
+    <section className="border-t border-greige pt-5"><h3 className="mb-3 font-semibold text-charcoal">محصولات مرتبط (حداکثر سه محصول)</h3><div className="grid gap-2 md:grid-cols-2">{products.filter((product) => product.status === "active").map((product) => <label key={product.id} className="flex items-center gap-2 text-sm text-charcoal"><input type="checkbox" checked={(form.relatedProductIds || []).includes(product.id)} onChange={() => toggleRelatedProduct(product.id)} />{product.title}</label>)}</div></section>
     <section className="grid gap-3 border-t border-greige pt-5 md:grid-cols-3"><Field label="متن دکمه CTA"><input className={fieldClass} value={form.ctaLabel} onChange={(e) => update("ctaLabel", e.target.value)} /></Field><Field label="لینک CTA"><input dir="ltr" className={`${fieldClass} text-left`} value={form.ctaUrl} onChange={(e) => update("ctaUrl", e.target.value)} placeholder="/custom-order" /></Field><Field label="توضیح CTA"><input className={fieldClass} value={form.ctaText} onChange={(e) => update("ctaText", e.target.value)} /></Field></section>
   </div>;
 }

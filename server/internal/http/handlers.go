@@ -31,18 +31,19 @@ import (
 )
 
 type Handler struct {
-	db          *database.PostgresDB
-	cfg         *config.Config
-	courses     *repository.CourseRepository
-	products    *repository.ProductRepository
-	variants    *repository.ImageVariantRepository
-	orders      *repository.OrderRepository
-	addresses   *repository.AddressRepository
-	users       *repository.UserRepository
-	blogs       *repository.BlogRepository
-	siteShellMu sync.RWMutex
-	siteShell   []byte
-	siteShellAt time.Time
+	db           *database.PostgresDB
+	cfg          *config.Config
+	courses      *repository.CourseRepository
+	products     *repository.ProductRepository
+	variants     *repository.ImageVariantRepository
+	orders       *repository.OrderRepository
+	addresses    *repository.AddressRepository
+	users        *repository.UserRepository
+	blogs        *repository.BlogRepository
+	contentLinks *repository.BlogProductLinkRepository
+	siteShellMu  sync.RWMutex
+	siteShell    []byte
+	siteShellAt  time.Time
 }
 
 const (
@@ -179,15 +180,16 @@ type courseWithImagesResponse struct {
 
 func NewHandler(db *database.PostgresDB, cfg *config.Config) *Handler {
 	return &Handler{
-		db:        db,
-		cfg:       cfg,
-		courses:   repository.NewCourseRepository(db.Pool()),
-		products:  repository.NewProductRepository(db.Pool()),
-		variants:  repository.NewImageVariantRepository(db.Pool()),
-		orders:    repository.NewOrderRepository(db.Pool()),
-		addresses: repository.NewAddressRepository(db.Pool()),
-		users:     repository.NewUserRepository(db.Pool()),
-		blogs:     repository.NewBlogRepository(db.Pool()),
+		db:           db,
+		cfg:          cfg,
+		courses:      repository.NewCourseRepository(db.Pool()),
+		products:     repository.NewProductRepository(db.Pool()),
+		variants:     repository.NewImageVariantRepository(db.Pool()),
+		orders:       repository.NewOrderRepository(db.Pool()),
+		addresses:    repository.NewAddressRepository(db.Pool()),
+		users:        repository.NewUserRepository(db.Pool()),
+		blogs:        repository.NewBlogRepository(db.Pool()),
+		contentLinks: repository.NewBlogProductLinkRepository(db.Pool()),
 	}
 }
 
@@ -1165,6 +1167,10 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
 		return
 	}
+	if err := h.attachProductRelations(ctx, &product, false); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت راهنماهای مرتبط انجام نشد."})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"product": product})
 }
@@ -1180,6 +1186,10 @@ func (h *Handler) ListAdminProducts(c *gin.Context) {
 	for index := range products {
 		if err := h.attachProductGallery(ctx, &products[index]); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصولات انجام نشد."})
+			return
+		}
+		if err := h.attachProductRelations(ctx, &products[index], true); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت راهنماهای مرتبط محصولات انجام نشد."})
 			return
 		}
 	}
@@ -1200,6 +1210,10 @@ func (h *Handler) GetAdminProduct(c *gin.Context) {
 	}
 	if err := h.attachProductGallery(ctx, &product); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
+	if err := h.attachProductRelations(ctx, &product, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت راهنماهای مرتبط انجام نشد."})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"product": product})
@@ -1387,8 +1401,18 @@ func (h *Handler) CreateAdminProduct(c *gin.Context) {
 		h.productWriteError(c, err)
 		return
 	}
+	if product.RelatedPostIDs != nil {
+		if err := h.contentLinks.ReplaceForProduct(ctx, created.ID, product.RelatedPostIDs); err != nil {
+			h.productWriteError(c, err)
+			return
+		}
+	}
 	if err := h.attachProductGallery(ctx, &created); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
+	if err := h.attachProductRelations(ctx, &created, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت راهنماهای مرتبط انجام نشد."})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"product": created})
@@ -1407,8 +1431,18 @@ func (h *Handler) UpdateAdminProduct(c *gin.Context) {
 		h.productWriteError(c, err)
 		return
 	}
+	if product.RelatedPostIDs != nil {
+		if err := h.contentLinks.ReplaceForProduct(ctx, updated.ID, product.RelatedPostIDs); err != nil {
+			h.productWriteError(c, err)
+			return
+		}
+	}
 	if err := h.attachProductGallery(ctx, &updated); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت تصاویر محصول انجام نشد."})
+		return
+	}
+	if err := h.attachProductRelations(ctx, &updated, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "دریافت راهنماهای مرتبط انجام نشد."})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"product": updated})
@@ -1454,6 +1488,8 @@ func (h *Handler) productWriteError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "محصول پیدا نشد."})
 	case errors.Is(err, repository.ErrFeaturedLimit):
 		c.JSON(http.StatusConflict, gin.H{"error": "حداکثر سه محصول می‌توانند در صفحه اصلی منتخب باشند."})
+	case errors.Is(err, repository.ErrTooManyRelatedItems):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "حداکثر سه مقاله مرتبط انتخاب کنید."})
 	case errors.Is(err, repository.ErrProductSlugTaken):
 		c.JSON(http.StatusConflict, gin.H{"error": "آدرس محصول قبلاً استفاده شده است."})
 	case isUniqueViolation(err):

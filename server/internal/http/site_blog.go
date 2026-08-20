@@ -107,6 +107,9 @@ func (h *Handler) blogSitePage(ctx context.Context, path string) (string, string
 		return "", "", "/blogs/" + url.PathEscape(post.Slug), meta, http.StatusMovedPermanently, true
 	}
 	h.prepareBlogPost(ctx, &post)
+	if err := h.attachBlogRelations(ctx, &post, false); err != nil {
+		return renderBlogStatus("خطا در دریافت مقاله", "محصولات مرتبط در دسترس نیستند."), "", "", serverErrorMetadata(baseURL, defaultImage), http.StatusInternalServerError, true
+	}
 	post.BodyHTMLSource = ""
 	post.BodyJSON = nil
 	meta.Title = firstNonEmpty(post.SEOTitle, post.Title+" | گلملو")
@@ -214,6 +217,17 @@ func renderBlogPost(post models.BlogPost) string {
 	}
 	if post.CTALabel != "" && post.CTAURL != "" {
 		builder.WriteString(`<aside class="mt-14 bg-[#f6eeee] px-5 py-8 text-center"><p class="mx-auto max-w-xl text-sm leading-7 text-[#5f514c]">` + html.EscapeString(post.CTAText) + `</p><a href="` + html.EscapeString(post.CTAURL) + `" class="mt-5 inline-flex h-11 items-center bg-[#a05f62] px-6 text-sm font-medium text-white">` + html.EscapeString(post.CTALabel) + `</a></aside>`)
+	}
+	if len(post.RelatedProducts) > 0 {
+		builder.WriteString(`<section class="mt-16"><h2 class="mb-7 text-center text-2xl font-semibold">محصولات مرتبط</h2><div class="grid grid-cols-3 gap-4">`)
+		for _, product := range post.RelatedProducts {
+			builder.WriteString(`<article><a href="/products/` + html.EscapeString(url.PathEscape(product.Slug)) + `" class="block">`)
+			if product.CoverImageURL != "" {
+				builder.WriteString(`<img src="` + html.EscapeString(product.CoverImageURL) + `" alt="` + html.EscapeString(product.Title) + `" width="480" height="480" loading="lazy" class="aspect-square w-full object-cover">`)
+			}
+			builder.WriteString(`<h3 class="mt-3 text-sm font-semibold">` + html.EscapeString(product.Title) + `</h3></a></article>`)
+		}
+		builder.WriteString(`</div></section>`)
 	}
 	if len(post.RelatedPosts) > 0 {
 		builder.WriteString(`<section class="mt-16"><h2 class="mb-7 text-center text-2xl font-semibold">مقالات مرتبط</h2><div class="grid gap-6 md:grid-cols-3">`)

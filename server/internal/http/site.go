@@ -77,6 +77,9 @@ func (h *Handler) SiteShell(c *gin.Context) {
 	if path == "/products" && status == http.StatusOK {
 		bodyHTML = h.productListSiteHTML(ctx)
 	}
+	if strings.HasPrefix(path, "/products/") && status == http.StatusOK {
+		bodyHTML = h.productDetailSiteHTML(ctx, strings.TrimPrefix(path, "/products/"))
+	}
 	if status == http.StatusNotFound {
 		metadata.Robots = "noindex, nofollow"
 	}
@@ -641,6 +644,34 @@ func (h *Handler) productListSiteHTML(ctx context.Context) string {
 		builder.WriteString(`</article>`)
 	}
 	builder.WriteString(`</section></main>`)
+	return builder.String()
+}
+
+func (h *Handler) productDetailSiteHTML(ctx context.Context, slug string) string {
+	product, err := h.products.GetProduct(ctx, slug, false)
+	if err != nil {
+		return ""
+	}
+	h.attachProductImage(ctx, &product)
+	if err := h.attachProductRelations(ctx, &product, false); err != nil {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString(`<main dir="rtl"><article><nav aria-label="مسیر صفحه"><a href="/">گلملو</a> / <a href="/products">محصولات</a></nav><h1>` + html.EscapeString(product.Title) + `</h1>`)
+	if product.Description != "" {
+		builder.WriteString(`<p>` + html.EscapeString(product.Description) + `</p>`)
+	}
+	if labels := productTaxonomyLabels(product); len(labels) > 0 {
+		builder.WriteString(`<p>` + html.EscapeString(strings.Join(labels, "، ")) + `</p>`)
+	}
+	if len(product.RelatedPosts) > 0 {
+		builder.WriteString(`<section><h2>راهنمای مرتبط</h2><ul>`)
+		for _, post := range product.RelatedPosts {
+			builder.WriteString(`<li><a href="/blogs/` + html.EscapeString(url.PathEscape(post.Slug)) + `">` + html.EscapeString(post.Title) + `</a></li>`)
+		}
+		builder.WriteString(`</ul></section>`)
+	}
+	builder.WriteString(`</article></main>`)
 	return builder.String()
 }
 

@@ -516,6 +516,7 @@ const emptyProductForm = {
   featuredOrder: "0",
   seoTitle: "",
   seoDescription: "",
+  relatedPostIds: [],
   status: "draft",
   sortOrder: "0",
 };
@@ -661,12 +662,13 @@ function productFromForm(form) {
     featuredOrder: Number(latinDigits(form.featuredOrder)) || 0,
     seoTitle: form.seoTitle.trim(),
     seoDescription: form.seoDescription.trim(),
+    relatedPostIds: form.relatedPostIds || [],
     status: form.status,
     sortOrder: Number(latinDigits(form.sortOrder)) || 0,
   };
 }
 
-function ProductManager({ products, projectImages, token, onReload, onStatus }) {
+function ProductManager({ products, blogPosts, projectImages, token, onReload, onStatus }) {
   const [selectedId, setSelectedId] = useState("");
   const [form, setForm] = useState(() => productToForm(null));
   const [isOpen, setIsOpen] = useState(false);
@@ -700,6 +702,22 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
           ? selected.filter((item) => item !== value)
           : [...selected, value],
       };
+    });
+  };
+
+  const toggleRelatedPost = (postID) => {
+    setForm((current) => {
+      const selected = current.relatedPostIds || [];
+      if (selected.includes(postID)) {
+        setSaveStatus({ type: "idle", message: "" });
+        return { ...current, relatedPostIds: selected.filter((id) => id !== postID) };
+      }
+      if (selected.length >= 3) {
+        setSaveStatus({ type: "error", message: "حداکثر سه مقاله مرتبط انتخاب کنید." });
+        return current;
+      }
+      setSaveStatus({ type: "idle", message: "" });
+      return { ...current, relatedPostIds: [...selected, postID] };
     });
   };
 
@@ -969,6 +987,18 @@ function ProductManager({ products, projectImages, token, onReload, onStatus }) 
               <textarea value={form[field]} onChange={update(field)} rows={rows} className="rounded-md border border-greige bg-alabaster px-3 py-2 outline-none focus:border-rosewood/40" />
             </label>
           ))}
+
+          <fieldset className="rounded-lg border border-greige p-4">
+            <legend className="px-2 text-sm font-medium text-charcoal/70">راهنماهای مرتبط (حداکثر سه مقاله)</legend>
+            <div className="mt-2 grid gap-2 md:grid-cols-2">
+              {(blogPosts || []).map((post) => (
+                <label key={post.id} className="flex cursor-pointer items-start gap-2 text-sm text-charcoal/70">
+                  <input type="checkbox" checked={(form.relatedPostIds || []).includes(post.id)} onChange={() => toggleRelatedPost(post.id)} className="mt-1 accent-rosewood" />
+                  <span>{post.title}<small className="mr-2 text-xs text-charcoal/50">{post.status === "scheduled" ? "زمان‌بندی‌شده" : post.status === "published" ? "منتشرشده" : post.status}</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <div className="grid gap-4 md:grid-cols-2">
             {productTaxonomyFields.map(({ field, label, options }) => (
@@ -1792,6 +1822,7 @@ function Dashboard({ token, onLogout }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [blogCount, setBlogCount] = useState(0);
+  const [blogPosts, setBlogPosts] = useState([]);
   const [projectImages, setProjectImages] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [status, setStatus] = useState({ type: "loading", message: "" });
@@ -1823,6 +1854,7 @@ function Dashboard({ token, onLogout }) {
       setProducts(productsData.products || []);
       setOrders(ordersData.orders || []);
       setBlogCount((blogsData.posts || []).length);
+      setBlogPosts(blogsData.posts || []);
       setProjectImages(projectData.images || []);
       setHeroSlides(heroData.images || []);
       setStatus({ type: "idle", message: "" });
@@ -1985,7 +2017,7 @@ function Dashboard({ token, onLogout }) {
         </section>
 
         <DashboardPanel id="dashboard-blogs" active={activeSection === "blogs"}>
-          <BlogManager token={token} onStatus={setStatus} onCountChange={setBlogCount} />
+          <BlogManager token={token} products={products} onStatus={setStatus} onCountChange={setBlogCount} />
         </DashboardPanel>
 
         <DashboardPanel id="dashboard-orders" active={activeSection === "orders"}>
@@ -2004,7 +2036,7 @@ function Dashboard({ token, onLogout }) {
         </DashboardPanel>
 
         <DashboardPanel id="dashboard-products" active={activeSection === "products"}>
-          <ProductManager products={products} projectImages={projectImages} token={token} onReload={loadData} onStatus={setStatus} />
+          <ProductManager products={products} blogPosts={blogPosts} projectImages={projectImages} token={token} onReload={loadData} onStatus={setStatus} />
         </DashboardPanel>
 
         <DashboardPanel id="dashboard-courses" active={activeSection === "courses"}>

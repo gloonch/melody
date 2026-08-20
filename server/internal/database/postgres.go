@@ -447,6 +447,15 @@ func (p *PostgresDB) createSchema(ctx context.Context) error {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_blog_slug_history_post ON blog_slug_history (blog_id, created_at DESC)`,
+		`CREATE TABLE IF NOT EXISTS blog_product_links (
+			blog_post_id TEXT NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+			product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (blog_post_id, product_id)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_product_links_product ON blog_product_links (product_id, sort_order, blog_post_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_blog_product_links_blog ON blog_product_links (blog_post_id, sort_order, product_id)`,
 		`CREATE TABLE IF NOT EXISTS image_variants (
 			id TEXT PRIMARY KEY,
 			source_table TEXT NOT NULL,
