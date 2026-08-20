@@ -137,9 +137,14 @@ func (r *BlogProductLinkRepository) PublishedBlogsForProduct(ctx context.Context
 
 func (r *BlogProductLinkRepository) ActiveProductsForBlog(ctx context.Context, blogID string) ([]models.Product, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+productColumns+`
-		FROM blog_product_links l JOIN products ON products.id=l.product_id
-		WHERE l.blog_post_id=$1 AND products.status='active'
-		ORDER BY l.sort_order,products.sort_order,products.created_at LIMIT $2`, strings.TrimSpace(blogID), MaxRelatedContentItems)
+		FROM products
+		WHERE products.status='active' AND products.id IN (
+			SELECT product_id FROM blog_product_links WHERE blog_post_id=$1
+		)
+		ORDER BY (
+			SELECT sort_order FROM blog_product_links
+			WHERE blog_post_id=$1 AND product_id=products.id
+		), products.sort_order,products.created_at LIMIT $2`, strings.TrimSpace(blogID), MaxRelatedContentItems)
 	if err != nil {
 		return nil, err
 	}
